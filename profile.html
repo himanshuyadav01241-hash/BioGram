@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BioGram Profile</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=Poppins:wght@400;600;800&family=Space+Grotesk:wght@400;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { width: 100vw; height: 100vh; overflow: hidden; background: #000; color: #fff; }
+    
+    #live-bg {
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      background-size: cover; background-position: center; z-index: 1; filter: brightness(0.85);
+    }
+
+    #overlay {
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0,0,0,0.6); backdrop-filter: blur(8px); z-index: 999;
+      display: flex; justify-content: center; align-items: center; cursor: pointer; transition: opacity 0.5s;
+    }
+
+    .profile-card {
+      position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+      width: 90%; max-width: 400px; padding: 2rem; border-radius: 24px;
+      text-align: center; z-index: 10; border: 2px solid #6366f1;
+      box-shadow: 0 20px 50px rgba(0,0,0,0.4); backdrop-filter: blur(16px);
+    }
+
+    .avatar {
+      width: 95px; height: 95px; border-radius: 50%; margin: 0 auto 1rem;
+      background-size: cover; background-position: center; border: 2px solid var(--accent, #6366f1);
+    }
+
+    .social-links { display: flex; gap: 10px; justify-content: center; margin-top: 1.2rem; }
+    .social-btn {
+      padding: 8px 16px; border-radius: 8px; text-decoration: none;
+      font-weight: 600; font-size: 0.85rem; background: rgba(0,0,0,0.05); border: 1px solid rgba(0,0,0,0.1);
+    }
+  </style>
+</head>
+<body>
+
+  <div id="live-bg"></div>
+  
+  <div id="overlay" onclick="enterSite()">
+    <h2>Click Anywhere to Unmute & Enter</h2>
+  </div>
+
+  <div class="profile-card" id="card">
+    <div class="avatar" id="avatar"></div>
+    <h2 id="disp-name">Loading...</h2>
+    <p id="user-handle" style="opacity: 0.7; font-size: 0.9rem; margin-bottom: 10px;"></p>
+    <p id="bio"></p>
+
+    <div class="social-links" id="socials"></div>
+  </div>
+
+  <audio id="bg-audio" loop></audio>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-app.js";
+    import { getDatabase, ref, get, child } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-database.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyAj1gX4dmw8uNEG0yyYL3t6wE0i9BShpBQ",
+      databaseURL: "https://biogram-3a908-default-rtdb.asia-southeast1.firebasedatabase.app",
+      projectId: "biogram-3a908"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+
+    const urlParams = new URLSearchParams(window.location.search);
+    const username = urlParams.get('u');
+
+    async function loadProfile() {
+      if (!username) return;
+      const uidSnap = await get(child(ref(db), `usernames/${username.toLowerCase()}`));
+      if (!uidSnap.exists()) {
+        document.getElementById('disp-name').textContent = "User Not Found";
+        return;
+      }
+
+      const uid = uidSnap.val();
+      const profSnap = await get(child(ref(db), `profiles/${uid}`));
+      if (profSnap.exists()) {
+        const d = profSnap.val();
+        document.title = `${d.displayName || d.username} | BioGram`;
+        document.getElementById('disp-name').textContent = d.displayName || d.username;
+        document.getElementById('user-handle').textContent = `@${d.username}`;
+        document.getElementById('bio').textContent = d.bio || '';
+
+        const card = document.getElementById('card');
+        if (d.fontFamily) document.body.style.fontFamily = d.fontFamily;
+        if (d.cardBgColor) card.style.backgroundColor = d.cardBgColor;
+        if (d.textColor) card.style.color = d.textColor;
+        if (d.accentColor) {
+          card.style.borderColor = d.accentColor;
+          document.documentElement.style.setProperty('--accent', d.accentColor);
+        }
+        if (d.bgGifUrl) document.getElementById('live-bg').style.backgroundImage = `url('${d.bgGifUrl}')`;
+        if (d.avatarUrl) document.getElementById('avatar').style.backgroundImage = `url('${d.avatarUrl}')`;
+        if (d.musicUrl) document.getElementById('bg-audio').src = d.musicUrl;
+
+        // Social Links
+        const socials = document.getElementById('socials');
+        if (d.linkTwitter) socials.innerHTML += `<a href="${d.linkTwitter}" target="_blank" class="social-btn" style="color: ${d.textColor || '#000'}">X / Twitter</a>`;
+        if (d.linkInstagram) socials.innerHTML += `<a href="${d.linkInstagram}" target="_blank" class="social-btn" style="color: ${d.textColor || '#000'}">Instagram</a>`;
+        if (d.linkGithub) socials.innerHTML += `<a href="${d.linkGithub}" target="_blank" class="social-btn" style="color: ${d.textColor || '#000'}">GitHub</a>`;
+      }
+    }
+
+    window.enterSite = () => {
+      document.getElementById('overlay').style.opacity = '0';
+      setTimeout(() => document.getElementById('overlay').style.display = 'none', 500);
+      const audio = document.getElementById('bg-audio');
+      if (audio.src) audio.play();
+    };
+
+    loadProfile();
+  </script>
+</body>
+</html>

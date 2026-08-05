@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>BioGram — Next-Gen Interactive Biolinks</title>
+  
+  <!-- Browser Tab Favicon Logo (Replaces default globe icon) -->
+  <link rel="icon" type="image/svg+xml" href="https://api.iconify.design/lucide:sparkles.svg?color=%236366f1" />
+  
+  <link rel="stylesheet" href="style.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=Poppins:wght@400;600;800&family=Space+Grotesk:wght@400;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+</head>
+<body>
+
+  <!-- Ambient Animated Glows -->
+  <div class="ambient-glow glow-1"></div>
+  <div class="ambient-glow glow-2"></div>
+  <div class="ambient-glow glow-3"></div>
+
+  <!-- Navbar -->
+  <header class="navbar">
+    <div class="nav-brand">
+      <!-- Animated BioGram Logo Text -->
+      <h2 class="animated-brand">
+        <span class="brand-icon">✨</span>
+        <span class="brand-text">Bio<span class="highlight">Gram</span></span>
+      </h2>
+    </div>
+
+    <nav class="nav-links">
+      <a href="#demo">Interactive Demo</a>
+      <a href="#features">Features</a>
+      <a href="#faq">FAQ</a>
+    </nav>
+
+    <div class="nav-right">
+      <button id="nav-login-btn" class="profile-trigger-btn" onclick="toggleProfileModal()">
+        <span>Sign In / Profile</span>
+      </button>
+
+      <button id="nav-user-avatar" class="user-avatar-btn hidden" onclick="toggleProfileModal()">
+        <div id="nav-avatar-img" class="avatar-circle"></div>
+      </button>
+
+      <!-- Account Hub & Customizer Modal -->
+      <div id="profile-modal" class="profile-modal hidden">
+        <div class="modal-header">
+          <h3 id="modal-title">Account Hub</h3>
+          <button class="close-btn" onclick="toggleProfileModal()">✕</button>
+        </div>
+
+        <button id="google-login-btn" class="google-btn">
+          <svg class="google-icon" viewBox="0 0 18 18">
+            <path fill="#4285F4" d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.874 2.684-6.616z"/>
+            <path fill="#34A853" d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 0 0 9 18z"/>
+            <path fill="#FBBC05" d="M3.964 10.71A5.41 5.41 0 0 1 3.682 9c0-.593.102-1.17.282-1.71V4.958H.957A8.996 8.996 0 0 0 0 9c0 1.452.348 2.827.957 4.042l3.007-2.332z"/>
+            <path fill="#EA4335" d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 0 0 .957 4.958L3.964 7.29C4.672 5.163 6.656 3.58 9 3.58z"/>
+          </svg>
+          <span id="google-btn-text">Continue with Google</span>
+        </button>
+
+        <div class="divider"><span>OR EMAIL</span></div>
+
+        <div id="status-msg" class="message-box"></div>
+
+        <!-- Auth Form -->
+        <form id="auth-form" class="modal-form">
+          <div class="form-group">
+            <label>Username Handle</label>
+            <input type="text" id="username" placeholder="alex" required />
+          </div>
+          <div class="form-group">
+            <label>Email</label>
+            <input type="email" id="email" placeholder="alex@example.com" required />
+          </div>
+          <div class="form-group">
+            <label>Password</label>
+            <input type="password" id="password" required />
+          </div>
+          <button type="submit" class="primary-btn">Sign In / Register</button>
+        </form>
+
+        <!-- Customizer Form -->
+        <form id="editor-form" class="modal-form hidden">
+          <a id="view-profile-link" href="#" target="_blank" class="launch-link-btn">View My Live Site ↗</a>
+          
+          <div class="editor-scroll-container">
+            <h4>Identity & Bio</h4>
+            <div class="form-group">
+              <label>Display Name</label>
+              <input type="text" id="displayName" placeholder="Alex Rivers" />
+            </div>
+            <div class="form-group">
+              <label>Bio Paragraph</label>
+              <textarea id="bio" rows="2" placeholder="Digital designer & producer..."></textarea>
+            </div>
+            <div class="form-group">
+              <label>Avatar / Profile Image URL</label>
+              <input type="url" id="avatarUrl" placeholder="https://..." />
+            </div>
+
+            <h4>Theme & Aesthetics</h4>
+            <div class="form-group">
+              <label>Font Style</label>
+              <select id="fontFamily">
+                <option value="'Inter', sans-serif">Inter (Modern Clean)</option>
+                <option value="'Poppins', sans-serif">Poppins (Soft & Rounded)</option>
+                <option value="'Space Grotesk', sans-serif">Space Grotesk (Tech/Modern)</option>
+                <option value="'Space Mono', monospace">Space Mono (Retro Mono)</option>
+              </select>
+            </div>
+            <div class="form-group flex-group">
+              <div>
+                <label>Accent</label>
+                <input type="color" id="accentColor" value="#6366f1" />
+              </div>
+              <div>
+                <label>Card BG</label>
+                <input type="color" id="cardBgColor" value="#ffffff" />
+              </div>
+              <div>
+                <label>Text Color</label>
+                <input type="color" id="textColor" value="#0f172a" />
+              </div>
+            </div>
+            <div class="form-group">
+              <label>Background GIF or Photo URL</label>
+              <input type="url" id="bgGifUrl" placeholder="https://..." />
+            </div>
+
+            <h4>Integrations & Widgets</h4>
+            <div class="form-group">
+              <label>Background Music MP3 URL</label>
+              <input type="url" id="musicUrl" placeholder="https://..." />
+            </div>
+            <div class="form-group">
+              <label>Discord User ID (Lanyard API)</label>
+              <input type="text" id="discordId" placeholder="1234567890" />
+            </div>
+
+            <h4>Social Links</h4>
+            <div class="form-group">
+              <label>Twitter / X URL</label>
+              <input type="url" id="linkTwitter" placeholder="https://x.com/username" />
+            </div>
+            <div class="form-group">
+              <label>Instagram URL</label>
+              <input type="url" id="linkInstagram" placeholder="https://instagram.com/username" />
+            </div>
+            <div class="form-group">
+              <label>GitHub URL</label>
+              <input type="url" id="linkGithub" placeholder="https://github.com/username" />
+            </div>
+          </div>
+
+          <button type="submit" class="primary-btn">Save Webpage Settings</button>
+          <button type="button" id="logout-btn" class="secondary-btn">Sign Out</button>
+        </form>
+      </div>
+    </div>
+  </header>
+
+  <!-- Hero Section -->
+  <section class="hero-container">
+    <span class="badge">✨ Express Yourself Online</span>
+    <h1>Your Digital Persona.<br>Reimagined for Web3 & Web2.</h1>
+    <p>BioGram gives creators, developers, and gamers an interactive biolink webpage. Enjoy live Discord presence, custom background MP3 streams, animated GIF overlays, and modular glassmorphic design.</p>
+    <div class="hero-cta-btns">
+      <button class="primary-cta-btn" onclick="toggleProfileModal()">Claim Your @Handle</button>
+      <a href="#demo" class="secondary-cta-btn">Try Live Builder 👇</a>
+    </div>
+  </section>
+
+  <!-- Interactive Demo Section -->
+  <section id="demo" class="demo-section">
+    <div class="section-title">
+      <h2>Interactive Live Playground</h2>
+      <p>Test out BioGram's real-time aesthetic presets right here before signing up.</p>
+    </div>
+
+    <div class="demo-wrapper">
+      <div class="demo-controls-panel">
+        <h3>Theme Presets</h3>
+        <div class="preset-buttons">
+          <button class="preset-btn active" onclick="applyPreset('clean')">Clean Glass</button>
+          <button class="preset-btn" onclick="applyPreset('cyber')">Cyber Neon</button>
+          <button class="preset-btn" onclick="applyPreset('sunset')">Y2K Sunset</button>
+        </div>
+      </div>
+
+      <div class="demo-card-stage">
+        <div class="mock-profile-card" id="demo-card">
+          <div class="mock-avatar" id="demo-avatar"></div>
+          <h3 id="demo-name">Alex Rivers</h3>
+          <p id="demo-handle">@alexrivers</p>
+          <p class="mock-bio" id="demo-bio">Creative Technologist & Electronic Music Producer. Building the future of link-in-bio experiences.</p>
+          
+          <div class="mock-widget discord-mock">
+            <div class="status-dot"></div>
+            <div>
+              <strong>Playing Valorant</strong>
+              <span>Discord Status • Live</span>
+            </div>
+          </div>
+
+          <div class="mock-socials">
+            <span class="mock-btn">Twitter</span>
+            <span class="mock-btn">Instagram</span>
+            <span class="mock-btn">GitHub</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Deep Feature Breakdown -->
+  <section id="features" class="features-section">
+    <div class="section-title">
+      <h2>Packed With Next-Gen Features</h2>
+      <p>Everything you need to showcase your links, music, and presence.</p>
+    </div>
+
+    <div class="extended-feature-grid">
+      <div class="feature-box">
+        <div class="feature-icon">🎮</div>
+        <h3>Realtime Discord Lanyard API</h3>
+        <p>Broadcast your live Discord status, current game activity, or Spotify track automatically to visitors on your page.</p>
+      </div>
+
+      <div class="feature-box">
+        <div class="feature-icon">🎵</div>
+        <h3>Custom Audio Streams</h3>
+        <p>Embed uncompressed MP3 background soundtracks that auto-play with smooth enter-overlay controls.</p>
+      </div>
+
+      <div class="feature-box">
+        <div class="feature-icon">🌆</div>
+        <h3>Animated GIF Themes</h3>
+        <p>Set high-FPS anime, vaporwave, or minimalist GIF backdrops to make your webpage stand out.</p>
+      </div>
+
+      <div class="feature-box">
+        <div class="feature-icon">🎨</div>
+        <h3>Custom Google Typography</h3>
+        <p>Select from Inter, Poppins, Space Grotesk, or Space Mono to match your exact brand aesthetic.</p>
+      </div>
+
+      <div class="feature-box">
+        <div class="feature-icon">🛡️</div>
+        <h3>Firebase Security Rules</h3>
+        <p>Your webpage settings are protected with owner-only write permissions while maintaining instant public read access.</p>
+      </div>
+
+      <div class="feature-box">
+        <div class="feature-icon">⚡</div>
+        <h3>Dynamic URL Routing</h3>
+        <p>Share your personalized link everywhere using clean parameters: <code>profile.html?u=yourname</code></p>
+      </div>
+    </div>
+  </section>
+
+  <!-- FAQ Section -->
+  <section id="faq" class="faq-section">
+    <div class="section-title">
+      <h2>Frequently Asked Questions</h2>
+    </div>
+
+    <div class="faq-accordion">
+      <div class="faq-item" onclick="toggleFaq(this)">
+        <div class="faq-question">
+          <span>Is BioGram free to use?</span>
+          <span class="faq-arrow">+</span>
+        </div>
+        <div class="faq-answer">
+          <p>Yes! BioGram is completely free. Customize your bio page, add audio streams, and link social media at zero cost.</p>
+        </div>
+      </div>
+
+      <div class="faq-item" onclick="toggleFaq(this)">
+        <div class="faq-question">
+          <span>How does the Discord live status widget work?</span>
+          <span class="faq-arrow">+</span>
+        </div>
+        <div class="faq-answer">
+          <p>BioGram integrates with the Lanyard REST API. Simply enter your numeric Discord User ID in the profile settings, and your real-time status updates instantly on your biolink.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <footer class="footer">
+    <p>© 2026 BioGram Platform. Built with Firebase & Modular JavaScript.</p>
+  </footer>
+
+  <script type="module" src="app.js"></script>
+</body>
+</html>
