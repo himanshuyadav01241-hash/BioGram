@@ -1,0 +1,1048 @@
+// ==========================================================================
+// 1. FIREBASE IMPORTS
+// ==========================================================================
+import { auth, db } from "./firebase.js";
+import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+import { 
+  doc, 
+  getDoc, 
+  setDoc,
+  collection,
+  query,
+  where,
+  getDocs
+} from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+document.addEventListener('DOMContentLoaded', () => {
+
+  // ==========================================================================
+  // 2. DOM REFERENCES & STATE
+  // ==========================================================================
+  const overlay = document.getElementById('tap-to-open-overlay');
+  const spaceContainer = document.getElementById('custom-space-container');
+  const bgAudio = document.getElementById('bg-audio-player');
+  const btnToggleAudio = document.getElementById('btn-toggle-audio');
+  const audioIcon = document.getElementById('audio-icon');
+  const volumeSlider = document.getElementById('bg-audio-volume');
+  const bgLayer = document.getElementById('space-bg-layer');
+
+  const openEditorBtn = document.getElementById("open-editor-btn");
+  const closeEditorBtn = document.getElementById("close-editor-btn");
+  const editorModal = document.getElementById("space-editor-modal") || document.getElementById("customize-space-modal");
+  const saveSpaceBtn = document.getElementById("save-space-btn");
+  const resetPositionsBtn = document.getElementById("reset-positions-btn");
+  const toggleLockBtn = document.getElementById("toggle-lock-btn");
+
+  const urlParams = new URLSearchParams(window.location.search);
+  const handleParam = urlParams.get("u")?.toLowerCase().trim() || urlParams.get("handle")?.toLowerCase().trim();
+
+  let clockInterval = null;
+  let activeSpaceConfig = {};
+  let currentLoadedUserData = null;
+  let mediaImages = [];
+  let currentMediaIndex = 0;
+  let mediaInterval = null;
+  let isLayoutAbsolute = false;
+  
+  // LOCK STATE: Layout is locked by default
+  let isLayoutLocked = true; 
+
+  // DISCORD ELAPSED TIMER STATE
+  let discordTimerInterval = null;
+
+  const isMobile = () => window.innerWidth <= 600;
+
+  // Helper functions for modal & state binding
+  const getInputValue = (id1, id2) => {
+    const el = document.getElementById(id1) || document.getElementById(id2);
+    return el ? el.value.trim() : "";
+  };
+
+  const getCheckboxValue = (id1, id2, defaultVal = true) => {
+    const el = document.getElementById(id1) || document.getElementById(id2);
+    return el ? el.checked : defaultVal;
+  };
+
+  const setInputValue = (id1, id2, value) => {
+    const el = document.getElementById(id1) || document.getElementById(id2);
+    if (el) el.value = value || "";
+  };
+
+  const setCheckboxValue = (id1, id2, value) => {
+    const el = document.getElementById(id1) || document.getElementById(id2);
+    if (el) el.checked = !!value;
+  };
+
+  const escapeHtml = (str) => {
+    if (!str) return "";
+    return String(str).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  };
+
+  // ==========================================================================
+  // 3. AUDIO ENGINE & TAP OVERLAY
+  // ==========================================================================
+  if (overlay) {
+    overlay.addEventListener('click', () => {
+      if (bgAudio && bgAudio.src) {
+        bgAudio.play().then(() => {
+          if (audioIcon) audioIcon.className = "fa-solid fa-pause";
+        }).catch(err => console.warn('Autoplay prevented:', err));
+      }
+
+      overlay.style.transition = "opacity 0.4s ease, visibility 0.4s ease";
+      overlay.style.opacity = "0";
+      overlay.style.visibility = "hidden";
+
+      setTimeout(() => {
+        overlay.classList.add('hidden');
+        if (spaceContainer) spaceContainer.classList.remove('hidden');
+      }, 400);
+    });
+  }
+
+  if (btnToggleAudio && bgAudio) {
+    btnToggleAudio.addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (!bgAudio.src) return;
+      if (bgAudio.paused) {
+        bgAudio.play();
+        if (audioIcon) audioIcon.className = "fa-solid fa-pause";
+      } else {
+        bgAudio.pause();
+        if (audioIcon) audioIcon.className = "fa-solid fa-play";
+      }
+    });
+  }
+
+  if (volumeSlider && bgAudio) {
+    bgAudio.volume = volumeSlider.value / 100;
+    volumeSlider.addEventListener('input', (e) => {
+      bgAudio.volume = e.target.value / 100;
+    });
+  }
+
+  // ==========================================================================
+  // 4. LAYOUT POSITIONING & PERSISTENCE ENGINE
+  // ==========================================================================
+  
+  const getLayoutPositionsDict = () => {
+    const cards = document.querySelectorAll('.glass-widget-card');
+    const positions = {};
+
+    cards.forEach((card, index) => {
+      const cardId = card.id || `widget_card_${index}`;
+      if (card.style.left && card.style.top) {
+        positions[cardId] = {
+          left: card.style.left,
+          top: card.style.top
+        };
+      }
+    });
+
+    return positions;
+  };
+
+  const saveLayoutToLocalStorage = () => {
+    const positions = getLayoutPositionsDict();
+    if (Object.keys(positions).length > 0) {
+      localStorage.setItem('biogram_space_layout_cache', JSON.stringify(positions));
+    } else {
+      localStorage.removeItem('biogram_space_layout_cache');
+    }
+  };
+
+  const applySavedPositions = (savedPositions) => {
+    if (isMobile()) return;
+
+    let positionsToApply = savedPositions;
+    if (!positionsToApply || Object.keys(positionsToApply).length === 0) {
+      try {
+        const localCache = localStorage.getItem('biogram_space_layout_cache');
+        if (localCache) positionsToApply = JSON.parse(localCache);
+      } catch (e) {
+        console.warn("Could not load local layout cache:", e);
+      }
+    }
+
+    if (!positionsToApply || Object.keys(positionsToApply).length === 0) {
+      resetToFlexLayout();
+      return;
+    }
+
+    const cards = document.querySelectorAll('.glass-widget-card');
+    let hasSaved = false;
+
+    cards.forEach((card, index) => {
+      const cardId = card.id || `widget_card_${index}`;
+      const pos = positionsToApply[cardId];
+      if (pos && pos.left && pos.top) {
+        card.style.position = 'absolute';
+        card.style.margin = '0';
+        card.style.left = pos.left;
+        card.style.top = pos.top;
+        hasSaved = true;
+      }
+    });
+
+    if (hasSaved) isLayoutAbsolute = true;
+  };
+
+  const convertAllToAbsolute = () => {
+    if (isMobile() || !spaceContainer) return;
+
+    const currentContainerHeight = spaceContainer.offsetHeight;
+    if (currentContainerHeight > 0) {
+      spaceContainer.style.minHeight = `${currentContainerHeight}px`;
+    }
+
+    const wrapperRect = spaceContainer.getBoundingClientRect();
+    const visibleCards = Array.from(document.querySelectorAll('.glass-widget-card:not(.hidden)'));
+
+    const calculatedPositions = visibleCards.map(card => {
+      if (card.style.position === 'absolute' && card.style.left) {
+        return { card, left: card.style.left, top: card.style.top };
+      }
+      const rect = card.getBoundingClientRect();
+      return {
+        card,
+        left: `${rect.left - wrapperRect.left}px`,
+        top: `${rect.top - wrapperRect.top}px`
+      };
+    });
+
+    calculatedPositions.forEach(({ card, left, top }) => {
+      card.style.position = 'absolute';
+      card.style.margin = '0';
+      card.style.left = left;
+      card.style.top = top;
+    });
+
+    isLayoutAbsolute = true;
+  };
+
+  const resetToFlexLayout = () => {
+    const cards = document.querySelectorAll('.glass-widget-card');
+    cards.forEach(card => {
+      card.style.position = '';
+      card.style.left = '';
+      card.style.top = '';
+      card.style.margin = '';
+      card.style.zIndex = '';
+    });
+    if (spaceContainer) spaceContainer.style.minHeight = '';
+    isLayoutAbsolute = false;
+    localStorage.removeItem('biogram_space_layout_cache');
+  };
+
+  // ==========================================================================
+  // 5. LOCK & DRAG ENGINE
+  // ==========================================================================
+  const updateLockStateUI = () => {
+    const cards = document.querySelectorAll('.glass-widget-card');
+    
+    cards.forEach(card => {
+      if (isLayoutLocked) {
+        card.style.cursor = 'default';
+        card.classList.remove('can-drag');
+      } else {
+        card.style.cursor = 'grab';
+        card.classList.add('can-drag');
+      }
+    });
+
+    if (toggleLockBtn) {
+      if (isLayoutLocked) {
+        toggleLockBtn.innerHTML = `<i class="fa-solid fa-lock"></i> <span>Locked</span>`;
+        toggleLockBtn.classList.remove('active-unlock');
+      } else {
+        toggleLockBtn.innerHTML = `<i class="fa-solid fa-lock-open"></i> <span>Move Widgets</span>`;
+        toggleLockBtn.classList.add('active-unlock');
+      }
+    }
+  };
+
+  toggleLockBtn?.addEventListener('click', async () => {
+    isLayoutLocked = !isLayoutLocked;
+
+    if (!isLayoutLocked) {
+      convertAllToAbsolute();
+    } else {
+      saveLayoutToLocalStorage();
+      const positions = getLayoutPositionsDict();
+      activeSpaceConfig.widgetPositions = positions;
+
+      const user = auth.currentUser;
+      if (user && Object.keys(positions).length > 0) {
+        try {
+          await setDoc(doc(db, "users_spaces", user.uid), { widgetPositions: positions }, { merge: true });
+        } catch (err) {
+          console.warn("Could not sync locked layout to database:", err);
+        }
+      }
+    }
+
+    updateLockStateUI();
+  });
+
+  const makeCardDraggable = (card, index = 0) => {
+    if (!card.id) {
+      card.id = `widget_card_${index || Date.now()}`;
+    }
+
+    let isDragging = false;
+    let offsetX = 0;
+    let offsetY = 0;
+
+    card.querySelectorAll('img').forEach(img => {
+      img.ondragstart = (e) => e.preventDefault();
+    });
+
+    const startDrag = (e, clientX, clientY, target) => {
+      if (isLayoutLocked || isMobile()) return;
+      if (target.closest('button, input, textarea, a, i, iframe, select, .no-drag')) return;
+
+      if (e && e.preventDefault) e.preventDefault();
+
+      if (!isLayoutAbsolute) convertAllToAbsolute();
+
+      isDragging = true;
+      card.style.zIndex = '1000';
+      card.style.cursor = 'grabbing';
+
+      const cardRect = card.getBoundingClientRect();
+      offsetX = clientX - cardRect.left;
+      offsetY = clientY - cardRect.top;
+    };
+
+    const moveDrag = (clientX, clientY) => {
+      if (!isDragging || !spaceContainer) return;
+
+      const wrapperRect = spaceContainer.getBoundingClientRect();
+      let newLeft = clientX - wrapperRect.left - offsetX;
+      let newTop = clientY - wrapperRect.top - offsetY;
+
+      card.style.left = `${newLeft}px`;
+      card.style.top = `${newTop}px`;
+    };
+
+    const endDrag = () => {
+      if (isDragging) {
+        isDragging = false;
+        card.style.zIndex = '10';
+        card.style.cursor = isLayoutLocked ? 'default' : 'grab';
+        saveLayoutToLocalStorage();
+      }
+    };
+
+    card.addEventListener('mousedown', (e) => startDrag(e, e.clientX, e.clientY, e.target));
+    document.addEventListener('mousemove', (e) => {
+      if (isDragging) {
+        e.preventDefault();
+        moveDrag(e.clientX, e.clientY);
+      }
+    });
+    document.addEventListener('mouseup', endDrag);
+
+    card.addEventListener('touchstart', (e) => {
+      if (e.touches.length === 1) {
+        startDrag(e, e.touches[0].clientX, e.touches[0].clientY, e.target);
+      }
+    }, { passive: false });
+
+    document.addEventListener('touchmove', (e) => {
+      if (isDragging && e.touches.length === 1) {
+        moveDrag(e.touches[0].clientX, e.touches[0].clientY);
+      }
+    }, { passive: true });
+
+    document.addEventListener('touchend', endDrag);
+  };
+
+  const initDragAndDrop = () => {
+    const cards = document.querySelectorAll('.glass-widget-card');
+    cards.forEach((card, index) => makeCardDraggable(card, index));
+    updateLockStateUI();
+  };
+
+  initDragAndDrop();
+
+  resetPositionsBtn?.addEventListener('click', async () => {
+    const confirmed = confirm("Are you sure you want to reset all widget positions to default?");
+    if (!confirmed) return;
+
+    resetToFlexLayout();
+    activeSpaceConfig.widgetPositions = {};
+
+    const user = auth.currentUser;
+    if (user) {
+      try {
+        await setDoc(doc(db, "users_spaces", user.uid), { widgetPositions: {} }, { merge: true });
+      } catch (err) {
+        console.warn("Error resetting layout on database:", err);
+      }
+    }
+
+    alert("Layout reset to default flow successfully!");
+  });
+
+  // ==========================================================================
+  // 6. WIDGET RENDERERS & CUSTOMIZATIONS
+  // ==========================================================================
+
+  // CLOCK WIDGET WITH COLOR CUSTOMIZATION
+  const renderClockWidget = (clockConfig = {}) => {
+    const widget = document.getElementById("clock-card-widget");
+    const clockEl = document.getElementById("clock-time");
+    const dateEl = document.getElementById("clock-date");
+
+    const showClock = clockConfig.showClock !== false;
+    const is24Hour = clockConfig.clockFormat === '24h';
+    const showSeconds = clockConfig.clockShowSeconds !== false;
+    const showDate = clockConfig.clockShowDate !== false;
+    const clockColor = clockConfig.clockColor || "";
+
+    if (!showClock) {
+      widget?.classList.add("hidden");
+      if (clockInterval) clearInterval(clockInterval);
+      return;
+    }
+
+    widget?.classList.remove("hidden");
+
+    if (clockEl) {
+      clockEl.style.color = clockColor || '';
+    }
+
+    if (dateEl) {
+      dateEl.style.display = showDate ? 'block' : 'none';
+      dateEl.style.color = clockColor || '';
+    }
+
+    const updateTime = () => {
+      const now = new Date();
+      if (clockEl) {
+        const timeOptions = {
+          hour: '2-digit',
+          minute: '2-digit',
+          hour12: !is24Hour
+        };
+        if (showSeconds) {
+          timeOptions.second = '2-digit';
+        }
+        clockEl.textContent = now.toLocaleTimeString('en-US', timeOptions);
+      }
+      if (dateEl && showDate) {
+        dateEl.textContent = now.toLocaleDateString('en-US', {
+          weekday: 'long', month: 'short', day: 'numeric'
+        });
+      }
+    };
+
+    updateTime();
+    if (clockInterval) clearInterval(clockInterval);
+    clockInterval = setInterval(updateTime, 1000);
+  };
+
+  // MULTIPLE CUSTOM PHOTO CARDS
+  const renderCustomPhotoWidgets = (customPhotosList = []) => {
+    document.querySelectorAll('.custom-photo-widget-card').forEach(el => el.remove());
+
+    if (!Array.isArray(customPhotosList) || customPhotosList.length === 0) return;
+
+    customPhotosList.forEach((photoObj, index) => {
+      if (!photoObj || !photoObj.url || !photoObj.url.trim()) return;
+
+      const cardId = photoObj.id || `custom_photo_${index + 1}`;
+      const card = document.createElement('div');
+      card.className = 'glass-widget-card custom-photo-widget-card';
+      card.id = cardId;
+      card.style.padding = '12px';
+      card.innerHTML = `
+        <div class="card-header" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+          <span style="font-size:0.85rem; font-weight:600;"><i class="fa-solid fa-image"></i> ${escapeHtml(photoObj.title || 'Photo')}</span>
+        </div>
+        <div class="photo-widget-body" style="overflow:hidden; border-radius:12px;">
+          <img src="${escapeHtml(photoObj.url.trim())}" alt="Photo Widget" style="width:100%; max-height: 250px; display:block; border-radius:12px; object-fit:cover;">
+        </div>
+      `;
+
+      spaceContainer?.appendChild(card);
+      makeCardDraggable(card);
+    });
+  };
+
+  // PROFILE WIDGET
+  const renderProfileWidget = (userData, spaceData, authUser, showProfile) => {
+    const widget = document.getElementById("profile-card-widget");
+    const avatarImg = document.getElementById("space-avatar-img");
+    const displayNameEl = document.getElementById("space-display-name");
+    const handleEl = document.getElementById("space-handle-text");
+    const bioEl = document.getElementById("space-bio-text");
+
+    if (!showProfile) {
+      widget?.classList.add("hidden");
+      return;
+    }
+
+    widget?.classList.remove("hidden");
+
+    if (avatarImg) {
+      let photoUrl = spaceData?.customAvatarUrl || userData?.photoURL || authUser?.photoURL;
+      if (!photoUrl || !photoUrl.trim()) {
+        const seed = spaceData?.handle || userData?.handle || handleParam || "biogram";
+        photoUrl = `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(seed)}`;
+      }
+      avatarImg.src = photoUrl;
+    }
+
+    if (displayNameEl) {
+      const name = spaceData?.displayName || userData?.displayName || authUser?.displayName || "BioGram User";
+      displayNameEl.innerHTML = `${escapeHtml(name)} <i class="fa-solid fa-circle-check" style="color: var(--primary-color, #3b82f6);"></i>`;
+    }
+
+    if (handleEl) {
+      const handle = spaceData?.handle || userData?.handle || handleParam || "user";
+      handleEl.textContent = `@${handle}`;
+    }
+
+    if (bioEl) {
+      const bioText = spaceData?.bio !== undefined ? spaceData.bio : (userData?.bio || "");
+      if (bioText && bioText.trim() !== "") {
+        bioEl.textContent = bioText;
+        bioEl.style.display = "block";
+      } else {
+        bioEl.textContent = "";
+        bioEl.style.display = "none";
+      }
+    }
+  };
+
+  // DISCORD WIDGET
+  const renderDiscordWidget = async (discordId, showDiscord) => {
+    const widget = document.getElementById("discord-card-widget");
+    const discordStatusEl = document.getElementById("discord-status-text");
+    const discordDetailEl = document.getElementById("discord-detail-text");
+    const statusDot = document.getElementById("discord-status-dot");
+
+    const cleanDiscordId = (discordId || "").trim();
+
+    if (!showDiscord || !cleanDiscordId) {
+      widget?.classList.add("hidden");
+      if (discordTimerInterval) clearInterval(discordTimerInterval);
+      return;
+    }
+
+    widget?.classList.remove("hidden");
+
+    try {
+      const res = await fetch(`https://api.lanyard.rest/v1/users/${cleanDiscordId}`);
+      const data = await res.json();
+
+      if (data.success && data.data) {
+        const dUser = data.data.discord_user;
+        const status = data.data.discord_status || "offline";
+        const activities = data.data.activities || [];
+        const spotify = data.data.spotify;
+
+        const statusColors = { online: '#22c55e', idle: '#eab308', dnd: '#ef4444', offline: '#64748b' };
+        if (statusDot) statusDot.style.background = statusColors[status] || '#64748b';
+
+        if (discordStatusEl) {
+          discordStatusEl.textContent = `${dUser.global_name || dUser.username}`;
+        }
+
+        if (discordTimerInterval) clearInterval(discordTimerInterval);
+
+        let activityText = "";
+        let startTimeStamp = null;
+
+        if (spotify) {
+          activityText = `<i class="fa-brands fa-spotify" style="color:#1db954;"></i> ${escapeHtml(spotify.song)}`;
+        } else if (activities.length > 0) {
+          const game = activities.find(a => a.type === 0 || a.type === 1 || a.type === 2);
+          const customStatus = activities.find(a => a.type === 4);
+
+          if (game) {
+            activityText = `Playing ${escapeHtml(game.name)}`;
+            if (game.timestamps && game.timestamps.start) startTimeStamp = game.timestamps.start;
+          } else if (customStatus && customStatus.state) {
+            activityText = escapeHtml(customStatus.state);
+          }
+        }
+
+        const updateElapsedTime = () => {
+          if (!startTimeStamp) {
+            if (discordDetailEl) discordDetailEl.innerHTML = activityText || status.toUpperCase();
+            return;
+          }
+
+          const elapsedMs = Date.now() - startTimeStamp;
+          if (elapsedMs < 0) return;
+
+          const totalSeconds = Math.floor(elapsedMs / 1000);
+          const hours = Math.floor(totalSeconds / 3600);
+          const minutes = Math.floor((totalSeconds % 3600) / 60);
+          const seconds = totalSeconds % 60;
+
+          const formattedMins = String(minutes).padStart(2, '0');
+          const formattedSecs = String(seconds).padStart(2, '0');
+
+          let timeStr = hours > 0 ? `${hours}h ${formattedMins}m` : `${formattedMins}:${formattedSecs}`;
+
+          if (discordDetailEl) {
+            discordDetailEl.innerHTML = `${activityText} <span style="display: block; opacity: 0.75; font-size: 0.75rem; margin-top: 2px;">elapsed ${timeStr}</span>`;
+          }
+        };
+
+        updateElapsedTime();
+        if (startTimeStamp) discordTimerInterval = setInterval(updateElapsedTime, 1000);
+      }
+    } catch (err) {
+      console.warn("Discord fetch error:", err);
+    }
+  };
+
+  // SPOTIFY PLAYER
+  const renderSpotifyWidget = (spotifyUrl, showSpotify) => {
+    const widget = document.getElementById("spotify-card-widget");
+    const iframe = document.getElementById("spotify-iframe");
+
+    const cleanSpotifyUrl = (spotifyUrl || "").trim();
+
+    if (!showSpotify || !cleanSpotifyUrl || !iframe) {
+      widget?.classList.add("hidden");
+      if (iframe) iframe.src = "";
+      return;
+    }
+
+    try {
+      let embedUrl = cleanSpotifyUrl;
+      if (!cleanSpotifyUrl.includes("/embed/")) {
+        embedUrl = cleanSpotifyUrl.replace("open.spotify.com/", "open.spotify.com/embed/");
+      }
+      iframe.src = embedUrl;
+      widget.classList.remove("hidden");
+    } catch (e) {
+      widget.classList.add("hidden");
+      if (iframe) iframe.src = "";
+    }
+  };
+
+  // MEDIA GALLERY
+  const renderMediaWidget = (imagesArray, showMedia) => {
+    const widget = document.getElementById("media-card-widget");
+    const imgEl = document.getElementById("media-display-img");
+
+    const validImages = Array.isArray(imagesArray) 
+      ? imagesArray.filter(url => typeof url === 'string' && url.trim().length > 0)
+      : [];
+
+    if (!showMedia || validImages.length === 0) {
+      widget?.classList.add("hidden");
+      if (imgEl) imgEl.src = ""; 
+      if (mediaInterval) clearInterval(mediaInterval);
+      mediaImages = [];
+      return;
+    }
+
+    widget?.classList.remove("hidden");
+    mediaImages = validImages;
+    currentMediaIndex = 0;
+
+    const showSlide = (index) => {
+      if (index >= mediaImages.length) currentMediaIndex = 0;
+      else if (index < 0) currentMediaIndex = mediaImages.length - 1;
+      else currentMediaIndex = index;
+
+      if (imgEl && mediaImages[currentMediaIndex]) {
+        imgEl.style.opacity = '0.3';
+        setTimeout(() => {
+          imgEl.src = mediaImages[currentMediaIndex];
+          imgEl.style.opacity = '1';
+        }, 150);
+      }
+    };
+
+    showSlide(0);
+    if (mediaInterval) clearInterval(mediaInterval);
+    if (mediaImages.length > 1) {
+      mediaInterval = setInterval(() => showSlide(currentMediaIndex + 1), 4000);
+    }
+  };
+
+  // HELPER: DETECT PLATFORM BRANDING & ICONS FOR SOCIAL LINKS
+  const getSocialLinkDetails = (item) => {
+    const rawUrl = item.url ? item.url.trim() : "";
+    let fullUrl = rawUrl.startsWith("http") ? rawUrl : `https://${rawUrl}`;
+    let domain = "";
+    try {
+      domain = new URL(fullUrl).hostname.replace('www.', '').toLowerCase();
+    } catch (e) {
+      domain = rawUrl.toLowerCase();
+    }
+
+    let platformName = item.platform || item.label || "";
+    let iconClass = "fa-solid fa-link";
+
+    if (domain.includes("github.com")) {
+      if (!platformName) platformName = "GitHub";
+      iconClass = "fa-brands fa-github";
+    } else if (domain.includes("twitter.com") || domain.includes("x.com")) {
+      if (!platformName) platformName = "X / Twitter";
+      iconClass = "fa-brands fa-x-twitter";
+    } else if (domain.includes("instagram.com")) {
+      if (!platformName) platformName = "Instagram";
+      iconClass = "fa-brands fa-instagram";
+    } else if (domain.includes("youtube.com") || domain.includes("youtu.be")) {
+      if (!platformName) platformName = "YouTube";
+      iconClass = "fa-brands fa-youtube";
+    } else if (domain.includes("twitch.tv")) {
+      if (!platformName) platformName = "Twitch";
+      iconClass = "fa-brands fa-twitch";
+    } else if (domain.includes("discord")) {
+      if (!platformName) platformName = "Discord";
+      iconClass = "fa-brands fa-discord";
+    } else if (domain.includes("linkedin.com")) {
+      if (!platformName) platformName = "LinkedIn";
+      iconClass = "fa-brands fa-linkedin";
+    } else if (domain.includes("spotify.com")) {
+      if (!platformName) platformName = "Spotify";
+      iconClass = "fa-brands fa-spotify";
+    } else if (domain.includes("reddit.com")) {
+      if (!platformName) platformName = "Reddit";
+      iconClass = "fa-brands fa-reddit";
+    } else if (domain.includes("tiktok.com")) {
+      if (!platformName) platformName = "TikTok";
+      iconClass = "fa-brands fa-tiktok";
+    } else if (domain.includes("t.me") || domain.includes("telegram")) {
+      if (!platformName) platformName = "Telegram";
+      iconClass = "fa-brands fa-telegram";
+    } else if (domain.includes("soundcloud.com")) {
+      if (!platformName) platformName = "SoundCloud";
+      iconClass = "fa-brands fa-soundcloud";
+    } else {
+      if (!platformName) platformName = domain || "Link";
+    }
+
+    return { fullUrl, platformName, iconClass, domain };
+  };
+
+  // SOCIALS / CONNECTED WITH ME WIDGET RENDERER
+  const renderSocialsWidget = (socialsArray, showSocials) => {
+    const widget = document.getElementById("socials-card-widget");
+    const container = document.getElementById("card-links-container");
+
+    if (!showSocials || !Array.isArray(socialsArray) || socialsArray.length === 0 || !container) {
+      widget?.classList.add("hidden");
+      return;
+    }
+
+    widget.classList.remove("hidden");
+    container.innerHTML = "";
+
+    socialsArray.forEach(item => {
+      if (!item.url || !item.url.trim()) return;
+
+      const { fullUrl, platformName, iconClass } = getSocialLinkDetails(item);
+
+      const a = document.createElement("a");
+      a.href = fullUrl;
+      a.target = "_blank";
+      a.rel = "noopener noreferrer";
+      a.className = "social-link-btn";
+      a.innerHTML = `<i class="${iconClass}"></i> <span>${escapeHtml(platformName)}</span>`;
+      container.appendChild(a);
+    });
+  };
+
+  // RANKINGS & VIEWS WIDGET
+  const renderRankingsWidget = (userData, spaceData, showRankings) => {
+    const widget = document.getElementById("rankings-card-widget");
+    const rankEl = document.getElementById("user-rank-display");
+    const viewsEl = document.getElementById("user-views-display");
+
+    if (!showRankings) {
+      widget?.classList.add("hidden");
+      return;
+    }
+
+    widget?.classList.remove("hidden");
+
+    const rawRank = userData?.rank ?? userData?.profileRank ?? userData?.ranking ?? spaceData?.rank;
+    const rawViews = userData?.views ?? userData?.profileViews ?? spaceData?.views;
+
+    if (rankEl) {
+      if (rawRank !== undefined && rawRank !== null && rawRank !== "") {
+        rankEl.textContent = String(rawRank).startsWith('#') ? rawRank : `#${rawRank}`;
+      } else {
+        rankEl.textContent = "#1";
+      }
+    }
+
+    if (viewsEl) {
+      const viewsNum = (rawViews !== undefined && rawViews !== null && rawViews !== "") ? Number(rawViews) : 0;
+      const formattedViews = isNaN(viewsNum) ? "0" : viewsNum.toLocaleString();
+      viewsEl.innerHTML = `<i class="fa-solid fa-eye" style="color: var(--primary-color, #3b82f6);"></i> ${formattedViews} Views`;
+    }
+  };
+
+  // APPLY SPACE STYLES & COLOR CUSTOMIZATIONS
+  const applyCustomSpaceStyles = (config = {}) => {
+    if (config.accentColor) {
+      document.documentElement.style.setProperty('--primary-color', config.accentColor);
+    }
+
+    const cards = document.querySelectorAll('.glass-widget-card');
+    cards.forEach(card => {
+      if (config.cardBgColor) {
+        card.style.backgroundColor = config.cardBgColor;
+      } else {
+        card.style.backgroundColor = '';
+      }
+      if (config.cardTextColor) {
+        card.style.color = config.cardTextColor;
+      } else {
+        card.style.color = '';
+      }
+    });
+  };
+
+  // ==========================================================================
+  // 7. MAIN SPACE RENDER
+  // ==========================================================================
+  const renderProfileSpace = (userData, spaceData, authUser) => {
+    activeSpaceConfig = spaceData || {};
+    currentLoadedUserData = userData;
+
+    // Background Audio Handler
+    const audioUrl = spaceData?.audioUrl || spaceData?.bgAudioUrl || "";
+    if (bgAudio) {
+      if (audioUrl && audioUrl.trim() !== "") {
+        bgAudio.src = audioUrl.trim();
+        if (btnToggleAudio) btnToggleAudio.style.display = "flex";
+      } else {
+        bgAudio.pause();
+        bgAudio.src = "";
+        if (audioIcon) audioIcon.className = "fa-solid fa-play";
+        if (btnToggleAudio) btnToggleAudio.style.display = "none";
+      }
+    }
+
+    // Background Asset Handler
+    const bgUrl = spaceData?.bgUrl || spaceData?.bgAssetUrl || "";
+    if (bgLayer) {
+      if (bgUrl && bgUrl.trim() !== "") {
+        bgLayer.innerHTML = `<div style="width:100%;height:100%;background:url('${escapeHtml(bgUrl.trim())}') center/cover no-repeat;"></div>`;
+      } else {
+        bgLayer.innerHTML = "";
+      }
+    }
+
+    renderClockWidget({
+      showClock: spaceData?.showClock !== false,
+      clockFormat: spaceData?.clockFormat || '12h',
+      clockShowSeconds: spaceData?.clockShowSeconds !== false,
+      clockShowDate: spaceData?.clockShowDate !== false,
+      clockColor: spaceData?.clockColor || ""
+    });
+
+    renderProfileWidget(userData, spaceData, authUser, spaceData?.showProfile !== false);
+    renderDiscordWidget(spaceData?.discordId, spaceData?.showDiscord !== false);
+    renderMediaWidget(spaceData?.mediaImages, spaceData?.showMedia !== false);
+    renderSpotifyWidget(spaceData?.spotifyUrl, spaceData?.showSpotify !== false);
+    renderSocialsWidget(spaceData?.socials, spaceData?.showSocials !== false);
+    renderRankingsWidget(userData, spaceData, spaceData?.showRankings !== false);
+
+    renderCustomPhotoWidgets(spaceData?.customPhotos || []);
+
+    applyCustomSpaceStyles(spaceData);
+    applySavedPositions(spaceData?.widgetPositions);
+    updateLockStateUI();
+  };
+
+  // ==========================================================================
+  // 8. EDITOR MODAL & PERSISTENCE LINKING
+  // ==========================================================================
+  openEditorBtn?.addEventListener("click", () => {
+    // Text inputs
+    setInputValue("edit-display-name", "modal-display-name", activeSpaceConfig.displayName || currentLoadedUserData?.displayName || "");
+    setInputValue("edit-bio", "modal-bio", activeSpaceConfig.bio || currentLoadedUserData?.bio || "");
+    setInputValue("edit-avatar-url", "modal-avatar-url", activeSpaceConfig.customAvatarUrl || "");
+    setInputValue("edit-bg-url", "modal-bg-url", activeSpaceConfig.bgUrl || activeSpaceConfig.bgAssetUrl || "");
+    setInputValue("edit-audio-url", "modal-audio-url", activeSpaceConfig.audioUrl || activeSpaceConfig.bgAudioUrl || "");
+    setInputValue("edit-spotify-url", "modal-spotify-url", activeSpaceConfig.spotifyUrl || "");
+    setInputValue("edit-discord-id", "modal-discord-id", activeSpaceConfig.discordId || "");
+
+    // Color & styling inputs
+    setInputValue("edit-clock-color", "modal-clock-color", activeSpaceConfig.clockColor || "");
+    setInputValue("edit-accent-color", "modal-accent-color", activeSpaceConfig.accentColor || "");
+    setInputValue("edit-card-bg-color", "modal-card-bg-color", activeSpaceConfig.cardBgColor || "");
+    setInputValue("edit-card-text-color", "modal-card-text-color", activeSpaceConfig.cardTextColor || "");
+
+    // Clock format
+    const formatSelect = document.getElementById("edit-clock-format") || document.getElementById("modal-clock-format");
+    if (formatSelect) formatSelect.value = activeSpaceConfig.clockFormat || "12h";
+
+    // Toggle checkboxes
+    setCheckboxValue("edit-clock-show-seconds", "modal-clock-show-seconds", activeSpaceConfig.clockShowSeconds !== false);
+    setCheckboxValue("edit-clock-show-date", "modal-clock-show-date", activeSpaceConfig.clockShowDate !== false);
+    setCheckboxValue("edit-show-clock", "modal-show-clock", activeSpaceConfig.showClock !== false);
+    setCheckboxValue("edit-show-profile", "modal-show-profile", activeSpaceConfig.showProfile !== false);
+    setCheckboxValue("edit-show-discord", "modal-show-discord", activeSpaceConfig.showDiscord !== false);
+    setCheckboxValue("edit-show-spotify", "modal-show-spotify", activeSpaceConfig.showSpotify !== false);
+    setCheckboxValue("edit-show-media", "modal-show-media", activeSpaceConfig.showMedia !== false);
+    setCheckboxValue("edit-show-socials", "modal-show-socials", activeSpaceConfig.showSocials !== false);
+    setCheckboxValue("edit-show-rankings", "modal-show-rankings", activeSpaceConfig.showRankings !== false);
+
+    // Media images gallery
+    const mediaUrlsInput = document.getElementById("edit-media-urls") || document.getElementById("modal-media-urls");
+    if (mediaUrlsInput) {
+      mediaUrlsInput.value = Array.isArray(activeSpaceConfig.mediaImages) 
+        ? activeSpaceConfig.mediaImages.join("\n") 
+        : "";
+    }
+
+    // Custom photo cards
+    const customPhotosInput = document.getElementById("edit-custom-photos-urls") || document.getElementById("modal-custom-photos-urls");
+    if (customPhotosInput) {
+      if (Array.isArray(activeSpaceConfig.customPhotos)) {
+        customPhotosInput.value = activeSpaceConfig.customPhotos.map(p => `${p.title || 'Photo'} | ${p.url}`).join("\n");
+      } else {
+        customPhotosInput.value = "";
+      }
+    }
+
+    editorModal?.classList.remove("hidden");
+  });
+
+  closeEditorBtn?.addEventListener("click", () => {
+    editorModal?.classList.add("hidden");
+  });
+
+  saveSpaceBtn?.addEventListener("click", async () => {
+    const user = auth.currentUser;
+    if (!user) {
+      alert("Please log in to save your space!");
+      return;
+    }
+
+    const widgetPositions = getLayoutPositionsDict();
+
+    // Parse media gallery URLs
+    const mediaUrlsInput = getInputValue("edit-media-urls", "modal-media-urls");
+    const mediaImagesArray = mediaUrlsInput
+      .split("\n")
+      .map(url => url.trim())
+      .filter(url => url.length > 0);
+
+    // Parse custom photo cards
+    const customPhotosRaw = getInputValue("edit-custom-photos-urls", "modal-custom-photos-urls");
+    const customPhotosArray = customPhotosRaw
+      .split("\n")
+      .map((line, idx) => {
+        const parts = line.split("|");
+        const title = parts.length > 1 ? parts[0].trim() : `Photo ${idx + 1}`;
+        const url = parts.length > 1 ? parts[1].trim() : parts[0].trim();
+        return url ? { id: `custom_photo_${idx + 1}`, title, url } : null;
+      })
+      .filter(Boolean);
+
+    const updatedConfig = {
+      displayName: getInputValue("edit-display-name", "modal-display-name"),
+      bio: getInputValue("edit-bio", "modal-bio"),
+      customAvatarUrl: getInputValue("edit-avatar-url", "modal-avatar-url"),
+      bgUrl: getInputValue("edit-bg-url", "modal-bg-url"),
+      audioUrl: getInputValue("edit-audio-url", "modal-audio-url"),
+      spotifyUrl: getInputValue("edit-spotify-url", "modal-spotify-url"),
+      discordId: getInputValue("edit-discord-id", "modal-discord-id"),
+
+      // Styling & colors
+      clockColor: getInputValue("edit-clock-color", "modal-clock-color"),
+      accentColor: getInputValue("edit-accent-color", "modal-accent-color"),
+      cardBgColor: getInputValue("edit-card-bg-color", "modal-card-bg-color"),
+      cardTextColor: getInputValue("edit-card-text-color", "modal-card-text-color"),
+
+      clockFormat: getInputValue("edit-clock-format", "modal-clock-format") || "12h",
+      clockShowSeconds: getCheckboxValue("edit-clock-show-seconds", "modal-clock-show-seconds", true),
+      clockShowDate: getCheckboxValue("edit-clock-show-date", "modal-clock-show-date", true),
+
+      showClock: getCheckboxValue("edit-show-clock", "modal-show-clock", true),
+      showProfile: getCheckboxValue("edit-show-profile", "modal-show-profile", true),
+      showDiscord: getCheckboxValue("edit-show-discord", "modal-show-discord", true),
+      showSpotify: getCheckboxValue("edit-show-spotify", "modal-show-spotify", true),
+      showMedia: getCheckboxValue("edit-show-media", "modal-show-media", true),
+      showSocials: getCheckboxValue("edit-show-socials", "modal-show-socials", true),
+      showRankings: getCheckboxValue("edit-show-rankings", "modal-show-rankings", true),
+
+      mediaImages: mediaImagesArray,
+      customPhotos: customPhotosArray,
+      widgetPositions: widgetPositions,
+      updatedAt: new Date().toISOString()
+    };
+
+    try {
+      saveSpaceBtn.disabled = true;
+      saveSpaceBtn.textContent = "Saving...";
+
+      await setDoc(doc(db, "users_spaces", user.uid), updatedConfig, { merge: true });
+
+      // Update main user document for global consistency
+      await setDoc(doc(db, "users", user.uid), {
+        displayName: updatedConfig.displayName || user.displayName || "BioGram User",
+        bio: updatedConfig.bio || "",
+        updatedAt: new Date().toISOString()
+      }, { merge: true });
+
+      saveLayoutToLocalStorage();
+      activeSpaceConfig = { ...activeSpaceConfig, ...updatedConfig };
+      renderProfileSpace(currentLoadedUserData, activeSpaceConfig, user);
+
+      editorModal?.classList.add("hidden");
+    } catch (err) {
+      alert(`Error saving space: ${err.message}`);
+    } finally {
+      saveSpaceBtn.disabled = false;
+      saveSpaceBtn.innerHTML = `<i class="fa-solid fa-floppy-disk"></i> Save Space Settings`;
+    }
+  });
+
+  // ==========================================================================
+  // 9. DATA LOADING
+  // ==========================================================================
+  const loadProfileData = async (authUser) => {
+    try {
+      let targetUid = authUser?.uid;
+      let userData = null;
+      let spaceData = null;
+
+      if (handleParam) {
+        const q = query(collection(db, "users"), where("handle", "==", handleParam));
+        const querySnap = await getDocs(q);
+        if (!querySnap.empty) {
+          const userDoc = querySnap.docs[0];
+          targetUid = userDoc.id;
+          userData = userDoc.data();
+        }
+      }
+
+      if (targetUid) {
+        if (!userData) {
+          const userSnap = await getDoc(doc(db, "users", targetUid));
+          if (userSnap.exists()) userData = userSnap.data();
+        }
+
+        const spaceSnap = await getDoc(doc(db, "users_spaces", targetUid));
+        if (spaceSnap.exists()) spaceData = spaceSnap.data();
+      }
+
+      renderProfileSpace(userData, spaceData, authUser);
+    } catch (err) {
+      console.error("Profile loading error:", err);
+    }
+  };
+
+  onAuthStateChanged(auth, (user) => {
+    loadProfileData(user);
+  });
+
+});
