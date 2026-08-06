@@ -73,17 +73,18 @@ body {
   justify-content: space-between; 
   align-items: center; 
   padding: 1rem 2.5rem; 
-  background: rgba(255,255,255,0.85); 
+  background: rgba(255, 255, 255, 0.85); 
   backdrop-filter: blur(12px); 
   border-bottom: 1px solid var(--border-light); 
   position: sticky; 
   top: 0; 
   z-index: 100; 
+  width: 100%;
   transition: background-color 0.3s, border-color 0.3s; 
 }
 
 [data-theme="dark"] .navbar { 
-  background: rgba(11,15,23,0.85); 
+  background: rgba(11, 15, 23, 0.85); 
 }
 
 .logo { 
@@ -231,13 +232,15 @@ body {
   line-height: 1.15; 
   letter-spacing: -1px; 
   margin-bottom: 1rem; 
-  color: var(--text-main); 
+  color: var(--text-main) !important; /* Forces high contrast visibility */
+  opacity: 1 !important;
 }
 
 .gradient-text { 
   background: linear-gradient(135deg, var(--primary-purple), var(--primary-pink)); 
   -webkit-background-clip: text; 
   -webkit-text-fill-color: transparent; 
+  display: inline-block;
 }
 
 .hero-subtitle { 
@@ -255,6 +258,7 @@ body {
   border: 1px solid var(--border-light); 
   border-radius: 14px; 
   padding: 6px 8px 6px 16px; 
+  width: 100%;
   max-width: 480px; 
   box-shadow: 0 4px 15px rgba(0,0,0,0.04); 
   transition: border-color 0.2s, box-shadow 0.2s; 
@@ -269,6 +273,7 @@ body {
   color: var(--text-dim); 
   font-size: 0.95rem; 
   font-weight: 600; 
+  white-space: nowrap;
 }
 
 .claim-box input { 
@@ -280,6 +285,7 @@ body {
   font-size: 0.95rem; 
   padding: 8px; 
   font-weight: 600; 
+  min-width: 0; /* Prevents overflow inside flex containers */
 }
 
 .btn-claim, 
@@ -983,6 +989,28 @@ body {
   .leaderboard-item,
   .leaderboard-card {
     padding: 8px 10px;
+  }
+}
+
+@media (max-width: 600px) {
+  .navbar {
+    flex-direction: column;
+    gap: 12px;
+    padding: 0.75rem 1rem;
+  }
+
+  .nav-user-menu, 
+  .nav-actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 8px;
+    width: 100%;
+  }
+
+  .nav-btn {
+    padding: 6px 10px;
+    font-size: 0.78rem;
   }
 }
 
