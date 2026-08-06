@@ -914,16 +914,155 @@ body {
 }
 
 /* ==========================================================================
-   7. MEDIA QUERIES
+   7. MEDIA QUERIES (FULL MOBILE SUPPORT)
    ========================================================================== */
 @media (max-width: 900px) {
-  .hero-grid { grid-template-columns: 1fr; gap: 2.5rem; }
-  .hero-left { text-align: center; }
-  .claim-box, .quick-tags { margin-left: auto; margin-right: auto; }
+  .navbar {
+    flex-wrap: wrap;
+    padding: 0.85rem 1.5rem;
+    gap: 10px;
+  }
+
+  .nav-center-menu {
+    order: 3;
+    width: 100%;
+    margin-top: 6px;
+    justify-content: center;
+  }
+
+  .hero-grid { 
+    grid-template-columns: 1fr; 
+    gap: 2.5rem; 
+    padding: 2.5rem 0;
+  }
+
+  .hero-left { 
+    text-align: center; 
+  }
+
+  .hero-subtitle {
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  .claim-box { 
+    margin-left: auto; 
+    margin-right: auto; 
+  }
+
+  .quick-tags { 
+    justify-content: center; 
+    margin-left: auto; 
+    margin-right: auto; 
+  }
 }
 
 @media (max-width: 768px) {
-  .guide-steps-grid, .guide-steps-list { grid-template-columns: 1fr; }
-  .navbar { padding: 1rem 1.25rem; }
-  .hero-title { font-size: 2.3rem; }
+  .main-container {
+    padding: 0 1rem 3rem;
+  }
+
+  .navbar { 
+    padding: 0.75rem 1rem; 
+  }
+
+  .hero-title { 
+    font-size: 2.3rem; 
+  }
+
+  .guide-steps-grid, 
+  .guide-steps-list { 
+    grid-template-columns: 1fr; 
+  }
+
+  .guide-wrapper-card,
+  .guide-section {
+    padding: 1.25rem;
+  }
+
+  .leaderboard-item,
+  .leaderboard-card {
+    padding: 8px 10px;
+  }
+}
+
+@media (max-width: 576px) {
+  .hero-title {
+    font-size: 1.95rem;
+  }
+
+  .claim-box {
+    flex-direction: column;
+    padding: 10px;
+    gap: 10px;
+    align-items: stretch;
+  }
+
+  .claim-box .prefix {
+    text-align: center;
+  }
+
+  .claim-box input {
+    text-align: center;
+  }
+
+  .btn-claim {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .clean-card {
+    max-width: 100%;
+    padding: 1.25rem;
+  }
+
+  .modal-overlay {
+    padding: 0.5rem;
+  }
+
+  .modal-card,
+  .leaderboard-modal-card {
+    border-radius: 16px;
+    max-height: 92vh;
+  }
+
+  .modal-header,
+  .modal-body,
+  .modal-footer {
+    padding: 1rem;
+  }
+
+  .leaderboard-item,
+  .leaderboard-card {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .leaderboard-actions,
+  .rank-views,
+  .leaderboard-views {
+    width: 100%;
+    justify-content: space-between;
+    margin-top: 4px;
+    padding-top: 4px;
+    border-top: 1px dashed var(--border-light);
+  }
+}
+
+@media (max-width: 400px) {
+  .logo span {
+    font-size: 1.1rem;
+  }
+
+  .nav-btn,
+  .btn-claim-small {
+    padding: 5px 8px;
+    font-size: 0.75rem;
+  }
+
+  .quick-tags {
+    flex-direction: column;
+    gap: 8px;
+    align-items: center;
+  }
 }
