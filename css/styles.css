@@ -1122,6 +1122,47 @@ body {
   .guide-section {
     padding: 1.25rem;
   }
+
+  /* Profile Card Mobile Adjustments */
+  .clean-card,
+  .glass-widget-card {
+    max-width: 100%;
+    padding: 1.5rem 1.25rem;
+    margin: 0 auto;
+  }
+
+  .avatar-wrapper {
+    width: 68px;
+    height: 68px;
+    margin-bottom: 8px;
+  }
+
+  .profile-name {
+    font-size: 1.1rem;
+    flex-wrap: wrap;
+  }
+
+  .profile-handle {
+    font-size: 0.8rem;
+  }
+
+  .card-bio {
+    font-size: 0.82rem;
+    padding: 0 0.5rem;
+  }
+
+  .link-button {
+    padding: 12px;
+    font-size: 0.88rem;
+  }
+
+  .activity-widget {
+    padding: 10px 12px;
+  }
+
+  .act-title {
+    font-size: 0.75rem;
+  }
 }
 
 @media (max-width: 576px) {
@@ -1163,9 +1204,25 @@ body {
     justify-content: center;
   }
 
-  .clean-card {
-    max-width: 100%;
-    padding: 1.25rem;
+  /* Profile Card Small Screen Refinements */
+  .clean-card,
+  .glass-widget-card {
+    padding: 1.25rem 1rem;
+    border-radius: 18px;
+  }
+
+  .avatar-wrapper {
+    width: 62px;
+    height: 62px;
+  }
+
+  .card-links {
+    gap: 6px;
+  }
+
+  .link-button {
+    padding: 10px;
+    border-radius: 8px;
   }
 
   .modal-overlay {
