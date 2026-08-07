@@ -12,7 +12,6 @@ import {
   collection,
   query,
   where,
-  orderBy,
   getDocs,
   limit
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
@@ -36,12 +35,34 @@ document.addEventListener('DOMContentLoaded', () => {
   const saveSpaceBtn = document.getElementById("save-space-btn");
   const resetPositionsBtn = document.getElementById("reset-positions-btn");
   const toggleLockBtn = document.getElementById("toggle-lock-btn");
+  const mobileOrderListContainer = document.getElementById("mobile-order-list");
 
   const mediaPrevBtn = document.getElementById("media-prev-btn");
   const mediaNextBtn = document.getElementById("media-next-btn");
 
   const urlParams = new URLSearchParams(window.location.search);
   const handleParam = urlParams.get("u")?.toLowerCase().trim() || urlParams.get("handle")?.toLowerCase().trim();
+
+  const DEFAULT_WIDGET_ORDER = ['clock', 'profile', 'discord', 'media', 'spotify', 'socials', 'rankings'];
+  const WIDGET_LABELS = {
+    clock: "Clock Widget",
+    profile: "Profile Widget",
+    discord: "Discord Activity",
+    media: "Media Gallery",
+    spotify: "Spotify Player",
+    socials: "Social Links",
+    rankings: "Rank & Views"
+  };
+
+  const WIDGET_ELEMENT_IDS = {
+    clock: "clock-card-widget",
+    profile: "profile-card-widget",
+    discord: "discord-card-widget",
+    media: "media-card-widget",
+    spotify: "spotify-card-widget",
+    socials: "socials-card-widget",
+    rankings: "rankings-card-widget"
+  };
 
   let clockInterval = null;
   let activeSpaceConfig = {};
@@ -54,6 +75,7 @@ document.addEventListener('DOMContentLoaded', () => {
   let isLayoutAbsolute = false;
   let isLayoutLocked = true; 
   let discordTimerInterval = null;
+  let tempMobileOrder = [...DEFAULT_WIDGET_ORDER];
 
   const isMobile = () => window.innerWidth <= 600;
   const getLocalStorageKey = () => targetUserId ? `biogram_space_layout_cache_${targetUserId}` : 'biogram_space_layout_cache_guest';
@@ -147,15 +169,12 @@ document.addEventListener('DOMContentLoaded', () => {
   };
 
   // ==========================================================================
-  // VIEW TRACKING (PREVENTS SELF-VIEWS & REFRESH SPAM)
+  // VIEW TRACKING
   // ==========================================================================
   const trackProfileView = async (targetUid, authUser) => {
     if (!targetUid) return;
-
-    // 1. Do NOT count view if user is viewing their own profile
     if (authUser && authUser.uid === targetUid) return;
 
-    // 2. Prevent duplicate view count in the same browser session
     const sessionKey = `biogram_viewed_${targetUid}`;
     if (sessionStorage.getItem(sessionKey)) return;
 
@@ -166,7 +185,6 @@ document.addEventListener('DOMContentLoaded', () => {
         views: increment(1)
       });
       
-      // Update local state views visually
       if (currentLoadedUserData) {
         currentLoadedUserData.views = (currentLoadedUserData.views || 0) + 1;
         const viewsEl = document.getElementById("views-count");
@@ -255,6 +273,69 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // ==========================================================================
+  // MOBILE ORDER UI & DOM REORDERING
+  // ==========================================================================
+  const renderMobileOrderList = () => {
+    if (!mobileOrderListContainer) return;
+    mobileOrderListContainer.innerHTML = "";
+
+    tempMobileOrder.forEach((key, index) => {
+      const itemRow = document.createElement("div");
+      itemRow.className = "mobile-order-item";
+
+      const label = document.createElement("span");
+      label.textContent = WIDGET_LABELS[key] || key;
+
+      const btnsGroup = document.createElement("div");
+      btnsGroup.className = "mobile-order-btns";
+
+      const upBtn = document.createElement("button");
+      upBtn.type = "button";
+      upBtn.className = "mobile-order-btn";
+      upBtn.innerHTML = '<i class="fa-solid fa-arrow-up"></i>';
+      upBtn.disabled = index === 0;
+      upBtn.addEventListener("click", () => moveMobileOrderItem(index, index - 1));
+
+      const downBtn = document.createElement("button");
+      downBtn.type = "button";
+      downBtn.className = "mobile-order-btn";
+      downBtn.innerHTML = '<i class="fa-solid fa-arrow-down"></i>';
+      downBtn.disabled = index === tempMobileOrder.length - 1;
+      downBtn.addEventListener("click", () => moveMobileOrderItem(index, index + 1));
+
+      btnsGroup.appendChild(upBtn);
+      btnsGroup.appendChild(downBtn);
+
+      itemRow.appendChild(label);
+      itemRow.appendChild(btnsGroup);
+      mobileOrderListContainer.appendChild(itemRow);
+    });
+  };
+
+  const moveMobileOrderItem = (fromIndex, toIndex) => {
+    if (toIndex < 0 || toIndex >= tempMobileOrder.length) return;
+    const item = tempMobileOrder.splice(fromIndex, 1)[0];
+    tempMobileOrder.splice(toIndex, 0, item);
+    renderMobileOrderList();
+  };
+
+  const applyMobileLayoutOrder = (orderArray) => {
+    if (!isMobile() || !spaceContainer) return;
+
+    const currentOrder = Array.isArray(orderArray) && orderArray.length > 0
+      ? orderArray
+      : DEFAULT_WIDGET_ORDER;
+
+    currentOrder.forEach(key => {
+      const elId = WIDGET_ELEMENT_IDS[key];
+      const widgetEl = elId ? document.getElementById(elId) : null;
+      if (widgetEl && widgetEl.parentElement === spaceContainer) {
+        spaceContainer.appendChild(widgetEl);
+      }
+    });
+  };
+
+  // ==========================================================================
   // LAYOUT PERSISTENCE & LOCK/DRAG
   // ==========================================================================
   const getLayoutPositionsDict = () => {
@@ -298,6 +379,7 @@ document.addEventListener('DOMContentLoaded', () => {
       });
       if (spaceContainer) spaceContainer.style.minHeight = '';
       isLayoutAbsolute = false;
+      applyMobileLayoutOrder(activeSpaceConfig.mobileWidgetOrder);
       return;
     }
 
@@ -510,10 +592,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
     resetToFlexLayout();
     activeSpaceConfig.widgetPositions = {};
+    activeSpaceConfig.mobileWidgetOrder = [...DEFAULT_WIDGET_ORDER];
 
     if (targetUserId) {
       try {
-        await setDoc(doc(db, "users_spaces", targetUserId), { widgetPositions: {} }, { merge: true });
+        await setDoc(doc(db, "users_spaces", targetUserId), { 
+          widgetPositions: {}, 
+          mobileWidgetOrder: [...DEFAULT_WIDGET_ORDER] 
+        }, { merge: true });
       } catch (err) {
         console.warn("Error resetting layout on database:", err);
       }
@@ -954,7 +1040,6 @@ document.addEventListener('DOMContentLoaded', () => {
       spaceContainer.style.pointerEvents = "auto";
     }
 
-    // Trigger view count update for non-self visits
     trackProfileView(targetUserId, authUser);
   };
 
@@ -990,6 +1075,12 @@ document.addEventListener('DOMContentLoaded', () => {
     setCheckboxValue("edit-show-media", "modal-show-media", activeSpaceConfig.showMedia !== false);
     setCheckboxValue("edit-show-socials", "modal-show-socials", activeSpaceConfig.showSocials !== false);
     setCheckboxValue("edit-show-rankings", "modal-show-rankings", activeSpaceConfig.showRankings !== false);
+
+    // Populate Mobile Order List
+    tempMobileOrder = Array.isArray(activeSpaceConfig.mobileWidgetOrder) && activeSpaceConfig.mobileWidgetOrder.length > 0
+      ? [...activeSpaceConfig.mobileWidgetOrder]
+      : [...DEFAULT_WIDGET_ORDER];
+    renderMobileOrderList();
 
     const mediaUrlsInput = document.getElementById("edit-media-urls");
     if (mediaUrlsInput) {
@@ -1072,6 +1163,7 @@ document.addEventListener('DOMContentLoaded', () => {
       showMedia: getCheckboxValue("edit-show-media"),
       showSocials: getCheckboxValue("edit-show-socials"),
       showRankings: getCheckboxValue("edit-show-rankings"),
+      mobileWidgetOrder: [...tempMobileOrder],
       socials: parsedSocials,
       mediaImages: getInputValue("edit-media-urls").split("\n").map(s => s.trim()).filter(Boolean)
     };
