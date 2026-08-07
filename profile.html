@@ -53,6 +53,7 @@
       inset: 0;
       background: rgba(15, 23, 42, 0.9);
       backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
       z-index: 9999;
       display: flex;
       align-items: center;
@@ -75,8 +76,7 @@
       gap: 20px;
       justify-content: center;
       align-items: flex-start;
-      padding-top: 5rem;
-      padding-bottom: 5rem;
+      padding: 5rem 1rem;
     }
 
     /* GLASS CARD BASE FOR SEPARATE WIDGETS */
@@ -229,26 +229,6 @@
       text-align: center;
     }
 
-    .social-link-btn {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      padding: 10px 16px;
-      background: rgba(15, 23, 42, 0.08);
-      color: #0f172a;
-      border: 1px solid rgba(0, 0, 0, 0.1);
-      border-radius: 20px;
-      text-decoration: none;
-      font-size: 0.85rem;
-      font-weight: 700;
-      transition: all 0.2s ease;
-    }
-
-    .social-link-btn:hover {
-      background: var(--primary-color);
-      color: #fff;
-    }
-
     /* FLOATING ACTION BAR CONTROLS */
     .floating-actions-bar {
       position: fixed;
@@ -293,6 +273,61 @@
       box-shadow: 0 8px 20px rgba(99,102,241,0.4);
     }
 
+    /* MODAL FORM CONTROLS */
+    .editor-modal-card {
+      background: #ffffff;
+      color: #0f172a;
+      width: 92%;
+      max-width: 480px;
+      max-height: 85vh;
+      overflow-y: auto;
+      border-radius: 20px;
+      padding: 20px;
+      text-align: left;
+    }
+
+    .form-group {
+      margin-bottom: 12px;
+    }
+
+    .editor-label {
+      display: block;
+      font-size: 0.8rem;
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+
+    .editor-input, .editor-textarea, .editor-select {
+      width: 100%;
+      padding: 8px 12px;
+      border-radius: 8px;
+      border: 1px solid #cbd5e1;
+      font-family: inherit;
+      font-size: 0.85rem;
+      outline: none;
+      transition: border-color 0.2s ease;
+    }
+
+    .editor-input:focus, .editor-textarea:focus, .editor-select:focus {
+      border-color: var(--primary-color);
+      box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+    }
+
+    .modal-divider {
+      margin: 14px 0;
+      border: none;
+      border-top: 1px solid #e2e8f0;
+    }
+
+    .modal-section-title {
+      margin-bottom: 8px;
+      font-size: 0.85rem;
+      font-weight: 800;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
     .hidden { display: none !important; }
 
     /* MOBILE SCREEN OVERRIDE */
@@ -320,22 +355,22 @@
 <body>
 
   <!-- BACKGROUND LAYER -->
-  <div id="space-bg-layer" class="space-bg-layer"></div>
+  <div id="space-bg-layer" class="space-bg-layer" aria-hidden="true"></div>
 
   <!-- AUDIO CONTROLS -->
   <div class="audio-control-top-left" style="position: fixed; top: 16px; left: 16px; z-index: 999; display: flex; align-items: center; gap: 8px; background: rgba(0, 0, 0, 0.5); backdrop-filter: blur(8px); padding: 8px 12px; border-radius: 20px; border: 1px solid rgba(255, 255, 255, 0.2);">
-    <button id="btn-toggle-audio" style="background: none; border: none; color: white; cursor: pointer; display: flex; align-items: center;">
+    <button type="button" id="btn-toggle-audio" aria-label="Toggle background audio" style="background: none; border: none; color: white; cursor: pointer; display: flex; align-items: center;">
       <i id="audio-icon" class="fa-solid fa-play"></i>
     </button>
-    <i class="fa-solid fa-volume-high" style="color: white; font-size: 0.8rem;"></i>
-    <input type="range" id="bg-audio-volume" min="0" max="100" value="50" style="width: 60px; cursor: pointer; accent-color: var(--primary-color);">
+    <i class="fa-solid fa-volume-high" style="color: white; font-size: 0.8rem;" aria-hidden="true"></i>
+    <input type="range" id="bg-audio-volume" min="0" max="100" value="50" aria-label="Audio Volume" style="width: 60px; cursor: pointer; accent-color: var(--primary-color);">
     <audio id="bg-audio-player" loop></audio>
   </div>
 
   <!-- TAP TO ENTER OVERLAY -->
-  <div id="tap-to-open-overlay" class="tap-overlay">
+  <div id="tap-to-open-overlay" class="tap-overlay" role="button" tabindex="0">
     <div>
-      <i class="fa-solid fa-hand-pointer" style="font-size: 2.5rem; margin-bottom: 12px; color: var(--primary-color);"></i>
+      <i class="fa-solid fa-hand-pointer" style="font-size: 2.5rem; margin-bottom: 12px; color: var(--primary-color);" aria-hidden="true"></i>
       <h2 style="font-size: 1.6rem; font-weight: 800; margin: 0;">Tap anywhere to enter</h2>
       <p style="font-size: 0.85rem; opacity: 0.8; margin-top: 6px;">Audio & Interactive space will start</p>
     </div>
@@ -358,13 +393,14 @@
           <img 
             id="space-avatar-img" 
             src="https://api.dicebear.com/7.x/avataaars/svg?seed=biogram" 
-            alt="Avatar" 
+            alt="User Avatar" 
+            loading="lazy"
             style="width: 88px; height: 88px; border-radius: 50%; object-fit: cover; border: 3px solid var(--primary-color); box-shadow: 0 8px 16px rgba(0,0,0,0.15);"
             referrerpolicy="no-referrer"
           >
         </div>
         <h1 id="space-display-name" style="font-size: 1.4rem; font-weight: 800; margin: 0;">
-          BioGram User <i class="fa-solid fa-circle-check" style="color: var(--primary-color);"></i>
+          BioGram User <i class="fa-solid fa-circle-check" style="color: var(--primary-color);" aria-hidden="true"></i>
         </h1>
         <span id="space-handle-text" style="color: var(--primary-color); font-weight: 700; font-size: 0.85rem;">@user</span>
         <p id="space-bio-text" style="color: #475569; margin-top: 10px; font-size: 0.9rem; line-height: 1.4;">
@@ -376,7 +412,7 @@
       <div id="discord-card-widget" class="glass-widget-card">
         <div style="display: flex; align-items: center; gap: 12px;">
           <div style="position: relative;">
-            <i class="fa-brands fa-discord" style="font-size: 2rem; color: #5865F2;"></i>
+            <i class="fa-brands fa-discord" style="font-size: 2rem; color: #5865F2;" aria-hidden="true"></i>
             <span id="discord-status-dot" style="position: absolute; bottom: 0; right: -2px; width: 10px; height: 10px; border-radius: 50%; background: #64748b; border: 2px solid #1e1f22;"></span>
           </div>
           <div style="flex: 1; min-width: 0;">
@@ -391,43 +427,47 @@
       <div id="media-card-widget" class="glass-widget-card">
         <div class="media-widget-header">
           <span class="media-widget-title">
-            <i class="fa-regular fa-image" style="color: var(--primary-color);"></i> Media Showcase
+            <i class="fa-regular fa-image" style="color: var(--primary-color);" aria-hidden="true"></i> Media Showcase
           </span>
           <span style="font-size: 0.7rem; font-weight: 700; background: rgba(99, 102, 241, 0.15); color: var(--primary-color); padding: 3px 8px; border-radius: 12px;">Gallery</span>
         </div>
         <div class="media-display-container">
-          <img id="media-display-img" class="media-display-img" src="" alt="Media Showcase">
-          <button id="media-prev-btn" class="media-nav-btn media-nav-prev" aria-label="Previous image">
-            <i class="fa-solid fa-chevron-left" style="font-size: 0.85rem;"></i>
+          <img id="media-display-img" class="media-display-img" src="" alt="Media Showcase" loading="lazy">
+          <button type="button" id="media-prev-btn" class="media-nav-btn media-nav-prev" aria-label="Previous image">
+            <i class="fa-solid fa-chevron-left" style="font-size: 0.85rem;" aria-hidden="true"></i>
           </button>
-          <button id="media-next-btn" class="media-nav-btn media-nav-next" aria-label="Next image">
-            <i class="fa-solid fa-chevron-right" style="font-size: 0.85rem;"></i>
+          <button type="button" id="media-next-btn" class="media-nav-btn media-nav-next" aria-label="Next image">
+            <i class="fa-solid fa-chevron-right" style="font-size: 0.85rem;" aria-hidden="true"></i>
           </button>
         </div>
       </div>
 
       <!-- 5. SPOTIFY -->
       <div id="spotify-card-widget" class="glass-widget-card">
-        <div style="font-size: 0.8rem; font-weight: 800; margin-bottom: 8px; color: #1db954;"><i class="fa-brands fa-spotify"></i> Music Playlist</div>
+        <div style="font-size: 0.8rem; font-weight: 800; margin-bottom: 8px; color: #1db954;">
+          <i class="fa-brands fa-spotify" aria-hidden="true"></i> Music Playlist
+        </div>
         <div class="spotify-widget-container">
-          <iframe id="spotify-iframe" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy"></iframe>
+          <iframe id="spotify-iframe" title="Spotify Player" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy"></iframe>
         </div>
       </div>
 
       <!-- 6. SOCIAL LINKS -->
       <div id="socials-card-widget" class="glass-widget-card">
-        <div style="font-size: 0.8rem; font-weight: 800; margin-bottom: 10px; color: #475569; text-align: center;"><i class="fa-solid fa-share-nodes"></i> Connect With Me</div>
+        <div style="font-size: 0.8rem; font-weight: 800; margin-bottom: 10px; color: #475569; text-align: center;">
+          <i class="fa-solid fa-share-nodes" aria-hidden="true"></i> Connect With Me
+        </div>
         <div id="card-links-container" style="display: flex; flex-wrap: wrap; gap: 8px; justify-content: center;"></div>
       </div>
 
       <!-- 7. RANKINGS -->
       <div id="rankings-card-widget" class="glass-widget-card">
         <div style="font-size: 0.75rem; text-transform: uppercase; font-weight: 800; letter-spacing: 0.5px; color: #f59e0b; display: flex; align-items: center; justify-content: center; gap: 6px;">
-          <i class="fa-solid fa-trophy"></i> Profile Rank
+          <i class="fa-solid fa-trophy" aria-hidden="true"></i> Profile Rank
         </div>
         <div id="user-rank-display" style="font-size: 2.2rem; font-weight: 800; color: #ffffff; margin-top: 4px;">#--</div>
         <div id="user-views-display" style="font-size: 0.8rem; opacity: 0.8; margin-top: 2px; color: #cbd5e1;">
-          <i class="fa-solid fa-eye" style="color: var(--primary-color);"></i> -- Views
+          <i class="fa-solid fa-eye" style="color: var(--primary-color);" aria-hidden="true"></i> -- Views
         </div>
       </div>
 
@@ -436,57 +476,61 @@
 
   <!-- FLOATING BOTTOM CONTROLS -->
   <div class="floating-actions-bar">
-    <button id="toggle-lock-btn" class="space-action-btn">
-      <i class="fa-solid fa-lock"></i> <span>Locked</span>
+    <button type="button" id="toggle-lock-btn" class="space-action-btn">
+      <i class="fa-solid fa-lock" aria-hidden="true"></i> <span>Locked</span>
     </button>
-    <button id="open-editor-btn" class="space-action-btn">
-      <i class="fa-solid fa-sliders"></i> <span>Customize Space</span>
+    <button type="button" id="open-editor-btn" class="space-action-btn">
+      <i class="fa-solid fa-sliders" aria-hidden="true"></i> <span>Customize Space</span>
     </button>
   </div>
 
   <!-- EDIT MODAL -->
   <div id="space-editor-modal" class="tap-overlay hidden" style="background: rgba(0,0,0,0.7); backdrop-filter: blur(12px);">
-    <div style="background: #ffffff; color: #0f172a; width: 92%; max-width: 480px; max-height: 85vh; overflow-y: auto; border-radius: 20px; padding: 20px; text-align: left;">
+    <div class="editor-modal-card">
       
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
-        <h3 style="margin: 0; font-weight: 800;"><i class="fa-solid fa-wand-magic-sparkles" style="color: var(--primary-color);"></i> Customize Space</h3>
-        <button id="close-editor-btn" style="background: none; border: none; font-size: 1.5rem; cursor: pointer;">&times;</button>
+        <h3 style="margin: 0; font-weight: 800;">
+          <i class="fa-solid fa-wand-magic-sparkles" style="color: var(--primary-color);" aria-hidden="true"></i> Customize Space
+        </h3>
+        <button type="button" id="close-editor-btn" aria-label="Close Modal" style="background: none; border: none; font-size: 1.5rem; cursor: pointer;">&times;</button>
       </div>
 
       <!-- PROFILE INFO -->
-      <div class="form-group" style="margin-bottom: 10px;">
-        <label style="display: block; font-size: 0.8rem; font-weight: 700;">Display Name</label>
-        <input type="text" id="edit-display-name" style="width: 100%; padding: 8px; border-radius: 8px; border: 1px solid #cbd5e1;">
+      <div class="form-group">
+        <label for="edit-display-name" class="editor-label">Display Name</label>
+        <input type="text" id="edit-display-name" class="editor-input">
       </div>
 
-      <div class="form-group" style="margin-bottom: 10px;">
-        <label style="display: block; font-size: 0.8rem; font-weight: 700;">Bio / Tagline</label>
-        <textarea id="edit-bio" style="width: 100%; padding: 8px; border-radius: 8px; border: 1px solid #cbd5e1;" rows="2"></textarea>
+      <div class="form-group">
+        <label for="edit-bio" class="editor-label">Bio / Tagline</label>
+        <textarea id="edit-bio" class="editor-textarea" rows="2"></textarea>
       </div>
 
-      <div class="form-group" style="margin-bottom: 10px;">
-        <label style="display: block; font-size: 0.8rem; font-weight: 700;">Avatar Image URL</label>
-        <input type="text" id="edit-custom-avatar" style="width: 100%; padding: 8px; border-radius: 8px; border: 1px solid #cbd5e1;" placeholder="https://...">
+      <div class="form-group">
+        <label for="edit-custom-avatar" class="editor-label">Avatar Image URL</label>
+        <input type="url" id="edit-custom-avatar" class="editor-input" placeholder="https://...">
       </div>
 
       <!-- BACKGROUND & AUDIO -->
-      <div class="form-group" style="margin-bottom: 10px;">
-        <label style="display: block; font-size: 0.8rem; font-weight: 700;">Background Asset URL (GIF / Image)</label>
-        <input type="text" id="edit-bg-url" style="width: 100%; padding: 8px; border-radius: 8px; border: 1px solid #cbd5e1;" placeholder="https://...">
+      <div class="form-group">
+        <label for="edit-bg-url" class="editor-label">Background Asset URL (GIF / Image)</label>
+        <input type="url" id="edit-bg-url" class="editor-input" placeholder="https://...">
       </div>
 
-      <div class="form-group" style="margin-bottom: 10px;">
-        <label style="display: block; font-size: 0.8rem; font-weight: 700;">Background MP3 Audio URL</label>
-        <input type="text" id="edit-audio-url" style="width: 100%; padding: 8px; border-radius: 8px; border: 1px solid #cbd5e1;" placeholder="https://...">
+      <div class="form-group">
+        <label for="edit-audio-url" class="editor-label">Background MP3 Audio URL</label>
+        <input type="url" id="edit-audio-url" class="editor-input" placeholder="https://...">
       </div>
 
-      <hr style="margin: 14px 0; border: none; border-top: 1px solid #e2e8f0;">
+      <hr class="modal-divider">
 
       <!-- TIME WIDGET CUSTOMIZATION -->
-      <h4 style="margin-bottom: 8px; font-size: 0.85rem;"><i class="fa-solid fa-clock" style="color: #38bdf8;"></i> Time Widget Settings</h4>
-      <div class="form-group" style="margin-bottom: 8px;">
-        <label style="font-size: 0.8rem; font-weight: 700;">Time Format</label>
-        <select id="edit-clock-format" style="width: 100%; padding: 8px; border-radius: 8px; border: 1px solid #cbd5e1; font-weight: 600;">
+      <h4 class="modal-section-title">
+        <i class="fa-solid fa-clock" style="color: #38bdf8;" aria-hidden="true"></i> Time Widget Settings
+      </h4>
+      <div class="form-group">
+        <label for="edit-clock-format" class="editor-label">Time Format</label>
+        <select id="edit-clock-format" class="editor-select" style="font-weight: 600;">
           <option value="12h">12-Hour (12:00:00 AM)</option>
           <option value="24h">24-Hour (00:00:00)</option>
         </select>
@@ -496,42 +540,48 @@
         <label><input type="checkbox" id="edit-clock-show-date"> Show Date</label>
       </div>
 
-      <hr style="margin: 14px 0; border: none; border-top: 1px solid #e2e8f0;">
+      <hr class="modal-divider">
 
-      <!-- CUSTOM PHOTO CARDS (MULTIPLE) -->
-      <h4 style="margin-bottom: 6px; font-size: 0.85rem;"><i class="fa-solid fa-image" style="color: var(--primary-color);"></i> Custom Photo Cards (Multiple)</h4>
+      <!-- CUSTOM PHOTO CARDS -->
+      <h4 class="modal-section-title">
+        <i class="fa-solid fa-image" style="color: var(--primary-color);" aria-hidden="true"></i> Custom Photo Cards (Multiple)
+      </h4>
       <p style="font-size: 0.75rem; color: #64748b; margin-top: 0; margin-bottom: 8px;">Enter one photo per line as: <code>Title | Image_URL</code></p>
-      <div class="form-group" style="margin-bottom: 10px;">
-        <textarea id="edit-custom-photos-urls" style="width: 100%; padding: 8px; border-radius: 8px; border: 1px solid #cbd5e1;" rows="3" placeholder="My Setup | https://example.com/setup.png&#10;Favorite Art | https://example.com/art.jpg"></textarea>
+      <div class="form-group">
+        <textarea id="edit-custom-photos-urls" class="editor-textarea" rows="3" placeholder="My Setup | https://example.com/setup.png&#10;Favorite Art | https://example.com/art.jpg"></textarea>
       </div>
 
-      <hr style="margin: 14px 0; border: none; border-top: 1px solid #e2e8f0;">
+      <hr class="modal-divider">
 
       <!-- INTEGRATION URLS -->
-      <div class="form-group" style="margin-bottom: 10px;">
-        <label style="display: block; font-size: 0.8rem; font-weight: 700;"><i class="fa-brands fa-spotify" style="color: #1db954;"></i> Spotify Playlist / Track URL</label>
-        <input type="text" id="edit-spotify-url" style="width: 100%; padding: 8px; border-radius: 8px; border: 1px solid #cbd5e1;" placeholder="https://open.spotify.com/playlist/...">
+      <div class="form-group">
+        <label for="edit-spotify-url" class="editor-label">
+          <i class="fa-brands fa-spotify" style="color: #1db954;" aria-hidden="true"></i> Spotify Playlist / Track URL
+        </label>
+        <input type="url" id="edit-spotify-url" class="editor-input" placeholder="https://open.spotify.com/playlist/...">
       </div>
 
-      <div class="form-group" style="margin-bottom: 10px;">
-        <label style="display: block; font-size: 0.8rem; font-weight: 700;"><i class="fa-brands fa-discord" style="color: #5865f2;"></i> Discord ID</label>
-        <input type="text" id="edit-discord-id" style="width: 100%; padding: 8px; border-radius: 8px; border: 1px solid #cbd5e1;" placeholder="e.g. 954071055159406604">
+      <div class="form-group">
+        <label for="edit-discord-id" class="editor-label">
+          <i class="fa-brands fa-discord" style="color: #5865f2;" aria-hidden="true"></i> Discord ID
+        </label>
+        <input type="text" id="edit-discord-id" class="editor-input" placeholder="e.g. 954071055159406604">
       </div>
 
-      <div class="form-group" style="margin-bottom: 10px;">
-        <label style="display: block; font-size: 0.8rem; font-weight: 700;">Media Slideshow Images (1 URL per line)</label>
-        <textarea id="edit-media-urls" style="width: 100%; padding: 8px; border-radius: 8px; border: 1px solid #cbd5e1;" rows="2" placeholder="https://image1.jpg&#10;https://image2.jpg"></textarea>
+      <div class="form-group">
+        <label for="edit-media-urls" class="editor-label">Media Slideshow Images (1 URL per line)</label>
+        <textarea id="edit-media-urls" class="editor-textarea" rows="2" placeholder="https://image1.jpg&#10;https://image2.jpg"></textarea>
       </div>
 
-      <div class="form-group" style="margin-bottom: 10px;">
-        <label style="display: block; font-size: 0.8rem; font-weight: 700;">Social Links (format: <code>platform:url</code>)</label>
-        <textarea id="edit-socials-data" style="width: 100%; padding: 8px; border-radius: 8px; border: 1px solid #cbd5e1;" rows="2" placeholder="github:https://github.com/user&#10;x:https://x.com/user"></textarea>
+      <div class="form-group">
+        <label for="edit-socials-data" class="editor-label">Social Links (format: <code>platform:url</code>)</label>
+        <textarea id="edit-socials-data" class="editor-textarea" rows="2" placeholder="github:https://github.com/user&#10;x:https://x.com/user"></textarea>
       </div>
 
-      <hr style="margin: 14px 0; border: none; border-top: 1px solid #e2e8f0;">
+      <hr class="modal-divider">
 
       <!-- WIDGET VISIBILITY TOGGLES -->
-      <h4 style="margin-bottom: 8px; font-size: 0.85rem;"><i class="fa-solid fa-eye"></i> Toggle Individual Widgets</h4>
+      <h4 class="modal-section-title"><i class="fa-solid fa-eye" aria-hidden="true"></i> Toggle Individual Widgets</h4>
 
       <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 0.8rem; font-weight: 600;">
         <label><input type="checkbox" id="edit-show-clock"> Time Widget</label>
@@ -545,11 +595,11 @@
 
       <!-- MODAL ACTIONS -->
       <div style="display: flex; gap: 8px; margin-top: 20px;">
-        <button id="reset-positions-btn" style="flex: 1; padding: 12px; background: #64748b; color: white; font-weight: 700; border: none; border-radius: 12px; cursor: pointer;">
+        <button type="button" id="reset-positions-btn" style="flex: 1; padding: 12px; background: #64748b; color: white; font-weight: 700; border: none; border-radius: 12px; cursor: pointer;">
           Reset Layout
         </button>
-        <button id="save-space-btn" style="flex: 2; padding: 12px; background: var(--primary-color); color: white; font-weight: 700; border: none; border-radius: 12px; cursor: pointer;">
-          <i class="fa-solid fa-floppy-disk"></i> Save Space Settings
+        <button type="button" id="save-space-btn" style="flex: 2; padding: 12px; background: var(--primary-color); color: white; font-weight: 700; border: none; border-radius: 12px; cursor: pointer;">
+          <i class="fa-solid fa-floppy-disk" aria-hidden="true"></i> Save Space Settings
         </button>
       </div>
 
