@@ -80,6 +80,16 @@ document.addEventListener('DOMContentLoaded', () => {
     return String(str).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
   };
 
+  // Ensure all widget cards have unique stable DOM IDs
+  const ensureWidgetCardIds = () => {
+    const cards = document.querySelectorAll('.glass-widget-card');
+    cards.forEach((card, index) => {
+      if (!card.id) {
+        card.id = `widget_card_${index + 1}`;
+      }
+    });
+  };
+
   // Check if current user has edit rights for the profile currently rendered
   const canEditCurrentProfile = (authUser) => {
     if (!targetUserId) return false;
@@ -149,13 +159,13 @@ document.addEventListener('DOMContentLoaded', () => {
   // LAYOUT PERSISTENCE ENGINE
   // ==========================================================================
   const getLayoutPositionsDict = () => {
+    ensureWidgetCardIds();
     const cards = document.querySelectorAll('.glass-widget-card');
     const positions = {};
 
-    cards.forEach((card, index) => {
-      const cardId = card.id || `widget_card_${index}`;
+    cards.forEach((card) => {
       if (card.style.left && card.style.top) {
-        positions[cardId] = {
+        positions[card.id] = {
           left: card.style.left,
           top: card.style.top
         };
@@ -177,6 +187,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   const applySavedPositions = (savedPositions) => {
     if (isMobile()) return;
+    ensureWidgetCardIds();
 
     let positionsToApply = savedPositions;
     if (!positionsToApply || Object.keys(positionsToApply).length === 0) {
@@ -189,16 +200,14 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     if (!positionsToApply || Object.keys(positionsToApply).length === 0) {
-      resetToFlexLayout();
       return;
     }
 
     const cards = document.querySelectorAll('.glass-widget-card');
     let hasSaved = false;
 
-    cards.forEach((card, index) => {
-      const cardId = card.id || `widget_card_${index}`;
-      const pos = positionsToApply[cardId];
+    cards.forEach((card) => {
+      const pos = positionsToApply[card.id];
       if (pos && pos.left && pos.top) {
         card.style.position = 'absolute';
         card.style.margin = '0';
@@ -213,6 +222,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   const convertAllToAbsolute = () => {
     if (isMobile() || !spaceContainer) return;
+    ensureWidgetCardIds();
 
     const currentContainerHeight = spaceContainer.offsetHeight;
     if (currentContainerHeight > 0) {
@@ -296,6 +306,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!isLayoutLocked) {
       convertAllToAbsolute();
     } else {
+      // Locking the layout - Save positions permanently
       saveLayoutToLocalStorage();
       const positions = getLayoutPositionsDict();
       activeSpaceConfig.widgetPositions = positions;
@@ -387,6 +398,7 @@ document.addEventListener('DOMContentLoaded', () => {
   };
 
   const initDragAndDrop = () => {
+    ensureWidgetCardIds();
     const cards = document.querySelectorAll('.glass-widget-card');
     cards.forEach((card, index) => makeCardDraggable(card, index));
     updateLockStateUI();
@@ -803,15 +815,29 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   };
 
-  // Increment views count in Firestore when profile loads
-  const incrementProfileViews = async (uid) => {
+  // Increment views count safely (Excludes self-views & prevents infinite increments per session)
+  const incrementProfileViews = async (uid, authUser) => {
     if (!uid) return;
+
+    // 1. Skip incrementing if the viewer is the profile owner/admin viewing themselves
+    if (authUser && authUser.uid === uid) {
+      return;
+    }
+
+    // 2. Prevent repeated view count triggers in the same session
+    const sessionKey = `biogram_viewed_${uid}`;
+    if (sessionStorage.getItem(sessionKey)) {
+      return;
+    }
+
     try {
       const userRef = doc(db, "users", uid);
       await updateDoc(userRef, { views: increment(1) });
+      sessionStorage.setItem(sessionKey, "true");
     } catch (e) {
       try {
         await setDoc(doc(db, "users", uid), { views: increment(1) }, { merge: true });
+        sessionStorage.setItem(sessionKey, "true");
       } catch (err) {
         console.warn("View counter update failed:", err);
       }
@@ -1070,8 +1096,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const spaceSnap = await getDoc(doc(db, "users_spaces", targetUserId));
         if (spaceSnap.exists()) spaceData = spaceSnap.data();
 
-        // Increment profile view count on page load
-        await incrementProfileViews(targetUserId);
+        // Increment profile view count safely (Excludes self-views & repeat sessions)
+        await incrementProfileViews(targetUserId, authUser);
       }
 
       renderProfileSpace(userData, spaceData, authUser);
