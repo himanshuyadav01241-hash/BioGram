@@ -911,99 +911,123 @@ body {
 }
 
 /* ==========================================================================
-   8. LEADERBOARD ITEM STYLES (LAYOUT FIX)
+   8. LEADERBOARD COMPLETE FLEX OVERRIDE FIX
    ========================================================================== */
 .leaderboard-list {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 10px !important;
 }
 
 .leaderboard-item {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 10px 14px;
-  background: var(--bg-subtle);
-  border: 1px solid var(--border-light);
-  border-radius: 12px;
-  transition: background 0.2s, border-color 0.2s;
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 12px !important;
+  padding: 12px 16px !important;
+  background: var(--bg-subtle) !important;
+  border: 1px solid var(--border-light) !important;
+  border-radius: 14px !important;
+  transition: all 0.2s ease !important;
 }
 
 .leaderboard-item:hover {
-  background: var(--bg-card);
-  border-color: var(--border-hover);
+  background: var(--bg-card) !important;
+  border-color: var(--border-hover) !important;
+}
+
+/* Targets inner left/user wrapper containers across varying HTML structures */
+.leaderboard-left,
+.leaderboard-main,
+.leaderboard-user,
+.leaderboard-content,
+.leaderboard-profile-wrapper {
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  gap: 12px !important;
+  flex: 1 !important;
+  min-width: 0 !important;
 }
 
 .leaderboard-rank {
-  font-size: 0.9rem;
-  font-weight: 800;
-  color: var(--text-dim);
-  min-width: 24px;
-  text-align: center;
+  font-size: 0.95rem !important;
+  font-weight: 800 !important;
+  color: var(--text-dim) !important;
+  min-width: 28px !important;
+  text-align: center !important;
+  flex-shrink: 0 !important;
+  margin: 0 !important;
 }
 
 .leaderboard-avatar,
 .leaderboard-item img {
-  width: 42px;
-  height: 42px;
-  min-width: 42px;
-  min-height: 42px;
-  border-radius: 50%;
-  object-fit: cover;
-  border: 2px solid var(--primary-purple);
-  flex-shrink: 0;
+  width: 42px !important;
+  height: 42px !important;
+  min-width: 42px !important;
+  min-height: 42px !important;
+  border-radius: 50% !important;
+  object-fit: cover !important;
+  border: 2px solid var(--primary-purple) !important;
+  flex-shrink: 0 !important;
+  margin: 0 !important;
 }
 
-.leaderboard-info {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  flex: 1;
-  min-width: 0;
+.leaderboard-info,
+.leaderboard-details {
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: center !important;
+  gap: 2px !important;
+  flex: 1 !important;
+  min-width: 0 !important;
+  text-align: left !important;
 }
 
 .leaderboard-name {
-  font-size: 0.88rem;
-  font-weight: 700;
-  color: var(--text-main);
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  font-size: 0.9rem !important;
+  font-weight: 700 !important;
+  color: var(--text-main) !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 4px !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
 }
 
 .leaderboard-handle {
-  font-size: 0.78rem;
-  color: var(--text-muted);
-  font-weight: 600;
+  font-size: 0.78rem !important;
+  color: var(--text-muted) !important;
+  font-weight: 600 !important;
 }
 
 .leaderboard-stats,
-.leaderboard-actions {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 0.8rem;
-  font-weight: 700;
-  color: var(--text-muted);
-  white-space: nowrap;
-  margin-left: auto;
+.leaderboard-actions,
+.leaderboard-right {
+  display: flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+  font-size: 0.82rem !important;
+  font-weight: 700 !important;
+  color: var(--text-muted) !important;
+  white-space: nowrap !important;
+  margin-left: auto !important;
+  flex-shrink: 0 !important;
 }
 
 .btn-visit-profile {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  color: var(--primary-purple);
-  text-decoration: none;
-  font-weight: 700;
-  font-size: 0.8rem;
-  transition: opacity 0.2s;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 4px !important;
+  color: var(--primary-purple) !important;
+  text-decoration: none !important;
+  font-weight: 700 !important;
+  font-size: 0.82rem !important;
+  transition: opacity 0.2s !important;
 }
 
 .btn-visit-profile:hover {
-  opacity: 0.8;
+  opacity: 0.8 !important;
 }
