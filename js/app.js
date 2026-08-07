@@ -689,10 +689,10 @@ document.addEventListener("DOMContentLoaded", () => {
       const name = escapeHtml(user.displayName || user.name || user.username || "User");
       const views = Number(user.views) || 0;
 
-      // Render "You" badge for yourself instead of the "Visit" link
+      // Render "You" badge for yourself instead of the "Visit" link (Opens in same tab without target="_blank")
       const actionButton = isSelf
         ? `<span class="you-badge"><i class="fa-solid fa-user"></i> You</span>`
-        : `<a href="${getProfileUrl(user.handle || "")}" class="btn-visit-profile" target="_blank"><i class="fa-solid fa-arrow-up-right-from-square"></i> Visit</a>`;
+        : `<a href="${getProfileUrl(user.handle || "")}" class="btn-visit-profile"><i class="fa-solid fa-arrow-up-right-from-square"></i> Visit</a>`;
 
       item.innerHTML = `
         <div class="leaderboard-user-info">
