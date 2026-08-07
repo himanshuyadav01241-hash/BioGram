@@ -1168,10 +1168,58 @@ body {
   border: 1px solid rgba(255, 255, 255, 0.5) !important;
 }
 
+/* ==========================================================================
+   COMPACT RANK WIDGET (USER RANK ONLY)
+   ========================================================================== */
 #rankings-card-widget {
-  width: 260px !important;
-  padding: 14px 16px;
-  text-align: center;
+  width: 170px !important;
+  max-width: 170px !important;
+  padding: 12px 14px !important;
+  text-align: center !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  border-radius: 18px !important;
+}
+
+/* Scale title & icon down */
+#rankings-card-widget h3,
+#rankings-card-widget .widget-title,
+#rankings-card-widget .card-title {
+  font-size: 0.72rem !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.5px;
+  margin-bottom: 2px !important;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+}
+
+/* Compact rank display number */
+#rankings-card-widget h2,
+#rankings-card-widget .rank-display,
+#rankings-card-widget .big-rank {
+  font-size: 1.5rem !important;
+  font-weight: 800 !important;
+  margin: 4px 0 !important;
+  line-height: 1 !important;
+}
+
+/* Compact views count subtext */
+#rankings-card-widget .views-count,
+#rankings-card-widget p {
+  font-size: 0.7rem !important;
+  opacity: 0.75;
+}
+
+/* Hide the large full list inside this small card */
+#rankings-card-widget .leaderboard-section,
+#rankings-card-widget .leaderboard-list,
+#rankings-card-widget #leaderboard-list,
+#rankings-card-widget h4 {
+  display: none !important;
 }
 
 .social-link-btn {
