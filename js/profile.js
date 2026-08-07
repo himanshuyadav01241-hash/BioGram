@@ -36,6 +36,8 @@ document.addEventListener('DOMContentLoaded', () => {
   const resetPositionsBtn = document.getElementById("reset-positions-btn");
   const toggleLockBtn = document.getElementById("toggle-lock-btn");
   const mobileOrderListContainer = document.getElementById("mobile-order-list");
+  const toggleMobileOrderBtn = document.getElementById("toggle-mobile-order-btn");
+  const mobileOrderChevron = document.getElementById("mobile-order-chevron");
 
   const mediaPrevBtn = document.getElementById("media-prev-btn");
   const mediaNextBtn = document.getElementById("media-next-btn");
@@ -273,8 +275,20 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // ==========================================================================
-  // MOBILE ORDER UI & DOM REORDERING
+  // MOBILE ORDER UI & EXPANDABLE ACCORDION
   // ==========================================================================
+  toggleMobileOrderBtn?.addEventListener("click", () => {
+    if (!mobileOrderListContainer) return;
+    const isHidden = mobileOrderListContainer.classList.contains("hidden");
+    if (isHidden) {
+      mobileOrderListContainer.classList.remove("hidden");
+      if (mobileOrderChevron) mobileOrderChevron.style.transform = "rotate(180deg)";
+    } else {
+      mobileOrderListContainer.classList.add("hidden");
+      if (mobileOrderChevron) mobileOrderChevron.style.transform = "rotate(0deg)";
+    }
+  });
+
   const renderMobileOrderList = () => {
     if (!mobileOrderListContainer) return;
     mobileOrderListContainer.innerHTML = "";
@@ -322,7 +336,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const applyMobileLayoutOrder = (orderArray) => {
     if (!isMobile() || !spaceContainer) return;
 
-    const currentOrder = Array.isArray(orderArray) && orderArray.length > 0
+    const currentOrder = (Array.isArray(orderArray) && orderArray.length > 0)
       ? orderArray
       : DEFAULT_WIDGET_ORDER;
 
@@ -504,7 +518,6 @@ document.addEventListener('DOMContentLoaded', () => {
       const positions = getLayoutPositionsDict();
       activeSpaceConfig.widgetPositions = positions;
 
-      // FIX: Save layout under auth.currentUser.uid instead of targetUserId
       const currentUid = auth.currentUser?.uid;
       if (currentUid && Object.keys(positions).length > 0) {
         try {
@@ -580,6 +593,7 @@ document.addEventListener('DOMContentLoaded', () => {
   window.addEventListener('resize', () => {
     if (activeSpaceConfig) {
       applySavedPositions(activeSpaceConfig.widgetPositions);
+      applyMobileLayoutOrder(activeSpaceConfig.mobileWidgetOrder);
       updateLockStateUI();
     }
   });
@@ -596,7 +610,6 @@ document.addEventListener('DOMContentLoaded', () => {
     activeSpaceConfig.widgetPositions = {};
     activeSpaceConfig.mobileWidgetOrder = [...DEFAULT_WIDGET_ORDER];
 
-    // FIX: Reset layout under auth.currentUser.uid
     const currentUid = auth.currentUser?.uid;
     if (currentUid) {
       try {
@@ -1036,6 +1049,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     applyCustomSpaceStyles(spaceData);
     applySavedPositions(spaceData?.widgetPositions);
+    applyMobileLayoutOrder(spaceData?.mobileWidgetOrder);
     updateLockStateUI();
 
     if (spaceContainer) {
@@ -1173,17 +1187,13 @@ document.addEventListener('DOMContentLoaded', () => {
       mediaImages: getInputValue("edit-media-urls").split("\n").map(s => s.trim()).filter(Boolean)
     };
 
-    // FIX: Always save to the authenticated user's own document ID (currentUid)
     try {
       await setDoc(doc(db, "users_spaces", currentUid), updatedConfig, { merge: true });
       if (editorModal) editorModal.classList.add("hidden");
       alert("Your space was updated successfully!");
 
-      // If editing own profile directly, re-render
-      if (targetUserId === currentUid) {
-        activeSpaceConfig = updatedConfig;
-        renderProfileSpace(currentLoadedUserData, activeSpaceConfig, auth.currentUser);
-      }
+      activeSpaceConfig = updatedConfig;
+      renderProfileSpace(currentLoadedUserData, activeSpaceConfig, auth.currentUser);
     } catch (err) {
       console.error("Error saving space:", err);
       alert("Failed to save settings.");
