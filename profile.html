@@ -92,7 +92,7 @@
       -webkit-user-select: none;
       touch-action: none;
       cursor: default;
-      transition: box-shadow 0.2s ease, transform 0.1s ease, border-color 0.2s ease;
+      transition: box-shadow 0.2s ease, transform 0.1s ease, border-color 0.2s ease, background 0.3s ease;
       width: 340px;
       color: #0f172a;
     }
@@ -108,6 +108,34 @@
       background: rgba(15, 23, 42, 0.88) !important;
       color: #f8fafc !important;
       border: 1px solid rgba(255, 255, 255, 0.15) !important;
+    }
+
+    /* NEW TRANSPARENT THEME PRESET */
+    .glass-widget-card.preset-glass-transparent,
+    .preset-glass-transparent {
+      background: rgba(18, 18, 20, 0.45) !important;
+      backdrop-filter: blur(18px) !important;
+      -webkit-backdrop-filter: blur(18px) !important;
+      border: 1px solid rgba(255, 255, 255, 0.2) !important;
+      color: #ffffff !important;
+      box-shadow: 0 12px 32px rgba(0, 0, 0, 0.35) !important;
+    }
+
+    .preset-glass-transparent h1,
+    .preset-glass-transparent h2,
+    .preset-glass-transparent h3,
+    .preset-glass-transparent span,
+    .preset-glass-transparent div,
+    .preset-glass-transparent p {
+      color: #ffffff !important;
+    }
+
+    .preset-glass-transparent .rank-label-title {
+      color: #ffb703 !important;
+    }
+
+    .preset-glass-transparent .sub-text-dim {
+      color: #e2e8f0 !important;
     }
 
     /* UNLOCKED / DRAGGABLE STATE STYLING */
@@ -249,25 +277,35 @@
       color: #ffffff;
     }
 
+    /* COMPACT RANK WIDGET */
     #rankings-card-widget {
-      width: 320px;
+      width: 200px;
+      padding: 16px;
       text-align: center;
-    }
-
-    .leaderboard-item {
       display: flex;
+      flex-direction: column;
       align-items: center;
-      justify-content: space-between;
-      padding: 6px 10px;
-      background: rgba(0, 0, 0, 0.05);
-      border-radius: 10px;
-      margin-top: 4px;
-      font-size: 0.8rem;
+      justify-content: center;
     }
 
-    .leaderboard-item.active-user {
-      border: 1px solid #f59e0b;
-      background: rgba(245, 158, 11, 0.15);
+    .rank-widget-inner {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      width: 100%;
+    }
+
+    .rank-pill-views {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.82rem;
+      font-weight: 700;
+      padding: 4px 12px;
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.15);
+      margin-top: 6px;
     }
 
     /* FLOATING ACTION BAR CONTROLS */
@@ -422,14 +460,14 @@
     <div id="custom-space-container" class="widgets-wrapper hidden">
 
       <!-- 1. CLOCK -->
-      <div id="clock-card-widget" class="glass-widget-card preset-glass-standard">
-        <div style="font-size: 0.75rem; text-transform: uppercase; letter-spacing: 1px; opacity: 0.7; margin-bottom: 4px;">Local Time</div>
-        <div id="clock-time" style="font-size: 1.6rem; font-weight: 800; color: #0284c7;">00:00:00 AM</div>
-        <div id="clock-date" style="font-size: 0.8rem; opacity: 0.8; font-family: sans-serif; margin-top: 4px;">Monday, Jan 1</div>
+      <div id="clock-card-widget" class="glass-widget-card preset-glass-transparent">
+        <div style="font-size: 0.75rem; text-transform: uppercase; letter-spacing: 1px; opacity: 0.8; margin-bottom: 4px;" class="sub-text-dim">Local Time</div>
+        <div id="clock-time" style="font-size: 1.6rem; font-weight: 800; color: #38bdf8;">00:00:00 AM</div>
+        <div id="clock-date" style="font-size: 0.8rem; opacity: 0.9; font-family: sans-serif; margin-top: 4px;" class="sub-text-dim">Monday, Jan 1</div>
       </div>
 
       <!-- 2. PROFILE -->
-      <div id="profile-card-widget" class="glass-widget-card preset-glass-standard">
+      <div id="profile-card-widget" class="glass-widget-card preset-glass-transparent">
         <div style="margin-bottom: 10px;">
           <img 
             id="space-avatar-img" 
@@ -440,37 +478,37 @@
             referrerpolicy="no-referrer"
           >
         </div>
-        <h1 id="space-display-name" style="font-size: 1.4rem; font-weight: 800; margin: 0; color: #0f172a;">
-          Kaumudi Tiwari <i class="fa-solid fa-circle-check" style="color: var(--primary-color);" aria-hidden="true"></i>
+        <h1 id="space-display-name" style="font-size: 1.4rem; font-weight: 800; margin: 0; color: #ffffff;">
+          Kaumudi Tiwari <i class="fa-solid fa-circle-check" style="color: #60a5fa;" aria-hidden="true"></i>
         </h1>
-        <span id="space-handle-text" style="color: var(--primary-color); font-weight: 700; font-size: 0.85rem;">@kaumudi</span>
-        <p id="space-bio-text" style="color: #475569; margin-top: 10px; font-size: 0.9rem; line-height: 1.4;">
+        <span id="space-handle-text" style="color: #818cf8; font-weight: 700; font-size: 0.85rem;">@kaumudi</span>
+        <p id="space-bio-text" style="color: #cbd5e1; margin-top: 10px; font-size: 0.9rem; line-height: 1.4;">
           Artist
         </p>
       </div>
 
       <!-- 3. DISCORD -->
-      <div id="discord-card-widget" class="glass-widget-card preset-glass-standard">
+      <div id="discord-card-widget" class="glass-widget-card preset-glass-transparent">
         <div style="display: flex; align-items: center; gap: 12px;">
           <div style="position: relative;">
-            <i class="fa-brands fa-discord" style="font-size: 2rem; color: #5865F2;" aria-hidden="true"></i>
-            <span id="discord-status-dot" style="position: absolute; bottom: 0; right: -2px; width: 10px; height: 10px; border-radius: 50%; background: #64748b; border: 2px solid #ffffff;"></span>
+            <i class="fa-brands fa-discord" style="font-size: 2rem; color: #818cf8;" aria-hidden="true"></i>
+            <span id="discord-status-dot" style="position: absolute; bottom: 0; right: -2px; width: 10px; height: 10px; border-radius: 50%; background: #22c55e; border: 2px solid #ffffff;"></span>
           </div>
           <div style="flex: 1; min-width: 0;">
-            <span style="display: block; font-size: 0.65rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; color: #64748b;">Discord Activity</span>
-            <span id="discord-status-text" style="font-weight: 800; font-size: 0.95rem; display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #000000;">Connecting...</span>
-            <span id="discord-detail-text" style="display: block; font-size: 0.8rem; color: #334155; line-height: 1.35; margin-top: 2px; word-break: break-word;">Checking status...</span>
+            <span style="display: block; font-size: 0.65rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; color: #cbd5e1;">Discord Activity</span>
+            <span id="discord-status-text" style="font-weight: 800; font-size: 0.95rem; display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #ffffff;">Connecting...</span>
+            <span id="discord-detail-text" style="display: block; font-size: 0.8rem; color: #e2e8f0; line-height: 1.35; margin-top: 2px; word-break: break-word;">Checking status...</span>
           </div>
         </div>
       </div>
 
       <!-- 4. MEDIA GALLERY -->
-      <div id="media-card-widget" class="glass-widget-card preset-glass-standard">
+      <div id="media-card-widget" class="glass-widget-card preset-glass-transparent">
         <div class="media-widget-header">
           <span class="media-widget-title">
-            <i class="fa-regular fa-image" style="color: var(--primary-color);" aria-hidden="true"></i> Media Showcase
+            <i class="fa-regular fa-image" style="color: #818cf8;" aria-hidden="true"></i> Media Showcase
           </span>
-          <span style="font-size: 0.7rem; font-weight: 700; background: rgba(99, 102, 241, 0.15); color: var(--primary-color); padding: 3px 8px; border-radius: 12px;">Gallery</span>
+          <span style="font-size: 0.7rem; font-weight: 700; background: rgba(99, 102, 241, 0.25); color: #ffffff; padding: 3px 8px; border-radius: 12px;">Gallery</span>
         </div>
         <div class="media-display-container">
           <img id="media-display-img" class="media-display-img" src="https://picsum.photos/400/300" alt="Media Showcase" loading="lazy">
@@ -484,8 +522,8 @@
       </div>
 
       <!-- 5. SPOTIFY -->
-      <div id="spotify-card-widget" class="glass-widget-card preset-glass-standard">
-        <div style="font-size: 0.8rem; font-weight: 800; margin-bottom: 8px; color: #1db954;">
+      <div id="spotify-card-widget" class="glass-widget-card preset-glass-transparent">
+        <div style="font-size: 0.8rem; font-weight: 800; margin-bottom: 8px; color: #4ade80;">
           <i class="fa-brands fa-spotify" aria-hidden="true"></i> Music Playlist
         </div>
         <div class="spotify-widget-container">
@@ -494,31 +532,23 @@
       </div>
 
       <!-- 6. SOCIAL LINKS -->
-      <div id="socials-card-widget" class="glass-widget-card preset-glass-standard">
-        <div style="font-size: 0.8rem; font-weight: 800; margin-bottom: 10px; color: #475569; text-align: center;">
+      <div id="socials-card-widget" class="glass-widget-card preset-glass-transparent">
+        <div style="font-size: 0.8rem; font-weight: 800; margin-bottom: 10px; color: #e2e8f0; text-align: center;">
           <i class="fa-solid fa-share-nodes" aria-hidden="true"></i> Connect With Me
         </div>
         <div id="card-links-container" style="display: flex; flex-wrap: wrap; gap: 8px; justify-content: center;"></div>
       </div>
 
-      <!-- 7. RANKINGS & LEADERBOARD WIDGET -->
-      <div id="rankings-card-widget" class="glass-widget-card preset-glass-standard">
-        <div style="font-size: 0.75rem; text-transform: uppercase; font-weight: 800; letter-spacing: 0.5px; color: #f59e0b; display: flex; align-items: center; justify-content: center; gap: 6px;">
-          <i class="fa-solid fa-trophy" aria-hidden="true"></i> Profile Rank
-        </div>
-        <div id="user-rank-display" style="font-size: 2.2rem; font-weight: 800; color: #0f172a; margin-top: 4px;">#--</div>
-        <div id="user-views-display" style="font-size: 0.8rem; opacity: 0.8; margin-top: 2px; color: #475569;">
-          <i class="fa-solid fa-eye" style="color: var(--primary-color);" aria-hidden="true"></i> <span id="views-count">0</span> Views
-        </div>
-
-        <hr style="margin: 12px 0; border: none; border-top: 1px solid rgba(0, 0, 0, 0.1);">
-
-        <!-- LEADERBOARD LIST CONTAINER -->
-        <div style="font-size: 0.75rem; font-weight: 700; text-transform: uppercase; color: #64748b; margin-bottom: 8px; text-align: left;">
-          Leaderboard
-        </div>
-        <div id="leaderboard-list" style="display: flex; flex-direction: column; gap: 4px; max-height: 160px; overflow-y: auto; text-align: left;">
-          <!-- Dynamically Injected -->
+      <!-- 7. COMPACT RANK & VIEWS WIDGET ONLY -->
+      <div id="rankings-card-widget" class="glass-widget-card preset-glass-transparent">
+        <div class="rank-widget-inner">
+          <div class="rank-label-title" style="font-size: 0.75rem; text-transform: uppercase; font-weight: 800; letter-spacing: 0.5px; color: #ffb703; display: flex; align-items: center; justify-content: center; gap: 6px;">
+            <i class="fa-solid fa-trophy" aria-hidden="true"></i> PROFILE RANK
+          </div>
+          <div id="user-rank-display" style="font-size: 2.2rem; font-weight: 800; color: #ffffff; line-height: 1.1; margin-top: 2px;">#1</div>
+          <div id="user-views-display" class="rank-pill-views">
+            <i class="fa-solid fa-eye" style="color: #60a5fa;" aria-hidden="true"></i> <span id="views-count">7</span> Views
+          </div>
         </div>
       </div>
 
@@ -550,6 +580,7 @@
       <div class="form-group">
         <label for="edit-glass-preset" class="editor-label">Glass Theme Preset</label>
         <select id="edit-glass-preset" class="editor-select" style="font-weight: 600;">
+          <option value="transparent" selected>New Transparent Glass</option>
           <option value="standard">Standard Bright Glass</option>
           <option value="dark">Dark Glass</option>
         </select>
