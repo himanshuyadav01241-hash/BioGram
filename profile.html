@@ -2,7 +2,8 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <!-- Fixed Viewport Meta Tag (Allows proper mobile zoom & responsive scaling) -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>BioGram — Custom Space</title>
 
   <!-- Google Fonts -->
@@ -62,6 +63,11 @@
       cursor: pointer;
       text-align: center;
       padding: 20px;
+    }
+
+    /* EDITOR MODAL Z-INDEX FIX (Renders above floating action bar) */
+    #space-editor-modal {
+      z-index: 20000 !important;
     }
 
     /* AUDIO CONTROLS TOP LEFT */
@@ -141,8 +147,7 @@
       border: 1px solid rgba(255, 255, 255, 0.15) !important;
     }
 
-    /* TRANSPARENT THEME PRESET */
-    .glass-widget-card.preset-glass-transparent,
+    /* TRANSPARENT THEME PRESET (Cleaned duplicate selector) */
     .preset-glass-transparent {
       background: rgba(18, 18, 20, 0.45) !important;
       backdrop-filter: blur(18px) !important;
@@ -529,10 +534,10 @@
 
     .hidden { display: none !important; }
 
-    /* MOBILE SCREEN OVERRIDE - FORCED UNHIDE & COMPACT BUTTONS */
+    /* MOBILE SCREEN OVERRIDE - ADJUSTED PADDING TO AVOID ACTION BAR OVERLAP */
     @media (max-width: 600px) {
       .widgets-wrapper {
-        padding: 4.5rem 12px 5rem 12px !important;
+        padding: 4.5rem 12px 6.5rem 12px !important;
         flex-direction: column;
         align-items: center;
       }
