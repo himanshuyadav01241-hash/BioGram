@@ -123,25 +123,62 @@
       -webkit-user-select: none;
       touch-action: none;
       cursor: default;
-      transition: box-shadow 0.2s ease, transform 0.1s ease, border-color 0.2s ease, background 0.3s ease;
+      transition: box-shadow 0.2s ease, transform 0.1s ease, border-color 0.2s ease, background 0.3s ease, color 0.3s ease;
       width: 340px;
       color: #0f172a;
     }
 
-    /* GLASS DESIGN PRESETS */
+    /* 1. STANDARD BRIGHT GLASS PRESET */
     .glass-widget-card.preset-glass-standard {
       background: rgba(255, 255, 255, 0.92) !important;
       color: #0f172a !important;
-      border: 1px solid rgba(255, 255, 255, 0.5) !important;
+      border: 1px solid rgba(255, 255, 255, 0.6) !important;
+      box-shadow: 0 12px 32px rgba(0, 0, 0, 0.15) !important;
     }
 
+    .preset-glass-standard h1,
+    .preset-glass-standard h2,
+    .preset-glass-standard h3,
+    .preset-glass-standard span,
+    .preset-glass-standard div,
+    .preset-glass-standard p {
+      color: #0f172a !important;
+    }
+
+    .preset-glass-standard .sub-text-dim {
+      color: #475569 !important;
+    }
+
+    .preset-glass-standard .rank-label-title {
+      color: #b45309 !important;
+    }
+
+    /* 2. DARK GLASS PRESET */
     .glass-widget-card.preset-glass-dark {
       background: rgba(15, 23, 42, 0.88) !important;
       color: #f8fafc !important;
       border: 1px solid rgba(255, 255, 255, 0.15) !important;
+      box-shadow: 0 12px 32px rgba(0, 0, 0, 0.45) !important;
     }
 
-    /* TRANSPARENT THEME PRESET */
+    .preset-glass-dark h1,
+    .preset-glass-dark h2,
+    .preset-glass-dark h3,
+    .preset-glass-dark span,
+    .preset-glass-dark div,
+    .preset-glass-dark p {
+      color: #f8fafc !important;
+    }
+
+    .preset-glass-dark .sub-text-dim {
+      color: #94a3b8 !important;
+    }
+
+    .preset-glass-dark .rank-label-title {
+      color: #fbbf24 !important;
+    }
+
+    /* 3. TRANSPARENT THEME PRESET */
     .glass-widget-card.preset-glass-transparent,
     .preset-glass-transparent {
       background: rgba(18, 18, 20, 0.45) !important;
@@ -205,7 +242,6 @@
 
     #discord-card-widget {
       width: 320px;
-      color: #0f172a;
     }
 
     .discord-status-dot {
@@ -355,7 +391,7 @@
       font-weight: 700;
       padding: 4px 12px;
       border-radius: 12px;
-      background: rgba(255, 255, 255, 0.15);
+      background: rgba(150, 150, 150, 0.15);
       margin-top: 6px;
     }
 
@@ -512,9 +548,9 @@
 
       <!-- 1. CLOCK -->
       <div id="clock-card-widget" class="glass-widget-card preset-glass-transparent">
-        <div style="font-size: 0.75rem; text-transform: uppercase; letter-spacing: 1px; opacity: 0.8; margin-bottom: 4px;" class="sub-text-dim">Local Time</div>
+        <div style="font-size: 0.75rem; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px;" class="sub-text-dim">Local Time</div>
         <div id="clock-time" style="font-size: 1.6rem; font-weight: 800; color: #38bdf8;">00:00:00 AM</div>
-        <div id="clock-date" style="font-size: 0.8rem; opacity: 0.9; font-family: sans-serif; margin-top: 4px;" class="sub-text-dim">Monday, Jan 1</div>
+        <div id="clock-date" style="font-size: 0.8rem; font-family: sans-serif; margin-top: 4px;" class="sub-text-dim">Monday, Jan 1</div>
       </div>
 
       <!-- 2. PROFILE -->
@@ -529,11 +565,11 @@
             referrerpolicy="no-referrer"
           >
         </div>
-        <h1 id="space-display-name" style="font-size: 1.4rem; font-weight: 800; margin: 0; color: #ffffff;">
+        <h1 id="space-display-name" style="font-size: 1.4rem; font-weight: 800; margin: 0;">
           Kaumudi Tiwari <i class="fa-solid fa-circle-check" style="color: #60a5fa;" aria-hidden="true"></i>
         </h1>
         <span id="space-handle-text" style="color: #818cf8; font-weight: 700; font-size: 0.85rem;">@kaumudi</span>
-        <p id="space-bio-text" style="color: #cbd5e1; margin-top: 10px; font-size: 0.9rem; line-height: 1.4;">
+        <p id="space-bio-text" class="sub-text-dim" style="margin-top: 10px; font-size: 0.9rem; line-height: 1.4;">
           Artist
         </p>
       </div>
@@ -546,9 +582,9 @@
             <span id="discord-status-dot" class="discord-status-dot"></span>
           </div>
           <div style="flex: 1; min-width: 0;">
-            <span style="display: block; font-size: 0.65rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; color: #cbd5e1;">Discord Activity</span>
-            <span id="discord-status-text" style="font-weight: 800; font-size: 0.95rem; display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #ffffff;">Connecting...</span>
-            <span id="discord-detail-text" style="display: block; font-size: 0.8rem; color: #e2e8f0; line-height: 1.35; margin-top: 2px; word-break: break-word;">Checking status...</span>
+            <span class="sub-text-dim" style="display: block; font-size: 0.65rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px;">Discord Activity</span>
+            <span id="discord-status-text" style="font-weight: 800; font-size: 0.95rem; display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Connecting...</span>
+            <span id="discord-detail-text" class="sub-text-dim" style="display: block; font-size: 0.8rem; line-height: 1.35; margin-top: 2px; word-break: break-word;">Checking status...</span>
           </div>
         </div>
       </div>
@@ -559,7 +595,7 @@
           <span class="media-widget-title">
             <i class="fa-regular fa-image" style="color: #818cf8;" aria-hidden="true"></i> Media Showcase
           </span>
-          <span style="font-size: 0.7rem; font-weight: 700; background: rgba(99, 102, 241, 0.25); color: #ffffff; padding: 3px 8px; border-radius: 12px;">Gallery</span>
+          <span style="font-size: 0.7rem; font-weight: 700; background: rgba(99, 102, 241, 0.25); color: #818cf8; padding: 3px 8px; border-radius: 12px;">Gallery</span>
         </div>
         <div class="media-display-container">
           <img id="media-display-img" class="media-display-img" src="https://picsum.photos/400/300" alt="Media Showcase" loading="lazy">
@@ -584,7 +620,7 @@
 
       <!-- 6. SOCIAL LINKS -->
       <div id="socials-card-widget" class="glass-widget-card preset-glass-transparent">
-        <div style="font-size: 0.8rem; font-weight: 800; margin-bottom: 10px; color: #e2e8f0; text-align: center;">
+        <div class="sub-text-dim" style="font-size: 0.8rem; font-weight: 800; margin-bottom: 10px; text-align: center;">
           <i class="fa-solid fa-share-nodes" aria-hidden="true"></i> Connect With Me
         </div>
         <div id="card-links-container" style="display: flex; flex-wrap: wrap; gap: 8px; justify-content: center;"></div>
@@ -593,10 +629,10 @@
       <!-- 7. COMPACT RANK & VIEWS WIDGET -->
       <div id="rankings-card-widget" class="glass-widget-card preset-glass-transparent">
         <div class="rank-widget-inner">
-          <div class="rank-label-title" style="font-size: 0.75rem; text-transform: uppercase; font-weight: 800; letter-spacing: 0.5px; color: #ffb703; display: flex; align-items: center; justify-content: center; gap: 6px;">
+          <div class="rank-label-title" style="font-size: 0.75rem; text-transform: uppercase; font-weight: 800; letter-spacing: 0.5px; display: flex; align-items: center; justify-content: center; gap: 6px;">
             <i class="fa-solid fa-trophy" aria-hidden="true"></i> PROFILE RANK
           </div>
-          <div id="user-rank-display" style="font-size: 2.2rem; font-weight: 800; color: #ffffff; line-height: 1.1; margin-top: 2px;">#1</div>
+          <div id="user-rank-display" style="font-size: 2.2rem; font-weight: 800; line-height: 1.1; margin-top: 2px;">#1</div>
           <div id="user-views-display" class="rank-pill-views">
             <i class="fa-solid fa-eye" style="color: #60a5fa;" aria-hidden="true"></i> <span id="views-count">7</span> Views
           </div>
@@ -621,17 +657,17 @@
     <div class="editor-modal-card">
       
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
-        <h3 style="margin: 0; font-weight: 800;">
+        <h3 style="margin: 0; font-weight: 800; color: #0f172a;">
           <i class="fa-solid fa-wand-magic-sparkles" style="color: var(--primary-color);" aria-hidden="true"></i> Customize Space
         </h3>
-        <button type="button" id="close-editor-btn" aria-label="Close Modal" style="background: none; border: none; font-size: 1.5rem; cursor: pointer;">&times;</button>
+        <button type="button" id="close-editor-btn" aria-label="Close Modal" style="background: none; border: none; font-size: 1.5rem; cursor: pointer; color: #0f172a;">&times;</button>
       </div>
 
       <!-- DESIGN STYLE PRESETS -->
       <div class="form-group">
         <label for="edit-glass-preset" class="editor-label">Glass Theme Preset</label>
         <select id="edit-glass-preset" class="editor-select" style="font-weight: 600;">
-          <option value="transparent" selected>New Transparent Glass</option>
+          <option value="transparent" selected>Transparent Glass</option>
           <option value="standard">Standard Bright Glass</option>
           <option value="dark">Dark Glass</option>
         </select>
