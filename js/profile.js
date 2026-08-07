@@ -12,9 +12,8 @@ import {
   collection,
   query,
   where,
-  getDocs,
   orderBy,
-  limit
+  getDocs
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -88,7 +87,7 @@ document.addEventListener('DOMContentLoaded', () => {
     return authUser && authUser.uid === targetUserId; // Profile owner check
   };
 
-  // Update UI permissions
+  // Update UI permissions (Show/Hide floating editor buttons)
   const updateEditorPermissionUI = (authUser) => {
     const canEdit = canEditCurrentProfile(authUser);
     const actionsBar = document.querySelector(".floating-actions-bar");
@@ -177,7 +176,7 @@ document.addEventListener('DOMContentLoaded', () => {
   };
 
   const applySavedPositions = (savedPositions) => {
-    if (isMobile() || !spaceContainer) return;
+    if (isMobile()) return;
 
     let positionsToApply = savedPositions;
     if (!positionsToApply || Object.keys(positionsToApply).length === 0) {
@@ -194,10 +193,8 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
 
-    spaceContainer.style.position = 'relative';
     const cards = document.querySelectorAll('.glass-widget-card');
     let hasSaved = false;
-    let maxBottom = 0;
 
     cards.forEach((card, index) => {
       const cardId = card.id || `widget_card_${index}`;
@@ -208,27 +205,15 @@ document.addEventListener('DOMContentLoaded', () => {
         card.style.left = pos.left;
         card.style.top = pos.top;
         hasSaved = true;
-
-        const topPx = parseFloat(pos.top) || 0;
-        const cardHeight = card.offsetHeight || 200;
-        if (topPx + cardHeight > maxBottom) {
-          maxBottom = topPx + cardHeight;
-        }
       }
     });
 
-    if (hasSaved) {
-      isLayoutAbsolute = true;
-      if (maxBottom > 0) {
-        spaceContainer.style.minHeight = `${maxBottom + 60}px`;
-      }
-    }
+    if (hasSaved) isLayoutAbsolute = true;
   };
 
   const convertAllToAbsolute = () => {
     if (isMobile() || !spaceContainer) return;
 
-    spaceContainer.style.position = 'relative';
     const currentContainerHeight = spaceContainer.offsetHeight;
     if (currentContainerHeight > 0) {
       spaceContainer.style.minHeight = `${currentContainerHeight}px`;
@@ -560,7 +545,12 @@ document.addEventListener('DOMContentLoaded', () => {
     const cleanDiscordId = (discordId || "").trim();
 
     if (!showDiscord || !cleanDiscordId) {
-      widget?.classList.add("hidden");
+      if (!cleanDiscordId && discordStatusEl) {
+        discordStatusEl.textContent = "Discord Not Linked";
+        if (discordDetailEl) discordDetailEl.textContent = "Add Discord ID in settings";
+        if (statusDot) statusDot.style.background = "#64748b";
+      }
+      if (!showDiscord) widget?.classList.add("hidden");
       if (discordTimerInterval) clearInterval(discordTimerInterval);
       return;
     }
@@ -569,6 +559,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     try {
       const res = await fetch(`https://api.lanyard.rest/v1/users/${cleanDiscordId}`);
+      if (!res.ok) throw new Error("Discord status request failed");
       const data = await res.json();
 
       if (data.success && data.data) {
@@ -629,21 +620,40 @@ document.addEventListener('DOMContentLoaded', () => {
 
         updateElapsedTime();
         if (startTimeStamp) discordTimerInterval = setInterval(updateElapsedTime, 1000);
+      } else {
+        if (discordStatusEl) discordStatusEl.textContent = "Discord Status";
+        if (discordDetailEl) discordDetailEl.textContent = "Offline or User Not Found";
+        if (statusDot) statusDot.style.background = "#64748b";
       }
     } catch (err) {
       console.warn("Discord fetch error:", err);
+      if (discordStatusEl) discordStatusEl.textContent = "Discord Status";
+      if (discordDetailEl) discordDetailEl.textContent = "Unable to load presence";
+      if (statusDot) statusDot.style.background = "#64748b";
     }
   };
 
   const renderSpotifyWidget = (spotifyUrl, showSpotify) => {
     const widget = document.getElementById("spotify-card-widget");
-    const iframe = document.getElementById("spotify-iframe");
+    let iframe = document.getElementById("spotify-iframe");
 
     const cleanSpotifyUrl = (spotifyUrl || "").trim();
 
-    if (!showSpotify || !cleanSpotifyUrl || !iframe) {
+    if (!showSpotify) {
       widget?.classList.add("hidden");
-      if (iframe) iframe.src = "";
+      return;
+    }
+
+    widget?.classList.remove("hidden");
+
+    if (!cleanSpotifyUrl) {
+      if (widget) {
+        widget.innerHTML = `
+          <div style="padding: 16px; text-align: center; color: rgba(255,255,255,0.6); font-size: 0.85rem;">
+            <i class="fa-brands fa-spotify" style="font-size: 1.5rem; margin-bottom: 6px; color: #1db954; display:block;"></i>
+            <span>No Music Playlist Connected</span>
+          </div>`;
+      }
       return;
     }
 
@@ -652,11 +662,14 @@ document.addEventListener('DOMContentLoaded', () => {
       if (!cleanSpotifyUrl.includes("/embed/")) {
         embedUrl = cleanSpotifyUrl.replace("open.spotify.com/", "open.spotify.com/embed/");
       }
-      iframe.src = embedUrl;
-      widget.classList.remove("hidden");
+
+      if (!iframe) {
+        widget.innerHTML = `<iframe id="spotify-iframe" style="border-radius:12px; border:0;" src="${escapeHtml(embedUrl)}" width="100%" height="152" allowfullscreen="" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy"></iframe>`;
+      } else {
+        iframe.src = embedUrl;
+      }
     } catch (e) {
-      widget.classList.add("hidden");
-      if (iframe) iframe.src = "";
+      console.warn("Spotify render error:", e);
     }
   };
 
@@ -730,10 +743,8 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   };
 
-  // ==========================================================================
-  // RANKINGS & LEADERBOARD WIDGET
-  // ==========================================================================
-  const renderRankingsWidget = async (userData, spaceData, showRankings) => {
+  // Dynamic Global Rank Calculation & View Count Display
+  const renderRankingsWidget = async (targetUid, userData, spaceData, showRankings) => {
     const widget = document.getElementById("rankings-card-widget");
     const rankEl = document.getElementById("user-rank-display");
     const viewsEl = document.getElementById("user-views-display");
@@ -745,57 +756,38 @@ document.addEventListener('DOMContentLoaded', () => {
 
     widget?.classList.remove("hidden");
 
-    // Display views from user document
-    const viewsCount = userData?.views || 0;
+    // Retrieve view count from document
+    const currentViews = userData?.views ?? spaceData?.views ?? 0;
     if (viewsEl) {
-      viewsEl.innerHTML = `<i class="fa-solid fa-eye" style="color: var(--primary-color, #3b82f6);"></i> ${viewsCount.toLocaleString()} Views`;
+      viewsEl.innerHTML = `<i class="fa-solid fa-eye" style="color: var(--primary-color, #3b82f6);"></i> ${Number(currentViews).toLocaleString()} Views`;
     }
 
-    // Fetch Leaderboard & Calculate Rank dynamically
-    try {
-      const topUsersQuery = query(collection(db, "users"), orderBy("views", "desc"), limit(10));
-      const querySnap = await getDocs(topUsersQuery);
+    // Dynamic global leaderboard position calculation
+    if (rankEl) {
+      try {
+        const usersRef = collection(db, "users");
+        const q = query(usersRef, orderBy("views", "desc"));
+        const snapshot = await getDocs(q);
 
-      let computedRank = "#-";
-      let leaderboardListHtml = "";
-      let index = 1;
+        let computedRank = null;
+        let pos = 1;
 
-      querySnap.forEach((userDoc) => {
-        const uData = userDoc.data();
-        const uId = userDoc.id;
-        const name = uData.displayName || `@${uData.handle || 'user'}`;
-        const views = uData.views || 0;
+        snapshot.forEach((docSnap) => {
+          if (docSnap.id === targetUid) {
+            computedRank = pos;
+          }
+          pos++;
+        });
 
-        if (uId === targetUserId) {
-          computedRank = `#${index}`;
+        if (computedRank !== null) {
+          rankEl.textContent = `#${computedRank}`;
+        } else {
+          rankEl.textContent = userData?.rank ? `#${userData.rank}` : "#--";
         }
-
-        leaderboardListHtml += `
-          <div style="display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-bottom: 1px solid rgba(255,255,255,0.08); font-size: 0.85rem;">
-            <span><strong>#${index}</strong> ${escapeHtml(name)}</span>
-            <span style="opacity: 0.8;"><i class="fa-solid fa-eye"></i> ${views.toLocaleString()}</span>
-          </div>
-        `;
-        index++;
-      });
-
-      if (rankEl) {
-        rankEl.textContent = computedRank;
+      } catch (err) {
+        console.warn("Dynamic rank query error:", err);
+        rankEl.textContent = userData?.rank ? `#${userData.rank}` : "#--";
       }
-
-      // Container for Leaderboard
-      let listContainer = widget.querySelector(".leaderboard-dynamic-list");
-      if (!listContainer) {
-        listContainer = document.createElement("div");
-        listContainer.className = "leaderboard-dynamic-list";
-        listContainer.style.marginTop = "12px";
-        widget.appendChild(listContainer);
-      }
-      listContainer.innerHTML = leaderboardListHtml || `<div style="opacity:0.6; font-size:0.8rem; margin-top:8px;">No rankings available yet.</div>`;
-
-    } catch (e) {
-      console.warn("Leaderboard load failed:", e);
-      if (rankEl) rankEl.textContent = "#-";
     }
   };
 
@@ -809,6 +801,21 @@ document.addEventListener('DOMContentLoaded', () => {
       card.style.backgroundColor = config.cardBgColor || '';
       card.style.color = config.cardTextColor || '';
     });
+  };
+
+  // Increment views count in Firestore when profile loads
+  const incrementProfileViews = async (uid) => {
+    if (!uid) return;
+    try {
+      const userRef = doc(db, "users", uid);
+      await updateDoc(userRef, { views: increment(1) });
+    } catch (e) {
+      try {
+        await setDoc(doc(db, "users", uid), { views: increment(1) }, { merge: true });
+      } catch (err) {
+        console.warn("View counter update failed:", err);
+      }
+    }
   };
 
   // ==========================================================================
@@ -854,7 +861,7 @@ document.addEventListener('DOMContentLoaded', () => {
     renderMediaWidget(spaceData?.mediaImages, spaceData?.showMedia !== false);
     renderSpotifyWidget(spaceData?.spotifyUrl, spaceData?.showSpotify !== false);
     renderSocialsWidget(spaceData?.socials, spaceData?.showSocials !== false);
-    renderRankingsWidget(userData, spaceData, spaceData?.showRankings !== false);
+    renderRankingsWidget(targetUserId, userData, spaceData, spaceData?.showRankings !== false);
     renderCustomPhotoWidgets(spaceData?.customPhotos || []);
 
     applyCustomSpaceStyles(spaceData);
@@ -1037,7 +1044,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
       }
 
-      // 2. Resolve Target User ID via URL handle query parameter first
+      // 2. Resolve Target User ID via URL handle parameter
       if (handleParam) {
         const q = query(collection(db, "users"), where("handle", "==", handleParam));
         const querySnap = await getDocs(q);
@@ -1053,20 +1060,18 @@ document.addEventListener('DOMContentLoaded', () => {
         targetUserId = authUser.uid;
       }
 
-      // 4. Fetch target user profile & space documents + Auto Increment Views
+      // 4. Fetch target user profile & space documents
       if (targetUserId) {
-        // Auto-increment views for profile visit
-        try {
-          await updateDoc(doc(db, "users", targetUserId), { views: increment(1) });
-        } catch (err) {
-          await setDoc(doc(db, "users", targetUserId), { views: 1 }, { merge: true });
+        if (!userData) {
+          const userSnap = await getDoc(doc(db, "users", targetUserId));
+          if (userSnap.exists()) userData = userSnap.data();
         }
-
-        const userSnap = await getDoc(doc(db, "users", targetUserId));
-        if (userSnap.exists()) userData = userSnap.data();
 
         const spaceSnap = await getDoc(doc(db, "users_spaces", targetUserId));
         if (spaceSnap.exists()) spaceData = spaceSnap.data();
+
+        // Increment profile view count on page load
+        await incrementProfileViews(targetUserId);
       }
 
       renderProfileSpace(userData, spaceData, authUser);
