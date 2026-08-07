@@ -1,733 +1,13 @@
 /* ==========================================================================
-   1. VARIABLES & THEMING
-   ========================================================================== */
-:root { 
-  --bg-page: #f8fafc; 
-  --bg-card: #ffffff; 
-  --bg-subtle: #f1f5f9; 
-  --border-light: #e2e8f0; 
-  --border-hover: #cbd5e1; 
-  --primary-purple: #6366f1; 
-  --primary-purple-gradient: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
-  --primary-pink: #ec4899; 
-  --primary-blue: #2563eb; 
-  --spotify-green: #16a34a; 
-  --discord-blue: #4f46e5; 
-  --text-main: #111827; 
-  --text-muted: #4b5563; 
-  --text-dim: #9ca3af; 
-  --card-shadow: 0 4px 20px rgba(0, 0, 0, 0.05); 
-  --card-shadow-hover: 0 10px 25px rgba(0, 0, 0, 0.08); 
-}
-
-[data-theme="dark"], 
-body.dark-theme { 
-  --bg-page: #0b0f17; 
-  --bg-card: #151c28; 
-  --bg-subtle: #1e293b; 
-  --border-light: #334155; 
-  --border-hover: #475569; 
-  --text-main: #f8fafc; 
-  --text-muted: #94a3b8; 
-  --text-dim: #64748b; 
-  --card-shadow: 0 4px 20px rgba(0, 0, 0, 0.25); 
-  --card-shadow-hover: 0 10px 25px rgba(0, 0, 0, 0.35); 
-}
-
-/* ==========================================================================
-   2. RESET & BASE STYLES
-   ========================================================================== */
-* { 
-  margin: 0; 
-  padding: 0; 
-  box-sizing: border-box; 
-  font-family: 'Plus Jakarta Sans', sans-serif; 
-}
-
-html { 
-  scroll-behavior: smooth; 
-}
-
-body { 
-  background: var(--bg-page); 
-  color: var(--text-main); 
-  min-height: 100vh; 
-  overflow-x: hidden; 
-  transition: background-color 0.3s, color 0.3s; 
-}
-
-.main-container { 
-  max-width: 1140px; 
-  margin: 0 auto; 
-  padding: 0 1.5rem 4rem; 
-}
-
-.hidden { 
-  display: none !important; 
-}
-
-/* Verified Badge Icon Class */
-.verified-icon {
-  color: #3b82f6;
-  font-size: 0.85em;
-}
-
-/* ==========================================================================
-   2.1 ADMIN BLUR & MODERATION STYLES
-   ========================================================================== */
-.blurred-text,
-.blurred-profile,
-.leaderboard-item.blurred-text {
-  filter: blur(6px) !important;
-  user-select: none !important;
-  pointer-events: none !important;
-  opacity: 0.6 !important;
-}
-
-.blurred-text img,
-.blurred-profile img,
-.leaderboard-item.blurred-text img,
-.blurred-text .leaderboard-avatar {
-  filter: blur(8px) !important;
-  opacity: 0.4 !important;
-}
-
-.blurred-text .btn-visit-profile,
-.blurred-profile .btn-visit-profile,
-.leaderboard-item.blurred-text .btn-visit-profile {
-  display: none !important;
-}
-
-/* ==========================================================================
-   3. GRID-BASED NAVIGATION
-   ========================================================================== */
-.navbar { 
-  display: grid;
-  grid-template-columns: auto 1fr auto;
-  align-items: center;
-  padding: 10px 24px;
-  gap: 16px;
-  background: var(--bg-card); 
-  border-bottom: 1px solid rgba(0, 0, 0, 0.06); 
-  position: sticky; 
-  top: 0; 
-  z-index: 100; 
-  width: 100%;
-  transition: background-color 0.3s, border-color 0.3s; 
-}
-
-.logo { 
-  display: flex; 
-  align-items: center; 
-  gap: 8px; 
-  font-size: 1.25rem; 
-  font-weight: 800; 
-  color: var(--text-main); 
-  text-decoration: none; 
-  white-space: nowrap;
-}
-
-.logo-icon { 
-  color: #6366f1; 
-}
-
-.nav-center-menu {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-}
-
-.nav-tab-link {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 6px 14px;
-  border-radius: 20px;
-  font-weight: 700;
-  font-size: 0.88rem;
-  text-decoration: none;
-  color: #4b5563;
-  background: rgba(243, 244, 246, 0.8);
-  border: 1px solid rgba(0, 0, 0, 0.04);
-  transition: all 0.2s ease;
-  white-space: nowrap;
-  cursor: pointer;
-}
-
-.nav-tab-link:hover {
-  color: #d97706;
-  background: rgba(245, 158, 11, 0.12);
-  border-color: rgba(245, 158, 11, 0.25);
-}
-
-.nav-tab-link i {
-  color: #f59e0b;
-  font-size: 0.95rem;
-}
-
-.nav-user-menu, 
-.user-menu-wrapper { 
-  display: flex; 
-  align-items: center; 
-  justify-content: flex-end;
-  gap: 8px; 
-  flex-wrap: nowrap;
-}
-
-.nav-avatar,
-.gmail-avatar { 
-  width: 36px !important; 
-  height: 36px !important; 
-  min-width: 36px !important;
-  min-height: 36px !important;
-  border-radius: 50% !important; 
-  border: 2px solid #6366f1; 
-  object-fit: cover !important; 
-  flex-shrink: 0 !important;
-  display: block;
-}
-
-.nav-username { 
-  font-size: 0.88rem; 
-  font-weight: 700; 
-  color: var(--text-main); 
-  margin-right: 4px; 
-}
-
-.nav-btn { 
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 6px 12px;
-  border-radius: 10px;
-  font-weight: 600;
-  font-size: 0.82rem;
-  border: 1px solid rgba(0,0,0,0.08);
-  background: #f9fafb;
-  color: #374151;
-  cursor: pointer;
-  text-decoration: none;
-  transition: all 0.15s ease;
-  white-space: nowrap;
-}
-
-.nav-btn:hover { 
-  background: #f3f4f6; 
-}
-
-.nav-btn.outline { 
-  color: var(--text-muted); 
-}
-
-.nav-btn.admin-btn,
-.nav-btn.danger-btn {
-  color: #dc2626;
-  border-color: rgba(239, 68, 68, 0.25);
-  background: rgba(239, 68, 68, 0.06);
-}
-
-.nav-btn.danger-btn:hover {
-  background: rgba(239, 68, 68, 0.15);
-}
-
-.theme-switch-group { 
-  display: flex; 
-  background: var(--bg-subtle); 
-  padding: 3px; 
-  border-radius: 20px; 
-  border: 1px solid var(--border-light); 
-  gap: 2px; 
-}
-
-.theme-btn { 
-  background: transparent; 
-  border: none; 
-  color: var(--text-muted); 
-  padding: 4px 8px; 
-  border-radius: 14px; 
-  cursor: pointer; 
-  font-size: 0.75rem; 
-  transition: all 0.2s; 
-}
-
-.theme-btn.active { 
-  background: var(--bg-card); 
-  color: #6366f1; 
-  box-shadow: 0 2px 6px rgba(0,0,0,0.1); 
-}
-
-/* ==========================================================================
-   4. HERO SECTION & WIDGET CARDS
-   ========================================================================== */
-.toast { 
-  position: fixed; 
-  bottom: 20px; 
-  right: 20px; 
-  background: var(--text-main); 
-  color: var(--bg-page); 
-  padding: 12px 20px; 
-  border-radius: 12px; 
-  font-size: 0.88rem; 
-  font-weight: 600; 
-  z-index: 2000; 
-  box-shadow: 0 10px 25px rgba(0,0,0,0.15); 
-  animation: fadeIn 0.2s ease; 
-}
-
-@keyframes fadeIn { 
-  from { opacity: 0; transform: translateY(10px); } 
-  to { opacity: 1; transform: translateY(0); } 
-}
-
-.hero-grid { 
-  display: grid; 
-  grid-template-columns: 1.1fr 0.9fr; 
-  gap: 3.5rem; 
-  align-items: center; 
-  padding: 3.5rem 0 3rem; 
-}
-
-.pill-badge { 
-  display: inline-flex; 
-  align-items: center; 
-  gap: 8px; 
-  background: rgba(124,58,237,0.08); 
-  border: 1px solid rgba(124,58,237,0.2); 
-  color: #6366f1; 
-  font-size: 0.8rem; 
-  font-weight: 700; 
-  padding: 6px 16px; 
-  border-radius: 30px; 
-  margin-bottom: 1.2rem; 
-}
-
-.hero-title { 
-  font-size: 3.1rem; 
-  font-weight: 800; 
-  line-height: 1.15; 
-  letter-spacing: -1px; 
-  margin-bottom: 1rem; 
-  color: var(--text-main) !important;
-  opacity: 1 !important;
-}
-
-.gradient-text { 
-  background: linear-gradient(135deg, #6366f1, #ec4899); 
-  -webkit-background-clip: text; 
-  -webkit-text-fill-color: transparent; 
-  display: inline-block;
-}
-
-.hero-subtitle { 
-  color: var(--text-muted); 
-  font-size: 1rem; 
-  line-height: 1.6; 
-  margin-bottom: 1.75rem; 
-  max-width: 480px; 
-}
-
-.claim-box { 
-  display: flex; 
-  align-items: center; 
-  background: var(--bg-card); 
-  border: 1px solid var(--border-light); 
-  border-radius: 14px; 
-  padding: 6px 8px 6px 16px; 
-  width: 100%;
-  max-width: 480px; 
-  box-shadow: 0 4px 15px rgba(0,0,0,0.04); 
-  transition: border-color 0.2s, box-shadow 0.2s; 
-}
-
-.claim-box:focus-within { 
-  border-color: #6366f1; 
-  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15); 
-}
-
-.claim-box .prefix { 
-  color: var(--text-dim); 
-  font-size: 0.95rem; 
-  font-weight: 600; 
-  white-space: nowrap;
-}
-
-.claim-box input { 
-  flex: 1; 
-  background: transparent; 
-  border: none; 
-  outline: none; 
-  color: var(--text-main); 
-  font-size: 0.95rem; 
-  padding: 8px; 
-  font-weight: 600; 
-  min-width: 0;
-}
-
-.btn-claim, 
-.btn-claim-small { 
-  background: var(--primary-purple-gradient); 
-  color: #ffffff; 
-  border: none; 
-  font-weight: 700; 
-  cursor: pointer; 
-  text-decoration: none; 
-  display: inline-flex; 
-  align-items: center; 
-  justify-content: center; 
-  gap: 6px; 
-  white-space: nowrap;
-  transition: transform 0.2s, opacity 0.2s; 
-}
-
-.btn-claim { 
-  padding: 12px 22px; 
-  border-radius: 10px; 
-  font-size: 0.9rem; 
-}
-
-.btn-claim:hover { 
-  opacity: 0.92;
-  transform: translateY(-1px); 
-}
-
-.btn-claim-small { 
-  padding: 6px 14px; 
-  border-radius: 10px; 
-  font-size: 0.82rem; 
-}
-
-.btn-claim-small:hover {
-  opacity: 0.92;
-}
-
-.quick-tags { 
-  display: flex; 
-  gap: 18px; 
-  margin-top: 1.25rem; 
-  font-size: 0.85rem; 
-  color: var(--text-muted); 
-  font-weight: 600; 
-}
-
-.check-icon { 
-  color: #6366f1; 
-  margin-right: 4px; 
-}
-
-.hero-right { 
-  display: flex; 
-  justify-content: center; 
-}
-
-.clean-card,
-.glass-widget-card { 
-  background: var(--bg-card); 
-  border: 1px solid var(--border-light); 
-  border-radius: 24px; 
-  padding: 1.75rem; 
-  width: 100%; 
-  max-width: 360px; 
-  box-shadow: var(--card-shadow); 
-  display: flex; 
-  flex-direction: column; 
-  gap: 1rem; 
-  transition: box-shadow 0.3s, border-color 0.3s, transform 0.2s, background 0.3s, color 0.3s; 
-}
-
-.clean-card:hover,
-.glass-widget-card:hover { 
-  box-shadow: var(--card-shadow-hover); 
-}
-
-/* Specific theme preset overrides */
-.glass-widget-card.preset-glass-standard {
-  background: rgba(255, 255, 255, 0.92) !important;
-  color: #0f172a !important;
-  border: 1px solid rgba(255, 255, 255, 0.6) !important;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.12) !important;
-}
-
-.glass-widget-card.preset-glass-standard h1,
-.glass-widget-card.preset-glass-standard h2,
-.glass-widget-card.preset-glass-standard h3,
-.glass-widget-card.preset-glass-standard span,
-.glass-widget-card.preset-glass-standard div,
-.glass-widget-card.preset-glass-standard p {
-  color: #0f172a !important;
-}
-
-.glass-widget-card.preset-glass-standard .sub-text-dim {
-  color: #475569 !important;
-}
-
-.glass-widget-card.preset-glass-dark {
-  background: rgba(15, 23, 42, 0.92) !important;
-  color: #f8fafc !important;
-  border: 1px solid rgba(255, 255, 255, 0.15) !important;
-  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.4) !important;
-}
-
-.glass-widget-card.preset-glass-dark h1,
-.glass-widget-card.preset-glass-dark h2,
-.glass-widget-card.preset-glass-dark h3,
-.glass-widget-card.preset-glass-dark span,
-.glass-widget-card.preset-glass-dark div,
-.glass-widget-card.preset-glass-dark p {
-  color: #f8fafc !important;
-}
-
-.glass-widget-card.preset-glass-dark .sub-text-dim {
-  color: #94a3b8 !important;
-}
-
-.card-profile-header { 
-  text-align: center; 
-}
-
-.avatar-wrapper { 
-  width: 76px; 
-  height: 76px; 
-  margin: 0 auto 10px; 
-  border-radius: 50%; 
-  padding: 3px; 
-  background: linear-gradient(135deg, var(--primary-pink), #6366f1); 
-  position: relative; 
-}
-
-.card-avatar { 
-  width: 100%; 
-  height: 100%; 
-  border-radius: 50%; 
-  background: var(--bg-subtle); 
-  object-fit: cover !important; 
-}
-
-.profile-name { 
-  font-size: 1.2rem; 
-  font-weight: 800; 
-  color: var(--text-main); 
-  display: flex; 
-  align-items: center; 
-  justify-content: center; 
-  gap: 6px; 
-}
-
-.profile-handle { 
-  font-size: 0.82rem; 
-  color: #7c3aed; 
-  font-weight: 600; 
-}
-
-.card-bio { 
-  text-align: center; 
-  font-size: 0.85rem; 
-  color: var(--text-muted); 
-  line-height: 1.5; 
-}
-
-.card-links { 
-  display: flex; 
-  flex-direction: column; 
-  gap: 8px; 
-}
-
-.link-button { 
-  display: flex; 
-  align-items: center; 
-  justify-content: center; 
-  gap: 8px; 
-  background: var(--bg-subtle); 
-  border: 1px solid var(--border-light); 
-  color: var(--text-main); 
-  text-decoration: none; 
-  padding: 10px; 
-  border-radius: 10px; 
-  font-size: 0.85rem; 
-  font-weight: 700; 
-  transition: all 0.2s; 
-}
-
-.link-button:hover { 
-  background: var(--bg-card); 
-  border-color: #6366f1; 
-  color: #6366f1; 
-  transform: translateY(-1px); 
-}
-
-.activity-widget { 
-  background: var(--bg-subtle); 
-  border: 1px solid var(--border-light); 
-  border-radius: 12px; 
-  padding: 9px 12px; 
-  display: flex; 
-  align-items: center; 
-  gap: 10px; 
-}
-
-.activity-widget.spotify { border-color: rgba(22,163,74,0.25); }
-.activity-widget.spotify .act-icon { color: var(--spotify-green); }
-.activity-widget.discord { border-color: rgba(79,70,229,0.25); }
-.activity-widget.discord .act-icon { color: var(--discord-blue); }
-
-.act-text { 
-  flex: 1; 
-  overflow: hidden; 
-}
-
-.act-label { 
-  display: block; 
-  font-size: 0.62rem; 
-  font-weight: 800; 
-  color: var(--text-dim); 
-  text-transform: uppercase; 
-}
-
-.act-title { 
-  font-size: 0.78rem; 
-  color: var(--text-main); 
-  font-weight: 700; 
-  white-space: nowrap; 
-  overflow: hidden; 
-  text-overflow: ellipsis; 
-}
-
-.wave-icon { 
-  color: var(--spotify-green); 
-  font-size: 0.8rem; 
-}
-
-.pulse-dot { 
-  width: 8px; 
-  height: 8px; 
-  background: #22c55e; 
-  border-radius: 50%; 
-  box-shadow: 0 0 8px #22c55e; 
-}
-
-/* ==========================================================================
-   5. GUIDE SECTION
-   ========================================================================== */
-.guide-section, 
-.guide-wrapper-card { 
-  background: var(--bg-card); 
-  border-radius: 20px; 
-  padding: 2rem; 
-  margin-top: 2rem; 
-  box-shadow: var(--card-shadow); 
-  border: 1px solid var(--border-light); 
-}
-
-.section-header, 
-.guide-header { 
-  margin-bottom: 1.5rem; 
-  text-align: left; 
-}
-
-.section-title, 
-.guide-header h2 { 
-  font-size: 1.6rem; 
-  font-weight: 800; 
-  color: var(--text-main); 
-  margin-bottom: 0.3rem; 
-  letter-spacing: -0.5px; 
-}
-
-.section-subtitle, 
-.guide-header p { 
-  color: var(--text-muted); 
-  font-size: 0.92rem; 
-  line-height: 1.45; 
-}
-
-.guide-steps-grid, 
-.guide-steps-list { 
-  display: grid; 
-  grid-template-columns: repeat(2, 1fr); 
-  gap: 1.25rem; 
-}
-
-.guide-card, 
-.guide-step-card { 
-  background: var(--bg-subtle); 
-  border: 1px solid var(--border-light); 
-  border-radius: 16px; 
-  padding: 1.25rem 1.5rem; 
-  display: flex; 
-  flex-direction: column; 
-  gap: 0.5rem; 
-  transition: transform 0.2s, border-color 0.2s, box-shadow 0.2s; 
-}
-
-.guide-card:hover, 
-.guide-step-card:hover { 
-  border-color: var(--border-hover); 
-  transform: translateY(-2px); 
-  box-shadow: 0 6px 16px rgba(0,0,0,0.04); 
-}
-
-.guide-card-top { 
-  display: flex; 
-  justify-content: space-between; 
-  align-items: center; 
-  width: 100%; 
-}
-
-.step-badge, 
-.step-num { 
-  font-size: 1rem; 
-  font-weight: 800; 
-  color: var(--text-dim); 
-  line-height: 1; 
-}
-
-.guide-icon, 
-.guide-step-icon { 
-  font-size: 1.1rem; 
-  color: var(--text-main); 
-}
-
-.guide-step-icon.purple { color: #6366f1; }
-.guide-step-icon.green { color: var(--spotify-green); }
-.guide-step-icon.blue { color: var(--discord-blue); }
-.guide-step-icon.pink { color: var(--primary-pink); }
-
-.guide-card h3, 
-.guide-step-body h3 { 
-  font-size: 1.05rem; 
-  font-weight: 700; 
-  color: var(--text-main); 
-  margin-bottom: 0.25rem; 
-}
-
-.guide-card p, 
-.guide-step-body p { 
-  font-size: 0.85rem; 
-  color: var(--text-muted); 
-  line-height: 1.5; 
-  margin: 0; 
-}
-
-.guide-card code, 
-.guide-step-body code { 
-  background: var(--border-light); 
-  padding: 1px 6px; 
-  border-radius: 4px; 
-  font-family: monospace; 
-  color: #6366f1; 
-  font-weight: 700; 
-  font-size: 0.82rem; 
-}
-
-/* ==========================================================================
-   6. MODAL OVERLAYS & COMPACT RANK/VIEWS LEADERBOARD
+   6. MODAL OVERLAYS & LEADERBOARD MODAL
    ========================================================================== */
 .modal-overlay { 
   position: fixed !important; 
   inset: 0 !important; 
   width: 100vw;
   height: 100vh;
-  background: rgba(0, 0, 0, 0.5) !important; 
+  background: rgba(0, 0, 0, 0.6) !important; 
+  backdrop-filter: blur(4px);
   display: flex; 
   align-items: center; 
   justify-content: center; 
@@ -739,36 +19,23 @@ body {
   display: none !important;
 }
 
-.modal-card { 
+.modal-card,
+.leaderboard-modal-card { 
   background: var(--bg-card); 
   border: 1px solid var(--border-light); 
-  border-radius: 20px; 
+  border-radius: 18px; 
   width: 100%; 
-  max-width: 480px; 
-  max-height: 90vh;
+  max-width: 460px; /* Increased from 300px to fit user details properly */
+  max-height: 80vh;
   display: flex;
   flex-direction: column;
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3); 
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.35); 
   overflow: hidden; 
-}
-
-/* Small & Compact Leaderboard Widget Container */
-.leaderboard-modal-card { 
-  background: var(--bg-card);
-  border: 1px solid var(--border-light);
-  border-radius: 14px;
-  max-width: 300px !important; /* Compact width */
-  width: 100%;
-  max-height: 70vh;
-  display: flex;
-  flex-direction: column;
-  box-shadow: 0 10px 25px rgba(0,0,0,0.15);
-  overflow: hidden;
 }
 
 .leaderboard-modal-header,
 .modal-header { 
-  padding: 10px 14px;
+  padding: 14px 18px;
   border-bottom: 1px solid var(--border-light);
   display: flex;
   align-items: center;
@@ -778,7 +45,7 @@ body {
 
 .leaderboard-modal-header h3,
 .modal-header h3 { 
-  font-size: 0.85rem; 
+  font-size: 0.95rem; 
   font-weight: 700; 
   color: var(--text-main); 
 }
@@ -787,7 +54,7 @@ body {
   background: none; 
   border: none; 
   color: var(--text-muted); 
-  font-size: 1.2rem; 
+  font-size: 1.25rem; 
   cursor: pointer; 
   transition: color 0.2s; 
 }
@@ -798,8 +65,9 @@ body {
 
 .leaderboard-modal-body,
 .modal-body { 
-  padding: 10px;
+  padding: 12px 16px;
   overflow-y: auto;
+  overflow-x: hidden; /* Prevents horizontal scrollbars */
 }
 
 .modal-tabs { 
@@ -841,25 +109,24 @@ body {
 #leaderboard-list { 
   display: flex; 
   flex-direction: column; 
-  gap: 6px; 
+  gap: 8px; 
 }
 
-/* Compact Leaderboard Row Item */
-.leaderboard-item,
-.leaderboard-card { 
+/* Leaderboard Row Item Inside Modal */
+.leaderboard-modal-card .leaderboard-item,
+.leaderboard-modal-card .leaderboard-card { 
   display: flex; 
   justify-content: space-between; 
   align-items: center; 
-  padding: 6px 10px; 
+  padding: 10px 12px; 
   background: var(--bg-subtle); 
   border: 1px solid var(--border-light);
-  border-radius: 8px; 
-  gap: 8px; 
+  border-radius: 12px; 
+  gap: 12px; 
   transition: border-color 0.2s, transform 0.2s; 
 }
 
-.leaderboard-item:hover,
-.leaderboard-card:hover { 
+.leaderboard-modal-card .leaderboard-item:hover { 
   border-color: #6366f1; 
   transform: translateY(-1px); 
 }
@@ -868,29 +135,42 @@ body {
 .rank-details-wrapper { 
   display: flex; 
   align-items: center; 
-  gap: 6px; 
+  gap: 10px; 
   min-width: 0;
-  flex: 0 0 auto;
+  flex: 1;
 }
 
-/* Hide Avatar, Profile Details, & Action Buttons */
-.leaderboard-avatar,
-.rank-avatar,
-.leaderboard-details,
-.rank-details,
-.btn-visit-profile { 
-  display: none !important; 
+/* Ensure Avatars & Profile Details are visible in the Modal */
+.leaderboard-modal-card .leaderboard-avatar,
+.leaderboard-modal-card .rank-avatar {
+  display: block !important;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+.leaderboard-modal-card .leaderboard-details,
+.leaderboard-modal-card .rank-details {
+  display: flex !important;
+  flex-direction: column;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.leaderboard-modal-card .btn-visit-profile {
+  display: inline-flex !important;
 }
 
 /* Compact Rank Badge Circle */
-.leaderboard-item .rank-badge,
 .rank-badge,
 .rank-number { 
   font-weight: 800;
   font-size: 0.75rem;
-  width: 24px;
-  height: 24px;
-  min-width: 24px;
+  width: 26px;
+  height: 26px;
+  min-width: 26px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -900,14 +180,14 @@ body {
   flex-shrink: 0;
 }
 
-/* Compact Views Styling */
+/* Views & Action Elements */
 .leaderboard-actions,
 .rank-views,
 .leaderboard-views { 
   display: flex; 
   align-items: center; 
-  gap: 4px; 
-  font-size: 0.75rem; 
+  gap: 6px; 
+  font-size: 0.8rem; 
   font-weight: 700; 
   color: var(--text-muted); 
   white-space: nowrap; 
@@ -985,117 +265,10 @@ body {
 }
 
 /* ==========================================================================
-   7. MEDIA QUERIES
+   OPTIONAL: COMPACT PROFILE LEADERBOARD WIDGET OVERRIDES
    ========================================================================== */
-@media (max-width: 900px) {
-  .navbar {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: space-between;
-    padding: 0.85rem 1.5rem;
-    gap: 10px;
-  }
-
-  .nav-center-menu {
-    order: 3;
-    width: 100%;
-    margin-top: 6px;
-    justify-content: center;
-  }
-
-  .hero-grid { 
-    grid-template-columns: 1fr; 
-    gap: 2.5rem; 
-    padding: 2.5rem 0;
-  }
-
-  .hero-left { 
-    text-align: center; 
-  }
-
-  .hero-subtitle {
-    margin-left: auto;
-    margin-right: auto;
-  }
-
-  .claim-box { 
-    margin-left: auto; 
-    margin-right: auto; 
-  }
-
-  .quick-tags { 
-    justify-content: center; 
-    margin-left: auto; 
-    margin-right: auto; 
-  }
-}
-
-@media (max-width: 768px) {
-  .main-container {
-    padding: 0 1rem 3rem;
-  }
-
-  .navbar { 
-    padding: 0.75rem 1rem; 
-  }
-
-  .hero-title { 
-    font-size: 2.3rem; 
-  }
-
-  .guide-steps-grid, 
-  .guide-steps-list { 
-    grid-template-columns: 1fr; 
-  }
-
-  .guide-wrapper-card,
-  .guide-section {
-    padding: 1.25rem;
-  }
-
-  .leaderboard-item,
-  .leaderboard-card {
-    padding: 6px 8px;
-  }
-}
-
-@media (max-width: 576px) {
-  .hero-title {
-    font-size: 1.95rem;
-  }
-
-  .claim-box {
-    flex-direction: column;
-    padding: 10px;
-    gap: 10px;
-    align-items: stretch;
-  }
-
-  .claim-box .prefix {
-    text-align: center;
-  }
-
-  .claim-box input {
-    text-align: center;
-  }
-
-  .btn-claim {
-    width: 100%;
-    justify-content: center;
-  }
-
-  .clean-card {
-    max-width: 100%;
-    padding: 1.25rem;
-  }
-
-  .modal-overlay {
-    padding: 0.5rem;
-  }
-
-  .modal-card,
-  .leaderboard-modal-card {
-    max-width: 100%;
-    border-radius: 14px;
-  }
+/* Scope compact/hidden styles specifically to profile widgets if needed */
+.profile-widget .leaderboard-avatar,
+.profile-widget .btn-visit-profile {
+  display: none;
 }
