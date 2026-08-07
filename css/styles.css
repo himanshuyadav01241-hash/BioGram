@@ -1158,3 +1158,24 @@ body {
     align-items: center;
   }
 }
+
+/* ==========================================================================
+   8. WIDGET CARD OVERRIDES & PRESETS
+   ========================================================================== */
+.glass-widget-card.preset-glass-standard {
+  background: rgba(255, 255, 255, 0.92) !important;
+  color: #0f172a !important;
+  border: 1px solid rgba(255, 255, 255, 0.5) !important;
+}
+
+#rankings-card-widget {
+  width: 260px !important;
+  padding: 14px 16px;
+  text-align: center;
+}
+
+.social-link-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
