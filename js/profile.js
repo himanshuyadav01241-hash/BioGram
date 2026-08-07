@@ -86,47 +86,19 @@ document.addEventListener('DOMContentLoaded', () => {
       .replace(/'/g, "&#039;");
   };
 
-  /**
-   * Detects social platform details and icon class from platform string or URL
-   */
-  const getSocialDetails = (platformStr = "", urlStr = "") => {
-    const combined = `${platformStr} ${urlStr}`.toLowerCase().trim();
-
-    let iconClass = "fa-solid fa-link";
-    let label = platformStr.trim();
-
-    if (combined.includes("instagram") || combined.includes("instagr.am")) {
-      iconClass = "fa-brands fa-instagram";
-      if (!label || label.toLowerCase().startsWith("http")) label = "Instagram";
-    } else if (combined.includes("github")) {
-      iconClass = "fa-brands fa-github";
-      if (!label || label.toLowerCase().startsWith("http")) label = "GitHub";
-    } else if (combined.includes("twitter") || combined.includes("x.com")) {
-      iconClass = "fa-brands fa-x-twitter";
-      if (!label || label.toLowerCase().startsWith("http")) label = "Twitter";
-    } else if (combined.includes("discord")) {
-      iconClass = "fa-brands fa-discord";
-      if (!label || label.toLowerCase().startsWith("http")) label = "Discord";
-    } else if (combined.includes("youtube") || combined.includes("youtu.be")) {
-      iconClass = "fa-brands fa-youtube";
-      if (!label || label.toLowerCase().startsWith("http")) label = "YouTube";
-    } else if (combined.includes("spotify")) {
-      iconClass = "fa-brands fa-spotify";
-      if (!label || label.toLowerCase().startsWith("http")) label = "Spotify";
-    } else if (combined.includes("twitch")) {
-      iconClass = "fa-brands fa-twitch";
-      if (!label || label.toLowerCase().startsWith("http")) label = "Twitch";
-    } else if (combined.includes("linkedin")) {
-      iconClass = "fa-brands fa-linkedin";
-      if (!label || label.toLowerCase().startsWith("http")) label = "LinkedIn";
-    } else if (combined.includes("tiktok")) {
-      iconClass = "fa-brands fa-tiktok";
-      if (!label || label.toLowerCase().startsWith("http")) label = "TikTok";
-    } else if (!label || label.toLowerCase().startsWith("http")) {
-      label = "Website";
-    }
-
-    return { iconClass, label };
+  // Dynamic Social Icon Resolver
+  const getSocialIconClass = (platformStr = "") => {
+    const p = platformStr.toLowerCase().trim();
+    if (p.includes("instagram") || p.includes("insta")) return "fa-brands fa-instagram";
+    if (p.includes("github")) return "fa-brands fa-github";
+    if (p.includes("twitter") || p.includes("x.com")) return "fa-brands fa-x-twitter";
+    if (p.includes("discord")) return "fa-brands fa-discord";
+    if (p.includes("youtube")) return "fa-brands fa-youtube";
+    if (p.includes("spotify")) return "fa-brands fa-spotify";
+    if (p.includes("twitch")) return "fa-brands fa-twitch";
+    if (p.includes("linkedin")) return "fa-brands fa-linkedin";
+    if (p.includes("tiktok")) return "fa-brands fa-tiktok";
+    return "fa-solid fa-link";
   };
 
   const ensureWidgetCardIds = () => {
@@ -774,7 +746,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   };
 
-  const renderSocialsWidget = (socialsArray, showSocials = true) => {
+  const renderSocialsWidget = (socialsArray, showSocials) => {
     const widget = document.getElementById("socials-card-widget");
     const container = document.getElementById("card-links-container");
 
@@ -786,69 +758,87 @@ document.addEventListener('DOMContentLoaded', () => {
     widget.classList.remove("hidden");
     container.innerHTML = "";
 
-    socialsArray.forEach((item) => {
-      if (!item || !item.url || !item.url.trim()) return;
+    socialsArray.forEach(item => {
+      if (!item.url || !item.url.trim()) return;
 
       const rawUrl = item.url.trim();
-      const fullUrl = rawUrl.startsWith("http") ? rawUrl : `https://${rawUrl}`;
+      let fullUrl = rawUrl.startsWith("http") ? rawUrl : `https://${rawUrl}`;
+      let platformName = item.platform || item.label || "Link";
 
-      // Auto-detect correct icon and clean display label
-      const { iconClass, label } = getSocialDetails(item.platform || item.label || "", rawUrl);
+      const iconClass = getSocialIconClass(platformName.concat(" ", rawUrl));
 
-      const linkElement = document.createElement("a");
-      linkElement.href = fullUrl;
-      linkElement.target = "_blank";
-      linkElement.rel = "noopener noreferrer";
-      linkElement.className = "social-link-btn";
-      linkElement.innerHTML = `
-        <i class="${iconClass}" aria-hidden="true"></i>
-        <span>${escapeHtml(label)}</span>
-      `;
-
-      container.appendChild(linkElement);
+      const a = document.createElement("a");
+      a.href = fullUrl;
+      a.target = "_blank";
+      a.rel = "noopener noreferrer";
+      a.className = "social-link-btn";
+      a.innerHTML = `<i class="${iconClass}" aria-hidden="true"></i> <span>${escapeHtml(platformName)}</span>`;
+      container.appendChild(a);
     });
   };
 
   const renderRankingsWidget = async (targetUid, userData, spaceData, showRankings) => {
     const widget = document.getElementById("rankings-card-widget");
-    if (!showRankings || !widget) {
+    const rankEl = document.getElementById("user-rank-display");
+    const viewsEl = document.getElementById("user-views-display");
+    const leaderboardListEl = document.getElementById("leaderboard-list");
+
+    if (!showRankings) {
       widget?.classList.add("hidden");
       return;
     }
 
-    widget.classList.remove("hidden");
+    widget?.classList.remove("hidden");
 
     const currentViews = userData?.views ?? spaceData?.views ?? 0;
-    let computedRank = 1;
+    if (viewsEl) {
+      viewsEl.innerHTML = `<i class="fa-solid fa-eye" style="color: var(--primary-color, #3b82f6);"></i> ${Number(currentViews).toLocaleString()} Views`;
+    }
 
     try {
       const usersRef = collection(db, "users");
-      const q = query(usersRef, orderBy("views", "desc"), limit(100));
+      const q = query(usersRef, orderBy("views", "desc"), limit(5));
       const snapshot = await getDocs(q);
 
+      let computedRank = null;
       let pos = 1;
+
+      if (leaderboardListEl) leaderboardListEl.innerHTML = "";
+
       if (!snapshot.empty) {
         snapshot.forEach((docSnap) => {
-          if (docSnap.id === targetUid) computedRank = pos;
+          const data = docSnap.data();
+          const isCurrent = docSnap.id === targetUid;
+
+          if (isCurrent) computedRank = pos;
+
+          if (leaderboardListEl) {
+            const item = document.createElement("div");
+            item.className = `leaderboard-item ${isCurrent ? 'active-user' : ''}`;
+            item.innerHTML = `
+              <span><b>#${pos}</b> ${escapeHtml(data.displayName || data.handle || 'User')}</span>
+              <span style="opacity: 0.8; font-size: 0.75rem;">${Number(data.views || 0).toLocaleString()}</span>
+            `;
+            leaderboardListEl.appendChild(item);
+          }
           pos++;
         });
       }
-    } catch (err) {
-      console.warn("Rank fetch warning:", err);
-      computedRank = userData?.rank || 1;
-    }
 
-    widget.innerHTML = `
-      <div class="widget-title">
-        <i class="fa-solid fa-trophy" style="color:#f59e0b;"></i>
-        <span>PROFILE RANK</span>
-      </div>
-      <div id="user-rank-display">#${computedRank}</div>
-      <div id="user-views-display">
-        <i class="fa-regular fa-eye"></i>
-        <span>${Number(currentViews).toLocaleString()} Views</span>
-      </div>
-    `;
+      if (rankEl) {
+        rankEl.textContent = computedRank !== null ? `#${computedRank}` : `#1`;
+      }
+    } catch (err) {
+      console.warn("Dynamic rank query warning (falling back to local user profile views):", err);
+      if (rankEl) rankEl.textContent = userData?.rank ? `#${userData.rank}` : "#1";
+      if (leaderboardListEl) {
+        leaderboardListEl.innerHTML = `
+          <div class="leaderboard-item active-user">
+            <span><b>#1</b> ${escapeHtml(userData?.displayName || 'User')}</span>
+            <span style="opacity: 0.8; font-size: 0.75rem;">${Number(currentViews).toLocaleString()}</span>
+          </div>`;
+      }
+    }
   };
 
   const applyCustomSpaceStyles = (config = {}) => {
@@ -1001,9 +991,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const socialsInput = document.getElementById("edit-socials-data");
     if (socialsInput) {
       if (Array.isArray(activeSpaceConfig.socials)) {
-        socialsInput.value = activeSpaceConfig.socials
-          .map(s => s.platform ? `${s.platform}: ${s.url}` : s.url)
-          .join("\n");
+        socialsInput.value = activeSpaceConfig.socials.map(s => `${s.platform || 'Instagram'}:${s.url}`).join("\n");
       } else {
         socialsInput.value = "";
       }
@@ -1031,23 +1019,15 @@ document.addEventListener('DOMContentLoaded', () => {
       .map(url => url.trim())
       .filter(url => url.length > 0);
 
-    const socialsRaw = document.getElementById("edit-socials-data")?.value || "";
+    const socialsRaw = getInputValue("edit-socials-data", "");
     const socialsArray = socialsRaw
       .split("\n")
-      .map((line) => {
-        const trimmed = line.trim();
-        if (!trimmed) return null;
-
-        // Supports "Platform: https://link..." format
-        if (trimmed.includes(":") && !trimmed.startsWith("http://") && !trimmed.startsWith("https://")) {
-          const parts = trimmed.split(":");
-          const platform = parts[0].trim();
-          const url = parts.slice(1).join(":").trim();
-          return url ? { platform, url } : null;
-        }
-
-        // Direct URL format (e.g., "https://instagram.com/user")
-        return { platform: "", url: trimmed };
+      .map(line => {
+        const parts = line.split(":");
+        if (parts.length < 2) return null;
+        const platform = parts[0].trim();
+        const url = parts.slice(1).join(":").trim();
+        return url ? { platform, url } : null;
       })
       .filter(Boolean);
 
@@ -1122,7 +1102,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
       if (authUser) {
         try {
-          const authUserSnap = await getDoc(doc(db, "users", authUser.uid));
+          const authUserSnap = await getDoc(doc(doc(db, "users", authUser.uid)));
           if (authUserSnap.exists()) {
             const authUserData = authUserSnap.data();
             isCurrentUserAdmin = authUserData.role === 'admin' || authUserData.isAdmin === true;
