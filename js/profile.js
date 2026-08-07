@@ -11,6 +11,7 @@ import {
   increment,
   collection,
   query,
+  where,
   orderBy,
   getDocs,
   limit
@@ -120,6 +121,58 @@ document.addEventListener('DOMContentLoaded', () => {
     if (openEditorBtn) openEditorBtn.style.display = canEdit ? "inline-flex" : "none";
     if (toggleLockBtn) toggleLockBtn.style.display = canEdit ? "inline-flex" : "none";
     if (resetPositionsBtn) resetPositionsBtn.style.display = canEdit ? "inline-flex" : "none";
+  };
+
+  // ==========================================================================
+  // NOT FOUND / GHOST PROFILE DELETION STATE
+  // ==========================================================================
+  const renderNotFoundUI = (handle) => {
+    if (overlay) overlay.classList.add('hidden');
+    if (bgAudio) {
+      bgAudio.pause();
+      bgAudio.src = "";
+    }
+    if (btnToggleAudio) btnToggleAudio.style.display = "none";
+    const actionsBar = document.querySelector(".floating-actions-bar");
+    if (actionsBar) actionsBar.classList.add("hidden");
+
+    if (spaceContainer) {
+      spaceContainer.innerHTML = `
+        <div style="
+          display: flex; 
+          flex-direction: column; 
+          align-items: center; 
+          justify-content: center; 
+          min-height: 65vh; 
+          text-align: center; 
+          color: var(--text-main, #ffffff);
+          padding: 2rem;
+          margin: 0 auto;
+        ">
+          <i class="fa-solid fa-user-slash" style="font-size: 3.5rem; color: #ef4444; margin-bottom: 1.25rem;"></i>
+          <h2 style="font-size: 1.8rem; font-weight: 800; margin-bottom: 0.5rem;">Profile Not Found</h2>
+          <p style="opacity: 0.75; max-width: 420px; margin-bottom: 1.5rem; font-size: 0.95rem; line-height: 1.5;">
+            ${handle ? `The profile <b>@${escapeHtml(handle)}</b> does not exist or has been removed.` : 'No user handle specified or you are not logged in.'}
+          </p>
+          <a href="/" style="
+            padding: 10px 22px; 
+            background: linear-gradient(135deg, #6366f1, #8b5cf6); 
+            color: #ffffff; 
+            text-decoration: none; 
+            border-radius: 12px; 
+            font-weight: 700;
+            font-size: 0.9rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            box-shadow: 0 4px 15px rgba(99, 102, 241, 0.3);
+          "><i class="fa-solid fa-house"></i> Return Home</a>
+        </div>
+      `;
+      spaceContainer.style.opacity = "1";
+      spaceContainer.style.pointerEvents = "auto";
+      spaceContainer.classList.remove('hidden');
+    }
   };
 
   // ==========================================================================
@@ -489,7 +542,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     if (displayNameEl) {
-      const name = spaceData?.displayName || userData?.displayName || "BioGram User";
+      const name = spaceData?.displayName || userData?.displayName || "User";
       displayNameEl.innerHTML = `${escapeHtml(name)} <i class="fa-solid fa-circle-check" style="color: var(--primary-color, #3b82f6);"></i>`;
     }
 
@@ -688,7 +741,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   };
 
-  // Fixed Render Socials Widget with Instagram / Brand Icons Support
   const renderSocialsWidget = (socialsArray, showSocials) => {
     const widget = document.getElementById("socials-card-widget");
     const container = document.getElementById("card-links-container");
@@ -708,7 +760,6 @@ document.addEventListener('DOMContentLoaded', () => {
       let fullUrl = rawUrl.startsWith("http") ? rawUrl : `https://${rawUrl}`;
       let platformName = item.platform || item.label || "Link";
 
-      // Detect icon based on URL or Platform name
       const iconClass = getSocialIconClass(platformName.concat(" ", rawUrl));
 
       const a = document.createElement("a");
@@ -721,7 +772,6 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   };
 
-  // Fixed Leaderboard Rendering Across Profiles
   const renderRankingsWidget = async (targetUid, userData, spaceData, showRankings) => {
     const widget = document.getElementById("rankings-card-widget");
     const rankEl = document.getElementById("user-rank-display");
@@ -837,6 +887,11 @@ document.addEventListener('DOMContentLoaded', () => {
   // MAIN RENDER FUNCTION
   // ==========================================================================
   const renderProfileSpace = (userData, spaceData, authUser) => {
+    if (!userData) {
+      renderNotFoundUI(handleParam);
+      return;
+    }
+
     activeSpaceConfig = spaceData || {};
     currentLoadedUserData = userData;
 
@@ -1072,19 +1127,23 @@ document.addEventListener('DOMContentLoaded', () => {
           if (userSnap.exists()) userData = userSnap.data();
         }
 
-        const spaceSnap = await getDoc(doc(db, "users_spaces", targetUserId));
-        if (spaceSnap.exists()) spaceData = spaceSnap.data();
+        if (userData) {
+          const spaceSnap = await getDoc(doc(db, "users_spaces", targetUserId));
+          if (spaceSnap.exists()) spaceData = spaceSnap.data();
 
-        await incrementProfileViews(targetUserId, authUser);
+          await incrementProfileViews(targetUserId, authUser);
+        }
+      }
+
+      if (!userData) {
+        renderNotFoundUI(handleParam);
+        return;
       }
 
       renderProfileSpace(userData, spaceData, authUser);
     } catch (err) {
       console.error("Profile loading error:", err);
-      if (spaceContainer) {
-        spaceContainer.style.opacity = "1";
-        spaceContainer.style.pointerEvents = "auto";
-      }
+      renderNotFoundUI(handleParam);
     }
   };
 
