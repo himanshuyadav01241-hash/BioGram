@@ -258,7 +258,7 @@ body {
 }
 
 /* ==========================================================================
-   4. HERO SECTION & PROMO CARDS
+   4. HERO SECTION & WIDGET CARDS
    ========================================================================== */
 .toast { 
   position: fixed; 
@@ -420,9 +420,6 @@ body {
   justify-content: center; 
 }
 
-/* ==========================================================================
-   5. GLASS WIDGET CARDS & SPACE STYLES
-   ========================================================================== */
 .clean-card,
 .glass-widget-card { 
   background: var(--bg-card); 
@@ -443,13 +440,7 @@ body {
   box-shadow: var(--card-shadow-hover); 
 }
 
-/* Glass Design Presets */
-.glass-widget-card.preset-glass-transparent {
-  background: rgba(255, 255, 255, 0.08) !important;
-  backdrop-filter: blur(16px);
-  border: 1px solid rgba(255, 255, 255, 0.18) !important;
-}
-
+/* Specific theme preset overrides */
 .glass-widget-card.preset-glass-standard {
   background: rgba(255, 255, 255, 0.92) !important;
   color: #0f172a !important;
@@ -535,69 +526,34 @@ body {
   line-height: 1.5; 
 }
 
-/* Connect With Me Social Links */
-#card-links-container {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  width: 100%;
+.card-links { 
+  display: flex; 
+  flex-direction: column; 
+  gap: 8px; 
 }
 
-.social-link-btn {
-  display: flex !important;
-  align-items: center !important;
-  justify-content: flex-start !important;
-  gap: 12px !important;
-  width: 100% !important;
-  padding: 10px 14px !important;
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  border-radius: 12px;
-  color: inherit;
-  text-decoration: none;
-  font-size: 0.9rem;
-  font-weight: 600;
-  transition: all 0.2s ease-in-out;
-  box-sizing: border-box;
+.link-button { 
+  display: flex; 
+  align-items: center; 
+  justify-content: center; 
+  gap: 8px; 
+  background: var(--bg-subtle); 
+  border: 1px solid var(--border-light); 
+  color: var(--text-main); 
+  text-decoration: none; 
+  padding: 10px; 
+  border-radius: 10px; 
+  font-size: 0.85rem; 
+  font-weight: 700; 
+  transition: all 0.2s; 
 }
 
-.social-link-btn:hover {
-  background: rgba(99, 102, 241, 0.2);
-  border-color: #6366f1;
-  transform: translateY(-1px);
+.link-button:hover { 
+  background: var(--bg-card); 
+  border-color: #6366f1; 
+  color: #6366f1; 
+  transform: translateY(-1px); 
 }
-
-.social-link-btn i {
-  font-size: 1.25rem !important;
-  width: 24px !important;
-  height: 24px !important;
-  min-width: 24px !important;
-  min-height: 24px !important;
-  display: inline-flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  flex-shrink: 0 !important;
-  text-align: center;
-}
-
-.social-link-btn span {
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  flex: 1;
-}
-
-/* Brand Icon Colors */
-.social-link-btn .fa-instagram { color: #e1306c; }
-.social-link-btn .fa-github { color: #ffffff; }
-.social-link-btn .fa-x-twitter { color: #ffffff; }
-.social-link-btn .fa-discord { color: #5865f2; }
-.social-link-btn .fa-youtube { color: #ff0000; }
-.social-link-btn .fa-spotify { color: #1db954; }
-.social-link-btn .fa-twitch { color: #9146ff; }
-.social-link-btn .fa-linkedin { color: #0a66c2; }
-.social-link-btn .fa-tiktok { color: #00f2fe; }
-.social-link-btn .fa-link { color: #94a3b8; }
 
 .activity-widget { 
   background: var(--bg-subtle); 
@@ -649,51 +605,8 @@ body {
   box-shadow: 0 0 8px #22c55e; 
 }
 
-/* Floating Space Actions Bar */
-.floating-actions-bar {
-  position: fixed;
-  bottom: 24px;
-  left: 50%;
-  transform: translateX(-50%);
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  background: rgba(15, 23, 42, 0.85);
-  backdrop-filter: blur(16px);
-  padding: 8px 16px;
-  border-radius: 40px;
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  box-shadow: 0 10px 30px rgba(0,0,0,0.3);
-  z-index: 1000;
-}
-
-.floating-actions-bar button {
-  background: transparent;
-  border: none;
-  color: #ffffff;
-  font-weight: 700;
-  font-size: 0.85rem;
-  padding: 8px 14px;
-  border-radius: 20px;
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  transition: all 0.2s ease;
-}
-
-.floating-actions-bar button:hover {
-  background: rgba(255, 255, 255, 0.15);
-}
-
-.floating-actions-bar button.active-unlock {
-  background: rgba(239, 68, 68, 0.2);
-  color: #fca5a5;
-  border: 1px solid rgba(239, 68, 68, 0.4);
-}
-
 /* ==========================================================================
-   6. GUIDE SECTION
+   5. GUIDE SECTION
    ========================================================================== */
 .guide-section, 
 .guide-wrapper-card { 
@@ -807,7 +720,7 @@ body {
 }
 
 /* ==========================================================================
-   7. MODAL OVERLAYS & LEADERBOARD
+   6. MODAL OVERLAYS & LEADERBOARD
    ========================================================================== */
 .modal-overlay { 
   position: fixed !important; 
@@ -1123,7 +1036,7 @@ body {
 }
 
 /* ==========================================================================
-   8. MEDIA QUERIES (DESKTOP & TABLET BREAKPOINTS)
+   7. MEDIA QUERIES
    ========================================================================== */
 @media (max-width: 900px) {
   .navbar {
@@ -1235,77 +1148,5 @@ body {
   .leaderboard-modal-card {
     max-width: 100%;
     border-radius: 16px;
-  }
-}
-
-/* ==========================================================================
-   9. MOBILE ISOLATION & CANVASES (@media max-width: 600px)
-   ========================================================================== */
-@media screen and (max-width: 600px) {
-
-  /* Force Mobile Vertical Column Flow */
-  #custom-space-container {
-    display: flex !important;
-    flex-direction: column !important;
-    align-items: center !important;
-    gap: 16px !important;
-    padding: 70px 16px 100px 16px !important;
-    width: 100% !important;
-    min-height: auto !important;
-    box-sizing: border-box !important;
-  }
-
-  /* Reset Drag/Drop Absolute Positions on Mobile */
-  .glass-widget-card {
-    position: relative !important;
-    top: auto !important;
-    left: auto !important;
-    width: 100% !important;
-    max-width: 420px !important;
-    margin: 0 !important;
-    box-sizing: border-box !important;
-  }
-
-  /* Strict Mobile Stack Hierarchy */
-  #profile-card-widget  { order: 1 !important; }
-  #clock-card-widget    { order: 2 !important; }
-  #discord-card-widget  { order: 3 !important; }
-  #spotify-card-widget  { order: 4 !important; }
-  #socials-card-widget  { order: 5 !important; }
-  #rankings-card-widget { order: 6 !important; }
-  #media-card-widget    { order: 7 !important; }
-
-  /* Audio player fixed top position */
-  .bg-audio-controls, 
-  #btn-toggle-audio,
-  .audio-player-top {
-    position: fixed !important;
-    top: 12px !important;
-    left: 16px !important;
-    z-index: 9999 !important;
-    background: rgba(15, 15, 20, 0.85) !important;
-    backdrop-filter: blur(12px) !important;
-    border-radius: 30px !important;
-    padding: 6px 14px !important;
-    border: 1px solid rgba(255, 255, 255, 0.15) !important;
-  }
-
-  /* Bottom floating action bar mobile sizing */
-  .floating-actions-bar {
-    position: fixed !important;
-    bottom: 16px !important;
-    left: 50% !important;
-    transform: translateX(-50%) !important;
-    z-index: 9999 !important;
-    width: 90% !important;
-    max-width: 380px !important;
-    display: flex !important;
-    justify-content: center !important;
-    gap: 10px !important;
-  }
-
-  /* Mobile social links touch padding */
-  .social-link-btn {
-    padding: 12px 16px !important;
   }
 }
