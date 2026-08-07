@@ -54,6 +54,7 @@ document.addEventListener('DOMContentLoaded', () => {
   let isLayoutAbsolute = false;
   let isLayoutLocked = true; 
   let discordTimerInterval = null;
+  let widgetOrder = [];
 
   const isMobile = () => window.innerWidth <= 600;
   const getLocalStorageKey = () => targetUserId ? `biogram_space_layout_cache_${targetUserId}` : 'biogram_space_layout_cache_guest';
@@ -137,14 +138,205 @@ document.addEventListener('DOMContentLoaded', () => {
     const actionsBar = document.querySelector(".floating-actions-bar");
 
     if (actionsBar) {
-      if (canEdit) actionsBar.classList.remove("hidden");
-      else actionsBar.classList.add("hidden");
+      actionsBar.style.display = canEdit ? "flex" : "none";
+      actionsBar.classList.remove("hidden");
     }
 
     if (openEditorBtn) openEditorBtn.style.display = canEdit ? "inline-flex" : "none";
-    if (toggleLockBtn) toggleLockBtn.style.display = canEdit ? "inline-flex" : "none";
+    if (toggleLockBtn) toggleLockBtn.style.display = (canEdit && !isMobile()) ? "inline-flex" : "none";
     if (resetPositionsBtn) resetPositionsBtn.style.display = canEdit ? "inline-flex" : "none";
   };
+
+  // ==========================================================================
+  // MOBILE ORDERING SYSTEM (TOP TO BOTTOM RANKING)
+  // ==========================================================================
+  const applyMobileWidgetOrder = () => {
+    if (!spaceContainer) return;
+    const cards = Array.from(spaceContainer.querySelectorAll('.glass-widget-card'));
+
+    if (widgetOrder && widgetOrder.length > 0) {
+      widgetOrder.forEach((id, index) => {
+        const card = document.getElementById(id);
+        if (card) {
+          card.style.order = index;
+        }
+      });
+    }
+
+    cards.forEach((card) => {
+      let controls = card.querySelector('.mobile-widget-reorder-controls');
+      if (!controls) {
+        controls = document.createElement('div');
+        controls.className = 'mobile-widget-reorder-controls';
+        card.insertBefore(controls, card.firstChild);
+      }
+
+      const currentCardOrder = parseInt(window.getComputedStyle(card).order) || 0;
+      controls.innerHTML = `
+        <span class="order-badge"><i class="fa-solid fa-arrow-down-up-between"></i> Rank #${currentCardOrder + 1}</span>
+        <div class="order-controls-btns">
+          <button type="button" class="order-control-btn move-up-btn" title="Move Up"><i class="fa-solid fa-chevron-up"></i></button>
+          <button type="button" class="order-control-btn move-down-btn" title="Move Down"><i class="fa-solid fa-chevron-down"></i></button>
+        </div>
+      `;
+
+      controls.querySelector('.move-up-btn').onclick = (e) => {
+        e.stopPropagation();
+        moveWidgetInOrder(card.id, 'up');
+      };
+
+      controls.querySelector('.move-down-btn').onclick = (e) => {
+        e.stopPropagation();
+        moveWidgetInOrder(card.id, 'down');
+      };
+    });
+  };
+
+  const moveWidgetInOrder = async (cardId, direction) => {
+    if (!spaceContainer) return;
+    const cards = Array.from(spaceContainer.querySelectorAll('.glass-widget-card'))
+      .sort((a, b) => (parseInt(window.getComputedStyle(a).order) || 0) - (parseInt(window.getComputedStyle(b).order) || 0));
+
+    let currentOrderIds = cards.map(c => c.id);
+    const index = currentOrderIds.indexOf(cardId);
+    if (index === -1) return;
+
+    if (direction === 'up' && index > 0) {
+      const temp = currentOrderIds[index];
+      currentOrderIds[index] = currentOrderIds[index - 1];
+      currentOrderIds[index - 1] = temp;
+    } else if (direction === 'down' && index < currentOrderIds.length - 1) {
+      const temp = currentOrderIds[index];
+      currentOrderIds[index] = currentOrderIds[index + 1];
+      currentOrderIds[index + 1] = temp;
+    } else {
+      return;
+    }
+
+    widgetOrder = currentOrderIds;
+    activeSpaceConfig.widgetOrder = widgetOrder;
+    applyMobileWidgetOrder();
+
+    if (targetUserId) {
+      try {
+        await setDoc(doc(db, "users_spaces", targetUserId), { widgetOrder: widgetOrder }, { merge: true });
+      } catch (err) {
+        console.warn("Failed to save mobile widget order:", err);
+      }
+    }
+  };
+
+  // Modal Open/Close Event Handlers
+  openEditorBtn?.addEventListener('click', () => {
+    if (editorModal) editorModal.classList.remove('hidden');
+  });
+
+  closeEditorBtn?.addEventListener('click', () => {
+    if (editorModal) editorModal.classList.add('hidden');
+  });
+
+  // Modal Save Handler
+  saveSpaceBtn?.addEventListener('click', async () => {
+    if (!canEditCurrentProfile(auth.currentUser)) {
+      alert("Permission denied.");
+      return;
+    }
+
+    const updatedConfig = {
+      glassPreset: getInputValue("edit-glass-preset"),
+      displayName: getInputValue("edit-display-name"),
+      bio: getInputValue("edit-bio"),
+      customAvatarUrl: getInputValue("edit-avatar-url"),
+      bgUrl: getInputValue("edit-bg-url"),
+      audioUrl: getInputValue("edit-audio-url"),
+      clockFormat: getInputValue("edit-clock-format"),
+      clockShowSeconds: getCheckboxValue("edit-clock-show-seconds"),
+      clockShowDate: getCheckboxValue("edit-clock-show-date"),
+      spotifyUrl: getInputValue("edit-spotify-url"),
+      discordId: getInputValue("edit-discord-id"),
+      mediaUrls: getInputValue("edit-media-urls").split('\n').filter(u => u.trim()),
+      socialsData: getInputValue("edit-socials-data").split('\n').filter(u => u.trim()).map(line => {
+        const parts = line.split(':');
+        return { platform: parts[0]?.trim() || 'Link', url: parts.slice(1).join(':').trim() };
+      }),
+      showClock: getCheckboxValue("edit-show-clock"),
+      showProfile: getCheckboxValue("edit-show-profile"),
+      showDiscord: getCheckboxValue("edit-show-discord"),
+      showSpotify: getCheckboxValue("edit-show-spotify"),
+      showMedia: getCheckboxValue("edit-show-media"),
+      showSocials: getCheckboxValue("edit-show-socials"),
+      showRankings: getCheckboxValue("edit-show-rankings")
+    };
+
+    if (targetUserId) {
+      try {
+        await setDoc(doc(db, "users_spaces", targetUserId), updatedConfig, { merge: true });
+        alert("Space updated successfully!");
+        if (editorModal) editorModal.classList.add('hidden');
+        window.location.reload();
+      } catch (err) {
+        console.error("Save error:", err);
+        alert("Failed to save settings: " + err.message);
+      }
+    }
+  });
+
+  // Auth & Initialization
+  onAuthStateChanged(auth, async (user) => {
+    if (user) {
+      try {
+        const adminDoc = await getDoc(doc(db, "admins", user.uid));
+        if (adminDoc.exists()) isCurrentUserAdmin = true;
+      } catch (e) {
+        console.warn("Admin check warning:", e);
+      }
+    }
+
+    if (handleParam) {
+      try {
+        const q = query(collection(db, "users"), where("handle", "==", handleParam), limit(1));
+        const snap = await getDocs(q);
+        if (!snap.empty) {
+          const userDoc = snap.docs[0];
+          targetUserId = userDoc.id;
+          currentLoadedUserData = userDoc.data();
+        } else {
+          renderNotFoundUI(handleParam);
+          return;
+        }
+      } catch (err) {
+        console.error("Error fetching target profile:", err);
+        renderNotFoundUI(handleParam);
+        return;
+      }
+    } else if (user) {
+      targetUserId = user.uid;
+      const userDoc = await getDoc(doc(db, "users", user.uid));
+      if (userDoc.exists()) currentLoadedUserData = userDoc.data();
+    } else {
+      renderNotFoundUI(null);
+      return;
+    }
+
+    if (targetUserId) {
+      const spaceDoc = await getDoc(doc(db, "users_spaces", targetUserId));
+      if (spaceDoc.exists()) {
+        activeSpaceConfig = spaceDoc.data();
+        widgetOrder = activeSpaceConfig.widgetOrder || [];
+      }
+
+      updateEditorPermissionUI(user);
+      renderClockWidget(activeSpaceConfig);
+      renderProfileWidget(currentLoadedUserData, activeSpaceConfig, user, activeSpaceConfig.showProfile !== false);
+      renderDiscordWidget(activeSpaceConfig.discordId, activeSpaceConfig.showDiscord !== false);
+      renderSpotifyWidget(activeSpaceConfig.spotifyUrl, activeSpaceConfig.showSpotify !== false);
+      renderMediaWidget(activeSpaceConfig.mediaUrls, activeSpaceConfig.showMedia !== false);
+      renderSocialsWidget(activeSpaceConfig.socialsData, activeSpaceConfig.showSocials !== false);
+      renderRankingsWidget(targetUserId, currentLoadedUserData, activeSpaceConfig, activeSpaceConfig.showRankings !== false);
+
+      applyMobileWidgetOrder();
+    }
+  });
 
   // ==========================================================================
   // NOT FOUND STATE
@@ -157,7 +349,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     if (btnToggleAudio) btnToggleAudio.style.display = "none";
     const actionsBar = document.querySelector(".floating-actions-bar");
-    if (actionsBar) actionsBar.classList.add("hidden");
+    if (actionsBar) actionsBar.style.display = "none";
 
     if (spaceContainer) {
       spaceContainer.innerHTML = `
@@ -256,7 +448,6 @@ document.addEventListener('DOMContentLoaded', () => {
     ensureWidgetCardIds();
     const cards = document.querySelectorAll('.glass-widget-card');
 
-    // MOBILE RESET: Clear absolute styling so mobile displays clean flex stack
     if (isMobile()) {
       cards.forEach(card => {
         card.style.position = '';
@@ -269,7 +460,6 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
 
-    // DESKTOP POSITIONING
     let positionsToApply = savedPositions;
     if (!positionsToApply || Object.keys(positionsToApply).length === 0) {
       try {
@@ -414,7 +604,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const startDrag = (e, clientX, clientY, target) => {
       if (isLayoutLocked || isMobile() || !canEditCurrentProfile(auth.currentUser)) return;
-      if (target.closest('button, input, textarea, a, i, iframe, select, .no-drag')) return;
+      if (target.closest('button, input, textarea, a, i, iframe, select, .no-drag, .mobile-widget-reorder-controls')) return;
 
       if (e && e.preventDefault) e.preventDefault();
       if (!isLayoutAbsolute) convertAllToAbsolute();
@@ -462,11 +652,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
   initDragAndDrop();
 
-  // Reset viewport orientation changes gracefully
   window.addEventListener('resize', () => {
     if (activeSpaceConfig) {
       applySavedPositions(activeSpaceConfig.widgetPositions);
       updateLockStateUI();
+      applyMobileWidgetOrder();
     }
   });
 
@@ -480,16 +670,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
     resetToFlexLayout();
     activeSpaceConfig.widgetPositions = {};
+    activeSpaceConfig.widgetOrder = [];
 
     if (targetUserId) {
       try {
-        await setDoc(doc(db, "users_spaces", targetUserId), { widgetPositions: {} }, { merge: true });
+        await setDoc(doc(db, "users_spaces", targetUserId), { widgetPositions: {}, widgetOrder: [] }, { merge: true });
       } catch (err) {
         console.warn("Error resetting layout on database:", err);
       }
     }
 
     alert("Layout reset successfully!");
+    window.location.reload();
   });
 
   // ==========================================================================
@@ -775,7 +967,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  // CONNECT WITH ME WIDGET RENDERER (FULLY FIXED FOR LOGOS & URLS)
   const renderSocialsWidget = (socialsArray, showSocials) => {
     const widget = document.getElementById("socials-card-widget");
     const container = document.getElementById("card-links-container");
@@ -832,256 +1023,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
     widget?.classList.remove("hidden");
 
-    const currentViews = userData?.views ?? spaceData?.views ?? 0;
     if (viewsEl) {
-      viewsEl.innerHTML = `<i class="fa-solid fa-eye" style="color: var(--primary-color, #3b82f6);"></i> ${Number(currentViews).toLocaleString()} Views`;
+      const viewsCount = userData?.views || spaceData?.views || 0;
+      viewsEl.innerHTML = `<i class="fa-solid fa-eye" style="color: #60a5fa;" aria-hidden="true"></i> <span id="views-count">${viewsCount}</span> Views`;
     }
 
     if (rankEl) {
-      rankEl.textContent = userData?.rank ? `#${userData.rank}` : "#1";
+      rankEl.textContent = "#1";
     }
   };
-
-  const applyCustomSpaceStyles = (config = {}) => {
-    if (config.accentColor) {
-      document.documentElement.style.setProperty('--primary-color', config.accentColor);
-    }
-
-    const glassStyleMode = config.glassDesignPreset || "transparent";
-    const cards = document.querySelectorAll('.glass-widget-card');
-
-    cards.forEach(card => {
-      card.classList.remove('preset-glass-standard', 'preset-glass-dark', 'preset-glass-transparent');
-
-      if (glassStyleMode === "dark") {
-        card.classList.add('preset-glass-dark');
-      } else if (glassStyleMode === "standard") {
-        card.classList.add('preset-glass-standard');
-      } else {
-        card.classList.add('preset-glass-transparent');
-      }
-
-      if (config.cardBgColor) card.style.backgroundColor = config.cardBgColor;
-      if (config.cardTextColor) card.style.color = config.cardTextColor;
-    });
-  };
-
-  // ==========================================================================
-  // MAIN RENDER FUNCTION
-  // ==========================================================================
-  const renderProfileSpace = (userData, spaceData, authUser) => {
-    if (!userData) {
-      renderNotFoundUI(handleParam);
-      return;
-    }
-
-    activeSpaceConfig = spaceData || {};
-    currentLoadedUserData = userData;
-
-    updateEditorPermissionUI(authUser);
-
-    const audioUrl = spaceData?.audioUrl || spaceData?.bgAudioUrl || "";
-    if (bgAudio) {
-      if (audioUrl && audioUrl.trim() !== "") {
-        bgAudio.src = audioUrl.trim();
-        if (btnToggleAudio) btnToggleAudio.style.display = "flex";
-      } else {
-        bgAudio.pause();
-        bgAudio.src = "";
-        if (btnToggleAudio) btnToggleAudio.style.display = "none";
-      }
-    }
-
-    const bgUrl = spaceData?.bgUrl || spaceData?.bgAssetUrl || "";
-    if (bgLayer) {
-      if (bgUrl && bgUrl.trim() !== "") {
-        bgLayer.innerHTML = `<div style="width:100%;height:100%;background:url('${escapeHtml(bgUrl.trim())}') center/cover no-repeat;"></div>`;
-      } else {
-        bgLayer.innerHTML = "";
-      }
-    }
-
-    renderClockWidget({
-      showClock: spaceData?.showClock !== false,
-      clockFormat: spaceData?.clockFormat || '12h',
-      clockShowSeconds: spaceData?.clockShowSeconds !== false,
-      clockShowDate: spaceData?.clockShowDate !== false
-    });
-
-    renderProfileWidget(userData, spaceData, authUser, spaceData?.showProfile !== false);
-    renderDiscordWidget(spaceData?.discordId, spaceData?.showDiscord !== false);
-    renderMediaWidget(spaceData?.mediaImages, spaceData?.showMedia !== false);
-    renderSpotifyWidget(spaceData?.spotifyUrl, spaceData?.showSpotify !== false);
-    renderSocialsWidget(spaceData?.socials, spaceData?.showSocials !== false);
-    renderRankingsWidget(targetUserId, userData, spaceData, spaceData?.showRankings !== false);
-
-    applyCustomSpaceStyles(spaceData);
-    applySavedPositions(spaceData?.widgetPositions);
-    updateLockStateUI();
-
-    if (spaceContainer) {
-      spaceContainer.style.opacity = "1";
-      spaceContainer.style.pointerEvents = "auto";
-    }
-  };
-
-  // ==========================================================================
-  // EDITOR MODAL CONTROLS & SAVE HANDLER
-  // ==========================================================================
-  openEditorBtn?.addEventListener("click", () => {
-    if (!canEditCurrentProfile(auth.currentUser)) {
-      alert("You do not have permission to edit this space.");
-      return;
-    }
-
-    setInputValue("edit-display-name", "modal-display-name", activeSpaceConfig.displayName || currentLoadedUserData?.displayName || "");
-    setInputValue("edit-bio", "modal-bio", activeSpaceConfig.bio || currentLoadedUserData?.bio || "");
-    setInputValue("edit-avatar-url", "modal-avatar-url", activeSpaceConfig.customAvatarUrl || "");
-    setInputValue("edit-bg-url", "modal-bg-url", activeSpaceConfig.bgUrl || activeSpaceConfig.bgAssetUrl || "");
-    setInputValue("edit-audio-url", "modal-audio-url", activeSpaceConfig.audioUrl || activeSpaceConfig.bgAudioUrl || "");
-    setInputValue("edit-spotify-url", "modal-spotify-url", activeSpaceConfig.spotifyUrl || "");
-    setInputValue("edit-discord-id", "modal-discord-id", activeSpaceConfig.discordId || "");
-
-    const stylePresetSelect = document.getElementById("edit-glass-preset");
-    if (stylePresetSelect) stylePresetSelect.value = activeSpaceConfig.glassDesignPreset || "transparent";
-
-    const formatSelect = document.getElementById("edit-clock-format") || document.getElementById("modal-clock-format");
-    if (formatSelect) formatSelect.value = activeSpaceConfig.clockFormat || "12h";
-
-    setCheckboxValue("edit-clock-show-seconds", "modal-clock-show-seconds", activeSpaceConfig.clockShowSeconds !== false);
-    setCheckboxValue("edit-clock-show-date", "modal-clock-show-date", activeSpaceConfig.clockShowDate !== false);
-    setCheckboxValue("edit-show-clock", "modal-show-clock", activeSpaceConfig.showClock !== false);
-    setCheckboxValue("edit-show-profile", "modal-show-profile", activeSpaceConfig.showProfile !== false);
-    setCheckboxValue("edit-show-discord", "modal-show-discord", activeSpaceConfig.showDiscord !== false);
-    setCheckboxValue("edit-show-spotify", "modal-show-spotify", activeSpaceConfig.showSpotify !== false);
-    setCheckboxValue("edit-show-media", "modal-show-media", activeSpaceConfig.showMedia !== false);
-    setCheckboxValue("edit-show-socials", "modal-show-socials", activeSpaceConfig.showSocials !== false);
-    setCheckboxValue("edit-show-rankings", "modal-show-rankings", activeSpaceConfig.showRankings !== false);
-
-    const mediaUrlsInput = document.getElementById("edit-media-urls");
-    if (mediaUrlsInput) {
-      mediaUrlsInput.value = Array.isArray(activeSpaceConfig.mediaImages) 
-        ? activeSpaceConfig.mediaImages.join("\n") 
-        : "";
-    }
-
-    const socialsInput = document.getElementById("edit-socials-data");
-    if (socialsInput) {
-      if (Array.isArray(activeSpaceConfig.socials) && activeSpaceConfig.socials.length > 0) {
-        socialsInput.value = activeSpaceConfig.socials
-          .map(item => {
-            let plat = item.platform || "";
-            if (!plat || plat.toLowerCase() === "https" || plat.toLowerCase() === "http") {
-              plat = detectPlatformFromUrl(item.url || "");
-            }
-            return `${plat}: ${item.url || ''}`;
-          })
-          .join("\n");
-      } else {
-        socialsInput.value = "GitHub: https://github.com\nInstagram: https://instagram.com";
-      }
-    }
-
-    if (editorModal) editorModal.classList.remove("hidden");
-  });
-
-  closeEditorBtn?.addEventListener("click", () => {
-    if (editorModal) editorModal.classList.add("hidden");
-  });
-
-  saveSpaceBtn?.addEventListener("click", async () => {
-    if (!canEditCurrentProfile(auth.currentUser)) {
-      alert("Permission denied.");
-      return;
-    }
-
-    // Smart Parser for Social Links
-    const rawSocialsText = getInputValue("edit-socials-data");
-    const parsedSocials = rawSocialsText
-      .split("\n")
-      .map(line => line.trim())
-      .filter(Boolean)
-      .map(line => {
-        if (/^https?:\/\//i.test(line)) {
-          return { platform: detectPlatformFromUrl(line), url: line };
-        }
-        
-        const colonIdx = line.indexOf(":");
-        if (colonIdx !== -1) {
-          const prefix = line.substring(0, colonIdx).trim();
-          const remainder = line.substring(colonIdx + 1).trim();
-          
-          if (prefix.toLowerCase() === "http" || prefix.toLowerCase() === "https") {
-            return { platform: detectPlatformFromUrl(line), url: line };
-          }
-          return { platform: prefix || detectPlatformFromUrl(remainder), url: remainder };
-        }
-        
-        return { platform: detectPlatformFromUrl(line), url: line };
-      });
-
-    const updatedConfig = {
-      ...activeSpaceConfig,
-      displayName: getInputValue("edit-display-name"),
-      bio: getInputValue("edit-bio"),
-      customAvatarUrl: getInputValue("edit-avatar-url"),
-      bgUrl: getInputValue("edit-bg-url"),
-      audioUrl: getInputValue("edit-audio-url"),
-      spotifyUrl: getInputValue("edit-spotify-url"),
-      discordId: getInputValue("edit-discord-id"),
-      glassDesignPreset: document.getElementById("edit-glass-preset")?.value || "transparent",
-      clockFormat: document.getElementById("edit-clock-format")?.value || "12h",
-      clockShowSeconds: getCheckboxValue("edit-clock-show-seconds"),
-      clockShowDate: getCheckboxValue("edit-clock-show-date"),
-      showClock: getCheckboxValue("edit-show-clock"),
-      showProfile: getCheckboxValue("edit-show-profile"),
-      showDiscord: getCheckboxValue("edit-show-discord"),
-      showSpotify: getCheckboxValue("edit-show-spotify"),
-      showMedia: getCheckboxValue("edit-show-media"),
-      showSocials: getCheckboxValue("edit-show-socials"),
-      showRankings: getCheckboxValue("edit-show-rankings"),
-      socials: parsedSocials,
-      mediaImages: getInputValue("edit-media-urls").split("\n").map(s => s.trim()).filter(Boolean)
-    };
-
-    if (targetUserId) {
-      try {
-        await setDoc(doc(db, "users_spaces", targetUserId), updatedConfig, { merge: true });
-        activeSpaceConfig = updatedConfig;
-        renderProfileSpace(currentLoadedUserData, activeSpaceConfig, auth.currentUser);
-        if (editorModal) editorModal.classList.add("hidden");
-        alert("Space updated successfully!");
-      } catch (err) {
-        console.error("Error saving space:", err);
-        alert("Failed to save settings.");
-      }
-    } else {
-      activeSpaceConfig = updatedConfig;
-      renderProfileSpace(currentLoadedUserData, activeSpaceConfig, auth.currentUser);
-      if (editorModal) editorModal.classList.add("hidden");
-    }
-  });
-
-  // INITIALIZE AUTH OBSERVER
-  onAuthStateChanged(auth, async (authUser) => {
-    targetUserId = authUser ? authUser.uid : null;
-
-    if (authUser) {
-      try {
-        const userDoc = await getDoc(doc(db, "users", authUser.uid));
-        const spaceDoc = await getDoc(doc(db, "users_spaces", authUser.uid));
-        
-        const userData = userDoc.exists() ? userDoc.data() : { displayName: authUser.displayName, handle: "user" };
-        const spaceData = spaceDoc.exists() ? spaceDoc.data() : {};
-
-        renderProfileSpace(userData, spaceData, authUser);
-      } catch (e) {
-        console.error("Firebase fetch error:", e);
-        renderProfileSpace({ displayName: "Demo User", handle: "demo" }, {}, authUser);
-      }
-    } else {
-      renderProfileSpace({ displayName: "Guest User", handle: "guest" }, {}, null);
-    }
-  });
-
 });
