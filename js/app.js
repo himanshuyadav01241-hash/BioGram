@@ -78,7 +78,7 @@ document.addEventListener("DOMContentLoaded", () => {
             }
           }
 
-          // Re-render leaderboard if open
+          // Re-render leaderboard if loaded
           if (cachedUsers.length > 0) {
             renderLeaderboard(cachedUsers);
           }
@@ -254,8 +254,8 @@ document.addEventListener("DOMContentLoaded", () => {
         const data = userSnap.data();
         handle = data.handle || "";
         isAdmin = !!data.isAdmin || data.role === "owner";
-        if (data.displayName && data.displayName !== "BioGram User") {
-          displayName = data.displayName;
+        if (data.displayName || data.name) {
+          displayName = data.displayName || data.name;
         }
         if (data.photoURL) {
           finalPhotoURL = data.photoURL;
@@ -343,7 +343,7 @@ document.addEventListener("DOMContentLoaded", () => {
         currentAvatarSeed = data.avatarSeed || user.uid;
 
         if (handleInput) handleInput.value = currentHandle;
-        if (nameInput) nameInput.value = (data.displayName && data.displayName !== "BioGram User") ? data.displayName : (user.displayName || "");
+        if (nameInput) nameInput.value = data.displayName || data.name || user.displayName || "";
         if (bioInput) bioInput.value = data.bio || data.tagline || "";
         if (avatarImg) {
           avatarImg.src = data.photoURL || activePhoto;
@@ -612,7 +612,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const leaderboardContainer = document.getElementById("leaderboard-list");
     if (!leaderboardContainer) return;
 
-    leaderboardContainer.innerHTML = `<div style="text-align:center; padding: 20px; color: #6b7280;"><i class="fa-solid fa-spinner fa-spin"></i> Loading rankings...</div>`;
+    leaderboardContainer.innerHTML = `<div style="text-align:center; padding: 20px; color: var(--text-muted);"><i class="fa-solid fa-spinner fa-spin"></i> Loading rankings...</div>`;
 
     if (unsubscribeLeaderboard) unsubscribeLeaderboard();
 
@@ -649,6 +649,9 @@ document.addEventListener("DOMContentLoaded", () => {
     // Sort by Views Descending
     displayUsers.sort((a, b) => (Number(b.views) || 0) - (Number(a.views) || 0));
 
+    // Cap at top 100 creators
+    displayUsers = displayUsers.slice(0, 100);
+
     // Force Owner to Top if configured
     if (systemConfig.forceOwnerTop !== false) {
       const ownerIndex = displayUsers.findIndex(
@@ -662,7 +665,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     leaderboardContainer.innerHTML = "";
     if (displayUsers.length === 0) {
-      leaderboardContainer.innerHTML = `<p style="text-align:center; color: #6b7280; margin: 12px 0;">No users on the leaderboard yet.</p>`;
+      leaderboardContainer.innerHTML = `<p style="text-align:center; color: var(--text-muted); margin: 12px 0;">No users on the leaderboard yet.</p>`;
       return;
     }
 
@@ -681,25 +684,27 @@ document.addEventListener("DOMContentLoaded", () => {
 
       const avatar = user.photoURL || user.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.handle || user.id}`;
       const handle = user.handle ? `@${user.handle}` : "@anonymous";
-      const name = escapeHtml(user.displayName || user.username || "User");
+      
+      // Accurately read individual user name from document fields
+      const name = escapeHtml(user.displayName || user.name || user.username || "User");
       const views = Number(user.views) || 0;
 
       // Render "You" badge for yourself instead of the "Visit" link
       const actionButton = isSelf
-        ? `<span class="self-badge"><i class="fa-solid fa-user"></i> You</span>`
-        : `<a href="${getProfileUrl(user.handle || "")}" class="btn-visit-profile"><i class="fa-solid fa-arrow-up-right-from-square"></i> Visit</a>`;
+        ? `<span class="you-badge"><i class="fa-solid fa-user"></i> You</span>`
+        : `<a href="${getProfileUrl(user.handle || "")}" class="btn-visit-profile" target="_blank"><i class="fa-solid fa-arrow-up-right-from-square"></i> Visit</a>`;
 
       item.innerHTML = `
         <div class="leaderboard-user-info">
           <span class="rank-badge">#${rank}</span>
-          <img src="${escapeHtml(avatar)}" class="nav-avatar ${isBlurred ? 'blurred-avatar' : ''}" alt="Avatar" referrerpolicy="no-referrer">
-          <div>
-            <div style="font-weight: 700; color: var(--text-main, #111827);">
+          <img src="${escapeHtml(avatar)}" class="leaderboard-avatar ${isBlurred ? 'blurred-avatar' : ''}" alt="Avatar" referrerpolicy="no-referrer">
+          <div class="leaderboard-details">
+            <div class="user-name">
               ${name}
               ${isVerified ? '<i class="fa-solid fa-circle-check verified-badge" style="color:#1d9bf0; margin-left:4px;" title="Verified"></i>' : ''}
               ${isOwner ? '<span class="badge owner-badge" style="background:#e11d48; color:#fff; font-size:0.65rem; padding:2px 6px; border-radius:4px; margin-left:4px;">OWNER</span>' : ''}
             </div>
-            <div style="font-size: 0.8rem; color: var(--text-muted, #6b7280);">${escapeHtml(handle)}</div>
+            <div class="user-handle">${escapeHtml(handle)}</div>
           </div>
         </div>
         <div class="leaderboard-actions">
