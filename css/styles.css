@@ -1,10 +1,9 @@
 /* ==========================================================================
-   1. VARIABLES & THEMING
+   1. VARIABLES & THEMING (SOLID COLORS, NO GLASS)
    ========================================================================== */
 :root { 
   --bg-page: #f8fafc; 
-  --bg-card: rgba(255, 255, 255, 0.85); 
-  --bg-card-glass: rgba(255, 255, 255, 0.72);
+  --bg-card: #ffffff; 
   --bg-subtle: #f1f5f9; 
   --border-light: #e2e8f0; 
   --border-hover: #cbd5e1; 
@@ -16,23 +15,22 @@
   --text-main: #0f172a; 
   --text-muted: #475569; 
   --text-dim: #94a3b8; 
-  --card-shadow: 0 10px 30px -5px rgba(0,0,0,0.05), 0 4px 12px -2px rgba(0,0,0,0.03); 
-  --card-shadow-hover: 0 20px 35px -5px rgba(0,0,0,0.08); 
+  --card-shadow: 0 4px 20px rgba(0, 0, 0, 0.05); 
+  --card-shadow-hover: 0 10px 25px rgba(0, 0, 0, 0.08); 
 }
 
 [data-theme="dark"], 
 body.dark-theme { 
   --bg-page: #0b0f17; 
-  --bg-card: rgba(21, 28, 40, 0.85); 
-  --bg-card-glass: rgba(21, 28, 40, 0.72);
+  --bg-card: #151c28; 
   --bg-subtle: #1e293b; 
   --border-light: #334155; 
   --border-hover: #475569; 
   --text-main: #f8fafc; 
   --text-muted: #94a3b8; 
   --text-dim: #64748b; 
-  --card-shadow: 0 10px 30px -5px rgba(0,0,0,0.3), 0 4px 12px -2px rgba(0,0,0,0.2); 
-  --card-shadow-hover: 0 20px 35px -5px rgba(0,0,0,0.45); 
+  --card-shadow: 0 4px 20px rgba(0, 0, 0, 0.25); 
+  --card-shadow-hover: 0 10px 25px rgba(0, 0, 0, 0.35); 
 }
 
 /* ==========================================================================
@@ -50,19 +48,11 @@ html {
 }
 
 body { 
-  background: var(--bg-page) radial-gradient(circle at 10% 10%, rgba(124,58,237,.05) 0%, transparent 40%), radial-gradient(circle at 90% 60%, rgba(236,72,153,.04) 0%, transparent 40%); 
+  background: var(--bg-page); 
   color: var(--text-main); 
   min-height: 100vh; 
   overflow-x: hidden; 
   transition: background-color 0.3s, color 0.3s; 
-}
-
-/* Background Blur Fallback when Modal is Open */
-body.modal-open .main-container,
-body.modal-open #custom-space-container {
-  filter: blur(8px);
-  pointer-events: none;
-  transition: filter 0.25s ease;
 }
 
 .main-container { 
@@ -71,35 +61,25 @@ body.modal-open #custom-space-container {
   padding: 0 1.5rem 4rem; 
 }
 
-#custom-space-container {
-  transition: opacity 0.3s ease, visibility 0.3s ease;
-}
-
 .hidden { 
   display: none !important; 
 }
 
 /* ==========================================================================
-   3. NAVIGATION
+   3. NAVIGATION (SOLID BACKGROUND)
    ========================================================================== */
 .navbar { 
   display: flex; 
   justify-content: space-between; 
   align-items: center; 
   padding: 1rem 2.5rem; 
-  background: rgba(255, 255, 255, 0.85); 
-  -webkit-backdrop-filter: blur(12px) saturate(180%);
-  backdrop-filter: blur(12px) saturate(180%); 
+  background: var(--bg-card); 
   border-bottom: 1px solid var(--border-light); 
   position: sticky; 
   top: 0; 
   z-index: 100; 
   width: 100%;
   transition: background-color 0.3s, border-color 0.3s; 
-}
-
-[data-theme="dark"] .navbar { 
-  background: rgba(11, 15, 23, 0.85); 
 }
 
 .logo { 
@@ -197,7 +177,7 @@ body.modal-open #custom-space-container {
 }
 
 /* ==========================================================================
-   4. HERO SECTION & CARDS
+   4. HERO SECTION & CARDS (SOLID DESIGN)
    ========================================================================== */
 .toast { 
   position: fixed; 
@@ -354,12 +334,9 @@ body.modal-open #custom-space-container {
   justify-content: center; 
 }
 
-/* Glassmorphism Profile & Widget Cards Fix */
 .clean-card,
 .glass-widget-card { 
-  background: var(--bg-card-glass) !important; 
-  -webkit-backdrop-filter: blur(16px) saturate(180%);
-  backdrop-filter: blur(16px) saturate(180%);
+  background: var(--bg-card) !important; 
   border: 1px solid var(--border-light); 
   border-radius: 24px; 
   padding: 1.75rem; 
@@ -369,7 +346,7 @@ body.modal-open #custom-space-container {
   display: flex; 
   flex-direction: column; 
   gap: 1rem; 
-  transition: box-shadow 0.3s, border-color 0.3s, background 0.3s, transform 0.2s; 
+  transition: box-shadow 0.3s, border-color 0.3s, transform 0.2s; 
 }
 
 .clean-card:hover,
@@ -621,23 +598,20 @@ body.modal-open #custom-space-container {
 }
 
 /* ==========================================================================
-   6. MODAL OVERLAYS & LEADERBOARD (UPDATED BLUR & VISIT/YOU FIXES)
+   6. MODAL OVERLAYS & LEADERBOARD (CLEAN OVERLAY, VISIT BUTTON ON ALL, FULL BLUR FOR BLURRED PROFILES)
    ========================================================================== */
 .modal-overlay { 
   position: fixed !important; 
   inset: 0 !important; 
   width: 100vw;
   height: 100vh;
-  background: rgba(15, 23, 42, 0.55) !important; 
-  -webkit-backdrop-filter: blur(12px) saturate(150%) !important;
-  backdrop-filter: blur(12px) saturate(150%) !important; 
+  /* Dark backdrop overlay WITHOUT blur filters affecting custom space */
+  background: rgba(0, 0, 0, 0.5) !important; 
   display: flex; 
   align-items: center; 
   justify-content: center; 
   z-index: 1000; 
   padding: 1rem; 
-  transform: translateZ(0);
-  will-change: backdrop-filter;
 }
 
 .modal-overlay.hidden {
@@ -653,7 +627,7 @@ body.modal-open #custom-space-container {
   max-height: 90vh;
   display: flex;
   flex-direction: column;
-  box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5); 
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3); 
   overflow: hidden; 
 }
 
@@ -857,9 +831,9 @@ body.modal-open #custom-space-container {
   flex-shrink: 0;
 }
 
-/* Visit Profile Button Style */
+/* Visit Profile Button Style (Visibile for EVERYONE including your profile) */
 .btn-visit-profile { 
-  display: inline-flex;
+  display: inline-flex !important;
   align-items: center;
   gap: 4px;
   font-size: 0.78rem; 
@@ -890,15 +864,20 @@ body.modal-open #custom-space-container {
   font-weight: 700;
 }
 
-/* Visibility Rules for Self vs Other profiles */
-.leaderboard-item.is-self .btn-visit-profile,
-.leaderboard-card.is-self .btn-visit-profile {
-  display: none !important;
-}
-
-.leaderboard-item:not(.is-self) .self-badge,
-.leaderboard-card:not(.is-self) .self-badge {
-  display: none !important;
+/* BLURRED PROFILE RULES: Blurs avatar photo and Visit button when profile is blurred */
+.is-blurred .rank-avatar,
+.is-blurred .leaderboard-avatar,
+.is-blurred img,
+.is-blurred .btn-visit-profile,
+.is-blurred .rank-details,
+.blurred-profile .rank-avatar,
+.blurred-profile .leaderboard-avatar,
+.blurred-profile img,
+.blurred-profile .btn-visit-profile,
+.blurred-profile .rank-details {
+  filter: blur(8px) !important;
+  pointer-events: none !important;
+  user-select: none !important;
 }
 
 .form-group { 
@@ -972,7 +951,7 @@ body.modal-open #custom-space-container {
 }
 
 /* ==========================================================================
-   7. MEDIA QUERIES (FULL MOBILE SUPPORT)
+   7. MEDIA QUERIES (MOBILE RESPONSIVENESS)
    ========================================================================== */
 @media (max-width: 900px) {
   .navbar {
@@ -1041,28 +1020,6 @@ body.modal-open #custom-space-container {
   .leaderboard-item,
   .leaderboard-card {
     padding: 8px 10px;
-  }
-}
-
-@media (max-width: 600px) {
-  .navbar {
-    flex-direction: column;
-    gap: 12px;
-    padding: 0.75rem 1rem;
-  }
-
-  .nav-user-menu, 
-  .nav-actions {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
-    gap: 8px;
-    width: 100%;
-  }
-
-  .nav-btn {
-    padding: 6px 10px;
-    font-size: 0.78rem;
   }
 }
 
@@ -1145,4 +1102,4 @@ body.modal-open #custom-space-container {
     gap: 8px;
     align-items: center;
   }
-}s
+}
