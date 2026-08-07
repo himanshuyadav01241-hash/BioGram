@@ -1,1105 +1,717 @@
-/* ==========================================================================
-   1. VARIABLES & THEMING (SOLID COLORS, NO GLASS)
-   ========================================================================== */
-:root { 
-  --bg-page: #f8fafc; 
-  --bg-card: #ffffff; 
-  --bg-subtle: #f1f5f9; 
-  --border-light: #e2e8f0; 
-  --border-hover: #cbd5e1; 
-  --primary-purple: #7c3aed; 
-  --primary-pink: #ec4899; 
-  --primary-blue: #2563eb; 
-  --spotify-green: #16a34a; 
-  --discord-blue: #4f46e5; 
-  --text-main: #0f172a; 
-  --text-muted: #475569; 
-  --text-dim: #94a3b8; 
-  --card-shadow: 0 4px 20px rgba(0, 0, 0, 0.05); 
-  --card-shadow-hover: 0 10px 25px rgba(0, 0, 0, 0.08); 
-}
-
-[data-theme="dark"], 
-body.dark-theme { 
-  --bg-page: #0b0f17; 
-  --bg-card: #151c28; 
-  --bg-subtle: #1e293b; 
-  --border-light: #334155; 
-  --border-hover: #475569; 
-  --text-main: #f8fafc; 
-  --text-muted: #94a3b8; 
-  --text-dim: #64748b; 
-  --card-shadow: 0 4px 20px rgba(0, 0, 0, 0.25); 
-  --card-shadow-hover: 0 10px 25px rgba(0, 0, 0, 0.35); 
-}
-
-/* ==========================================================================
-   2. RESET & BASE STYLES
-   ========================================================================== */
-* { 
-  margin: 0; 
-  padding: 0; 
-  box-sizing: border-box; 
-  font-family: 'Plus Jakarta Sans', sans-serif; 
-}
-
-html { 
-  scroll-behavior: smooth; 
-}
-
-body { 
-  background: var(--bg-page); 
-  color: var(--text-main); 
-  min-height: 100vh; 
-  overflow-x: hidden; 
-  transition: background-color 0.3s, color 0.3s; 
-}
-
-.main-container { 
-  max-width: 1140px; 
-  margin: 0 auto; 
-  padding: 0 1.5rem 4rem; 
-}
-
-.hidden { 
-  display: none !important; 
-}
-
-/* ==========================================================================
-   3. NAVIGATION (SOLID BACKGROUND)
-   ========================================================================== */
-.navbar { 
-  display: flex; 
-  justify-content: space-between; 
-  align-items: center; 
-  padding: 1rem 2.5rem; 
-  background: var(--bg-card); 
-  border-bottom: 1px solid var(--border-light); 
-  position: sticky; 
-  top: 0; 
-  z-index: 100; 
-  width: 100%;
-  transition: background-color 0.3s, border-color 0.3s; 
-}
-
-.logo { 
-  display: flex; 
-  align-items: center; 
-  gap: 10px; 
-  font-size: 1.25rem; 
-  font-weight: 800; 
-  color: var(--text-main); 
-  text-decoration: none; 
-}
-
-.logo-icon { 
-  color: var(--primary-purple); 
-}
-
-.nav-user-menu, 
-.user-menu-wrapper { 
-  display: flex; 
-  align-items: center; 
-  gap: 8px; 
-  background: var(--bg-subtle); 
-  padding: 4px 10px 4px 6px; 
-  border-radius: 30px; 
-  border: 1px solid var(--border-light); 
-}
-
-.nav-avatar,
-.gmail-avatar { 
-  width: 32px !important; 
-  height: 32px !important; 
-  min-width: 32px !important;
-  min-height: 32px !important;
-  border-radius: 50% !important; 
-  border: 1px solid var(--primary-purple); 
-  object-fit: cover !important; 
-  flex-shrink: 0 !important;
-  display: block;
-}
-
-.nav-username { 
-  font-size: 0.88rem; 
-  font-weight: 700; 
-  color: var(--text-main); 
-  margin-right: 4px; 
-}
-
-.nav-btn { 
-  background: transparent; 
-  border: none; 
-  color: var(--text-main); 
-  font-size: 0.82rem; 
-  font-weight: 600; 
-  cursor: pointer; 
-  padding: 6px 12px; 
-  border-radius: 20px; 
-  display: flex; 
-  align-items: center; 
-  gap: 6px; 
-  transition: background 0.2s, color 0.2s; 
-}
-
-.nav-btn:hover { 
-  background: var(--border-light); 
-}
-
-.nav-btn.outline { 
-  color: var(--text-muted); 
-}
-
-.theme-switch-group { 
-  display: flex; 
-  background: var(--bg-subtle); 
-  padding: 3px; 
-  border-radius: 20px; 
-  border: 1px solid var(--border-light); 
-  gap: 2px; 
-}
-
-.theme-btn { 
-  background: transparent; 
-  border: none; 
-  color: var(--text-muted); 
-  padding: 4px 8px; 
-  border-radius: 14px; 
-  cursor: pointer; 
-  font-size: 0.75rem; 
-  transition: all 0.2s; 
-}
-
-.theme-btn.active { 
-  background: var(--bg-card); 
-  color: var(--primary-purple); 
-  box-shadow: 0 2px 6px rgba(0,0,0,0.1); 
-}
-
-/* ==========================================================================
-   4. HERO SECTION & CARDS (SOLID DESIGN)
-   ========================================================================== */
-.toast { 
-  position: fixed; 
-  bottom: 20px; 
-  right: 20px; 
-  background: var(--text-main); 
-  color: var(--bg-page); 
-  padding: 12px 20px; 
-  border-radius: 12px; 
-  font-size: 0.88rem; 
-  font-weight: 600; 
-  z-index: 2000; 
-  box-shadow: 0 10px 25px rgba(0,0,0,0.15); 
-  animation: fadeIn 0.2s ease; 
-}
-
-@keyframes fadeIn { 
-  from { opacity: 0; transform: translateY(10px); } 
-  to { opacity: 1; transform: translateY(0); } 
-}
-
-.hero-grid { 
-  display: grid; 
-  grid-template-columns: 1.1fr 0.9fr; 
-  gap: 3.5rem; 
-  align-items: center; 
-  padding: 3.5rem 0 3rem; 
-}
-
-.pill-badge { 
-  display: inline-flex; 
-  align-items: center; 
-  gap: 8px; 
-  background: rgba(124,58,237,0.08); 
-  border: 1px solid rgba(124,58,237,0.2); 
-  color: var(--primary-purple); 
-  font-size: 0.8rem; 
-  font-weight: 700; 
-  padding: 6px 16px; 
-  border-radius: 30px; 
-  margin-bottom: 1.2rem; 
-}
-
-.hero-title { 
-  font-size: 3.1rem; 
-  font-weight: 800; 
-  line-height: 1.15; 
-  letter-spacing: -1px; 
-  margin-bottom: 1rem; 
-  color: var(--text-main) !important;
-  opacity: 1 !important;
-}
-
-.gradient-text { 
-  background: linear-gradient(135deg, var(--primary-purple), var(--primary-pink)); 
-  -webkit-background-clip: text; 
-  -webkit-text-fill-color: transparent; 
-  display: inline-block;
-}
-
-.hero-subtitle { 
-  color: var(--text-muted); 
-  font-size: 1rem; 
-  line-height: 1.6; 
-  margin-bottom: 1.75rem; 
-  max-width: 480px; 
-}
-
-.claim-box { 
-  display: flex; 
-  align-items: center; 
-  background: var(--bg-card); 
-  border: 1px solid var(--border-light); 
-  border-radius: 14px; 
-  padding: 6px 8px 6px 16px; 
-  width: 100%;
-  max-width: 480px; 
-  box-shadow: 0 4px 15px rgba(0,0,0,0.04); 
-  transition: border-color 0.2s, box-shadow 0.2s; 
-}
-
-.claim-box:focus-within { 
-  border-color: var(--primary-purple); 
-  box-shadow: 0 0 0 3px rgba(124,58,237,0.15); 
-}
-
-.claim-box .prefix { 
-  color: var(--text-dim); 
-  font-size: 0.95rem; 
-  font-weight: 600; 
-  white-space: nowrap;
-}
-
-.claim-box input { 
-  flex: 1; 
-  background: transparent; 
-  border: none; 
-  outline: none; 
-  color: var(--text-main); 
-  font-size: 0.95rem; 
-  padding: 8px; 
-  font-weight: 600; 
-  min-width: 0;
-}
-
-.btn-claim, 
-.btn-claim-small { 
-  background: var(--primary-purple); 
-  color: #ffffff; 
-  border: none; 
-  font-weight: 700; 
-  cursor: pointer; 
-  text-decoration: none; 
-  display: inline-flex; 
-  align-items: center; 
-  justify-content: center; 
-  gap: 6px; 
-  transition: transform 0.2s, background 0.2s; 
-}
-
-.btn-claim { 
-  padding: 12px 22px; 
-  border-radius: 10px; 
-  font-size: 0.9rem; 
-}
-
-.btn-claim:hover { 
-  background: #6d28d9; 
-  transform: translateY(-1px); 
-}
-
-.btn-claim-small { 
-  padding: 7px 14px; 
-  border-radius: 8px; 
-  font-size: 0.82rem; 
-}
-
-.quick-tags { 
-  display: flex; 
-  gap: 18px; 
-  margin-top: 1.25rem; 
-  font-size: 0.85rem; 
-  color: var(--text-muted); 
-  font-weight: 600; 
-}
-
-.check-icon { 
-  color: var(--primary-purple); 
-  margin-right: 4px; 
-}
-
-.hero-right { 
-  display: flex; 
-  justify-content: center; 
-}
-
-.clean-card,
-.glass-widget-card { 
-  background: var(--bg-card) !important; 
-  border: 1px solid var(--border-light); 
-  border-radius: 24px; 
-  padding: 1.75rem; 
-  width: 100%; 
-  max-width: 360px; 
-  box-shadow: var(--card-shadow); 
-  display: flex; 
-  flex-direction: column; 
-  gap: 1rem; 
-  transition: box-shadow 0.3s, border-color 0.3s, transform 0.2s; 
-}
-
-.clean-card:hover,
-.glass-widget-card:hover { 
-  box-shadow: var(--card-shadow-hover); 
-}
-
-.card-profile-header { 
-  text-align: center; 
-}
-
-.avatar-wrapper { 
-  width: 76px; 
-  height: 76px; 
-  margin: 0 auto 10px; 
-  border-radius: 50%; 
-  padding: 3px; 
-  background: linear-gradient(135deg, var(--primary-pink), var(--primary-purple)); 
-  position: relative; 
-}
-
-.card-avatar { 
-  width: 100%; 
-  height: 100%; 
-  border-radius: 50%; 
-  background: var(--bg-subtle); 
-  object-fit: cover !important; 
-}
-
-.profile-name { 
-  font-size: 1.2rem; 
-  font-weight: 800; 
-  color: var(--text-main); 
-  display: flex; 
-  align-items: center; 
-  justify-content: center; 
-  gap: 6px; 
-}
-
-.verified-icon { 
-  color: var(--primary-pink); 
-  font-size: 0.9rem; 
-}
-
-.profile-handle { 
-  font-size: 0.82rem; 
-  color: var(--primary-purple); 
-  font-weight: 700; 
-}
-
-.card-bio { 
-  text-align: center; 
-  font-size: 0.85rem; 
-  color: var(--text-muted); 
-  line-height: 1.5; 
-}
-
-.card-links { 
-  display: flex; 
-  flex-direction: column; 
-  gap: 8px; 
-}
-
-.link-button { 
-  display: flex; 
-  align-items: center; 
-  justify-content: center; 
-  gap: 8px; 
-  background: var(--bg-subtle); 
-  border: 1px solid var(--border-light); 
-  color: var(--text-main); 
-  text-decoration: none; 
-  padding: 10px; 
-  border-radius: 10px; 
-  font-size: 0.85rem; 
-  font-weight: 700; 
-  transition: all 0.2s; 
-}
-
-.link-button:hover { 
-  background: var(--bg-card); 
-  border-color: var(--primary-purple); 
-  color: var(--primary-purple); 
-  transform: translateY(-1px); 
-}
-
-.activity-widget { 
-  background: var(--bg-subtle); 
-  border: 1px solid var(--border-light); 
-  border-radius: 12px; 
-  padding: 9px 12px; 
-  display: flex; 
-  align-items: center; 
-  gap: 10px; 
-}
-
-.activity-widget.spotify { border-color: rgba(22,163,74,0.25); }
-.activity-widget.spotify .act-icon { color: var(--spotify-green); }
-.activity-widget.discord { border-color: rgba(79,70,229,0.25); }
-.activity-widget.discord .act-icon { color: var(--discord-blue); }
-
-.act-text { 
-  flex: 1; 
-  overflow: hidden; 
-}
-
-.act-label { 
-  display: block; 
-  font-size: 0.62rem; 
-  font-weight: 800; 
-  color: var(--text-dim); 
-  text-transform: uppercase; 
-}
-
-.act-title { 
-  font-size: 0.78rem; 
-  color: var(--text-main); 
-  font-weight: 700; 
-  white-space: nowrap; 
-  overflow: hidden; 
-  text-overflow: ellipsis; 
-}
-
-.wave-icon { 
-  color: var(--spotify-green); 
-  font-size: 0.8rem; 
-}
-
-.pulse-dot { 
-  width: 8px; 
-  height: 8px; 
-  background: #22c55e; 
-  border-radius: 50%; 
-  box-shadow: 0 0 8px #22c55e; 
-}
-
-/* ==========================================================================
-   5. GUIDE SECTION
-   ========================================================================== */
-.guide-section, 
-.guide-wrapper-card { 
-  background: var(--bg-card); 
-  border-radius: 20px; 
-  padding: 2rem; 
-  margin-top: 2rem; 
-  box-shadow: var(--card-shadow); 
-  border: 1px solid var(--border-light); 
-}
-
-.section-header, 
-.guide-header { 
-  margin-bottom: 1.5rem; 
-  text-align: left; 
-}
-
-.section-title, 
-.guide-header h2 { 
-  font-size: 1.6rem; 
-  font-weight: 800; 
-  color: var(--text-main); 
-  margin-bottom: 0.3rem; 
-  letter-spacing: -0.5px; 
-}
-
-.section-subtitle, 
-.guide-header p { 
-  color: var(--text-muted); 
-  font-size: 0.92rem; 
-  line-height: 1.45; 
-}
-
-.guide-steps-grid, 
-.guide-steps-list { 
-  display: grid; 
-  grid-template-columns: repeat(2, 1fr); 
-  gap: 1.25rem; 
-}
-
-.guide-card, 
-.guide-step-card { 
-  background: var(--bg-subtle); 
-  border: 1px solid var(--border-light); 
-  border-radius: 16px; 
-  padding: 1.25rem 1.5rem; 
-  display: flex; 
-  flex-direction: column; 
-  gap: 0.5rem; 
-  transition: transform 0.2s, border-color 0.2s, box-shadow 0.2s; 
-}
-
-.guide-card:hover, 
-.guide-step-card:hover { 
-  border-color: var(--border-hover); 
-  transform: translateY(-2px); 
-  box-shadow: 0 6px 16px rgba(0,0,0,0.04); 
-}
-
-.guide-card-top { 
-  display: flex; 
-  justify-content: space-between; 
-  align-items: center; 
-  width: 100%; 
-}
-
-.step-badge, 
-.step-num { 
-  font-size: 1rem; 
-  font-weight: 800; 
-  color: var(--text-dim); 
-  line-height: 1; 
-}
-
-.guide-icon, 
-.guide-step-icon { 
-  font-size: 1.1rem; 
-  color: var(--text-main); 
-}
-
-.guide-step-icon.purple { color: var(--primary-purple); }
-.guide-step-icon.green { color: var(--spotify-green); }
-.guide-step-icon.blue { color: var(--discord-blue); }
-.guide-step-icon.pink { color: var(--primary-pink); }
-
-.guide-card h3, 
-.guide-step-body h3 { 
-  font-size: 1.05rem; 
-  font-weight: 700; 
-  color: var(--text-main); 
-  margin-bottom: 0.25rem; 
-}
-
-.guide-card p, 
-.guide-step-body p { 
-  font-size: 0.85rem; 
-  color: var(--text-muted); 
-  line-height: 1.5; 
-  margin: 0; 
-}
-
-.guide-card code, 
-.guide-step-body code { 
-  background: var(--border-light); 
-  padding: 1px 6px; 
-  border-radius: 4px; 
-  font-family: monospace; 
-  color: var(--primary-purple); 
-  font-weight: 700; 
-  font-size: 0.82rem; 
-}
-
-/* ==========================================================================
-   6. MODAL OVERLAYS & LEADERBOARD (CLEAN OVERLAY, VISIT BUTTON ON ALL, FULL BLUR FOR BLURRED PROFILES)
-   ========================================================================== */
-.modal-overlay { 
-  position: fixed !important; 
-  inset: 0 !important; 
-  width: 100vw;
-  height: 100vh;
-  /* Dark backdrop overlay WITHOUT blur filters affecting custom space */
-  background: rgba(0, 0, 0, 0.5) !important; 
-  display: flex; 
-  align-items: center; 
-  justify-content: center; 
-  z-index: 1000; 
-  padding: 1rem; 
-}
-
-.modal-overlay.hidden {
-  display: none !important;
-}
-
-.modal-card { 
-  background: var(--bg-card); 
-  border: 1px solid var(--border-light); 
-  border-radius: 20px; 
-  width: 100%; 
-  max-width: 480px; 
-  max-height: 90vh;
-  display: flex;
-  flex-direction: column;
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3); 
-  overflow: hidden; 
-}
-
-.leaderboard-modal-card { 
-  max-width: 540px; 
-}
-
-.modal-header { 
-  display: flex; 
-  justify-content: space-between; 
-  align-items: center; 
-  padding: 1.2rem 1.5rem; 
-  border-bottom: 1px solid var(--border-light); 
-  flex-shrink: 0;
-}
-
-.modal-header h3 { 
-  font-size: 1.05rem; 
-  font-weight: 700; 
-  color: var(--text-main); 
-}
-
-.pill-badge-sm { 
-  display: inline-flex; 
-  align-items: center; 
-  gap: 4px; 
-  background: rgba(124,58,237,0.1); 
-  color: var(--primary-purple); 
-  font-size: 0.72rem; 
-  font-weight: 700; 
-  padding: 3px 10px; 
-  border-radius: 20px; 
-}
-
-.close-btn { 
-  background: none; 
-  border: none; 
-  color: var(--text-muted); 
-  font-size: 1.4rem; 
-  cursor: pointer; 
-  transition: color 0.2s; 
-}
-
-.close-btn:hover { 
-  color: var(--text-main); 
-}
-
-.modal-body { 
-  padding: 1.25rem 1.5rem; 
-  overflow-y: auto;
-}
-
-.modal-subtitle { 
-  font-size: 0.85rem; 
-  color: var(--text-muted); 
-  margin-bottom: 1.25rem; 
-}
-
-.modal-tabs { 
-  display: flex; 
-  gap: 8px; 
-  margin-bottom: 1.25rem; 
-  border-bottom: 1px solid var(--border-light); 
-  padding-bottom: 8px; 
-}
-
-.tab-btn { 
-  background: none; 
-  border: none; 
-  color: var(--text-muted); 
-  font-size: 0.82rem; 
-  font-weight: 600; 
-  padding: 6px 12px; 
-  border-radius: 8px; 
-  cursor: pointer; 
-  display: flex; 
-  align-items: center; 
-  gap: 6px; 
-}
-
-.tab-btn.active { 
-  background: rgba(124,58,237,0.1); 
-  color: var(--primary-purple); 
-}
-
-.tab-content { 
-  display: none; 
-}
-
-.tab-content.active { 
-  display: block; 
-}
-
-.leaderboard-list,
-#leaderboard-list { 
-  display: flex; 
-  flex-direction: column; 
-  gap: 10px; 
-  max-height: 380px; 
-  overflow-y: auto; 
-  padding-right: 4px; 
-}
-
-.leaderboard-item,
-.leaderboard-card { 
-  display: flex; 
-  align-items: center; 
-  justify-content: space-between; 
-  gap: 12px; 
-  background: var(--bg-subtle); 
-  border: 1px solid var(--border-light); 
-  padding: 10px 14px; 
-  border-radius: 14px; 
-  text-decoration: none;
-  color: var(--text-main);
-  transition: border-color 0.2s, transform 0.2s, box-shadow 0.2s; 
-}
-
-.leaderboard-item:hover,
-.leaderboard-card:hover { 
-  border-color: var(--primary-purple); 
-  transform: translateY(-1px); 
-  box-shadow: 0 4px 12px rgba(0,0,0,0.06);
-}
-
-.leaderboard-user-info,
-.rank-details-wrapper { 
-  display: flex; 
-  align-items: center; 
-  gap: 12px; 
-  flex: 1;
-  min-width: 0;
-}
-
-.rank-badge,
-.rank-number { 
-  font-size: 0.85rem; 
-  font-weight: 800; 
-  color: var(--primary-purple); 
-  background: rgba(124,58,237,0.12); 
-  padding: 4px 8px; 
-  border-radius: 8px; 
-  min-width: 32px;
-  text-align: center;
-  flex-shrink: 0;
-}
-
-.leaderboard-item img,
-.leaderboard-card img,
-.leaderboard-avatar,
-.rank-avatar { 
-  width: 42px !important; 
-  height: 42px !important; 
-  min-width: 42px !important; 
-  min-height: 42px !important; 
-  max-width: 42px !important; 
-  max-height: 42px !important; 
-  border-radius: 50% !important; 
-  object-fit: cover !important; 
-  flex-shrink: 0 !important; 
-  border: 1px solid var(--border-light); 
-  display: block;
-}
-
-.rank-details {
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-  flex: 1;
-}
-
-.rank-name,
-.leaderboard-username {
-  font-weight: 700;
-  font-size: 0.9rem;
-  color: var(--text-main);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.rank-handle,
-.leaderboard-handle {
-  font-size: 0.78rem;
-  color: var(--text-muted);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.leaderboard-actions,
-.rank-views,
-.leaderboard-views { 
-  display: flex; 
-  align-items: center; 
-  gap: 10px; 
-  font-size: 0.85rem; 
-  font-weight: 700; 
-  color: var(--text-muted); 
-  white-space: nowrap;
-  flex-shrink: 0;
-}
-
-/* Visit Profile Button Style (Visibile for EVERYONE including your profile) */
-.btn-visit-profile { 
-  display: inline-flex !important;
-  align-items: center;
-  gap: 4px;
-  font-size: 0.78rem; 
-  font-weight: 700; 
-  color: #ffffff !important; 
-  background: var(--primary-purple); 
-  padding: 6px 14px; 
-  border-radius: 8px; 
-  text-decoration: none; 
-  transition: background 0.2s, transform 0.15s; 
-}
-
-.btn-visit-profile:hover { 
-  background: #6d28d9; 
-  transform: translateY(-1px);
-}
-
-/* "You" Self Indicator Tag */
-.self-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  background: rgba(124, 58, 237, 0.12);
-  color: var(--primary-purple);
-  padding: 5px 10px;
-  border-radius: 8px;
-  font-size: 0.78rem;
-  font-weight: 700;
-}
-
-/* BLURRED PROFILE RULES: Blurs avatar photo and Visit button when profile is blurred */
-.is-blurred .rank-avatar,
-.is-blurred .leaderboard-avatar,
-.is-blurred img,
-.is-blurred .btn-visit-profile,
-.is-blurred .rank-details,
-.blurred-profile .rank-avatar,
-.blurred-profile .leaderboard-avatar,
-.blurred-profile img,
-.blurred-profile .btn-visit-profile,
-.blurred-profile .rank-details {
-  filter: blur(8px) !important;
-  pointer-events: none !important;
-  user-select: none !important;
-}
-
-.form-group { 
-  margin-bottom: 1rem; 
-}
-
-.form-group label { 
-  display: block; 
-  font-size: 0.78rem; 
-  font-weight: 600; 
-  color: var(--text-muted); 
-  margin-bottom: 6px; 
-}
-
-.modal-input { 
-  width: 100%; 
-  background: var(--bg-subtle); 
-  border: 1px solid var(--border-light); 
-  border-radius: 10px; 
-  padding: 9px 12px; 
-  color: var(--text-main); 
-  font-size: 0.88rem; 
-  outline: none; 
-  transition: border-color 0.2s, background 0.2s; 
-}
-
-.modal-input:focus { 
-  border-color: var(--primary-purple); 
-  background: var(--bg-card); 
-}
-
-.input-with-prefix { 
-  display: flex; 
-  align-items: center; 
-  background: var(--bg-subtle); 
-  border: 1px solid var(--border-light); 
-  border-radius: 10px; 
-  padding-left: 10px; 
-}
-
-.input-with-prefix span { 
-  color: var(--text-dim); 
-  font-size: 0.82rem; 
-  font-weight: 600; 
-}
-
-.input-with-prefix input { 
-  border: none; 
-  background: transparent; 
-}
-
-.modal-footer { 
-  display: flex; 
-  justify-content: flex-end; 
-  gap: 10px; 
-  padding: 1rem 1.5rem; 
-  background: var(--bg-subtle); 
-  border-top: 1px solid var(--border-light); 
-  flex-shrink: 0;
-}
-
-.status-msg { 
-  font-size: 0.78rem; 
-  font-weight: 600; 
-  margin-top: 8px; 
-  text-align: center; 
-}
-
-.full-width { 
-  width: 100%; 
-}
-
-/* ==========================================================================
-   7. MEDIA QUERIES (MOBILE RESPONSIVENESS)
-   ========================================================================== */
-@media (max-width: 900px) {
-  .navbar {
-    flex-wrap: wrap;
-    padding: 0.85rem 1.5rem;
-    gap: 10px;
+// ==========================================================================
+// 1. FIREBASE IMPORTS
+// ==========================================================================
+import { auth, db, googleProvider } from "./firebase.js";
+import { 
+  signInWithPopup, 
+  onAuthStateChanged, 
+  signOut 
+} from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+import { 
+  doc, 
+  getDoc, 
+  setDoc, 
+  increment,
+  collection,
+  runTransaction,
+  onSnapshot
+} from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+// ==========================================================================
+// 2. HELPER UTILITIES
+// ==========================================================================
+
+const escapeHtml = (str) => {
+  if (!str) return "";
+  return String(str)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+};
+
+const getProfileUrl = (handle) => {
+  const origin = window.location.origin;
+  const pathParts = window.location.pathname.split('/');
+  pathParts.pop();
+  const basePath = pathParts.join('/');
+  const cleanBase = basePath.endsWith('/') ? basePath : basePath + '/';
+  return `${origin}${cleanBase}profile.html?u=${encodeURIComponent(handle)}`;
+};
+
+document.addEventListener("DOMContentLoaded", () => {
+
+  // ==========================================================================
+  // 3. GLOBAL STATE & SYSTEM CONFIG
+  // ==========================================================================
+  let currentAvatarSeed = "biogram";
+  let avatarCustomized = false;
+  let currentHandle = "";
+  let systemConfig = {
+    globalBlur: false,
+    forceOwnerTop: true,
+    maintenanceMode: false,
+    announcementBanner: ""
+  };
+  let cachedUsers = [];
+  let unsubscribeLeaderboard = null;
+
+  // Realtime System Config Listener
+  const listenToSystemConfig = () => {
+    const configRef = doc(db, "system", "config");
+    onSnapshot(configRef, (docSnap) => {
+      if (docSnap.exists()) {
+        systemConfig = docSnap.data();
+
+        // Banner Handler
+        const bannerEl = document.getElementById("global-announcement-banner") || document.getElementById("announcement-banner");
+        if (bannerEl) {
+          if (systemConfig.announcementBanner) {
+            bannerEl.textContent = systemConfig.announcementBanner;
+            bannerEl.classList.remove("hidden");
+            bannerEl.style.display = "block";
+          } else {
+            bannerEl.classList.add("hidden");
+            bannerEl.style.display = "none";
+          }
+        }
+
+        // Re-render leaderboard if open
+        if (cachedUsers.length > 0) {
+          renderLeaderboard(cachedUsers);
+        }
+      }
+    }, (err) => console.error("System config listener error:", err));
+  };
+
+  listenToSystemConfig();
+
+  // ==========================================================================
+  // 4. THEME ENGINE & AVATAR PICKER
+  // ==========================================================================
+  const initThemeEngine = () => {
+    const themeBtns = document.querySelectorAll('.theme-btn');
+    
+    const applyTheme = (mode) => {
+      let targetTheme = mode;
+      if (mode === 'auto') {
+        const currentHour = new Date().getHours();
+        targetTheme = (currentHour >= 6 && currentHour < 18) ? 'light' : 'dark';
+      }
+
+      document.documentElement.setAttribute('data-theme', targetTheme);
+      localStorage.setItem('biogram_theme_mode', mode);
+
+      themeBtns.forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.themeMode === mode);
+      });
+    };
+
+    const savedMode = localStorage.getItem('biogram_theme_mode') || 'auto';
+    applyTheme(savedMode);
+
+    themeBtns.forEach(btn => {
+      btn.addEventListener('click', () => applyTheme(btn.dataset.themeMode));
+    });
+  };
+
+  const initAvatarPicker = () => {
+    const avatarImg = document.getElementById('acc-avatar-preview');
+    const randomizeBtn = document.getElementById('randomize-avatar-btn');
+
+    randomizeBtn?.addEventListener('click', () => {
+      currentAvatarSeed = Math.random().toString(36).substring(7);
+      avatarCustomized = true;
+      if (avatarImg) {
+        avatarImg.src = `https://api.dicebear.com/7.x/avataaars/svg?seed=${currentAvatarSeed}`;
+      }
+    });
+  };
+
+  initThemeEngine();
+  initAvatarPicker();
+
+  // ==========================================================================
+  // 5. TAB SWITCHER & MODAL HANDLERS
+  // ==========================================================================
+  const tabBtns = document.querySelectorAll('.tab-btn, [data-tab]');
+  const tabContents = document.querySelectorAll('.tab-content');
+
+  tabBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      const targetTab = btn.dataset.tab;
+      if (!targetTab) return;
+
+      tabBtns.forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+
+      tabContents.forEach(c => {
+        c.classList.remove('active');
+        c.classList.add('hidden');
+      });
+
+      const activeContent = document.getElementById(targetTab);
+      if (activeContent) {
+        activeContent.classList.remove('hidden');
+        activeContent.classList.add('active');
+      }
+    });
+  });
+
+  const leaderboardModal = document.getElementById("leaderboard-modal");
+  const openLeaderboardBtn = document.getElementById("open-leaderboard-btn");
+  const closeLeaderboardBtn = document.getElementById("close-leaderboard-btn");
+
+  if (openLeaderboardBtn) {
+    openLeaderboardBtn.addEventListener("click", () => {
+      leaderboardModal?.classList.remove("hidden");
+      startLeaderboardListener();
+    });
   }
 
-  .nav-center-menu {
-    order: 3;
-    width: 100%;
-    margin-top: 6px;
-    justify-content: center;
+  if (closeLeaderboardBtn) {
+    closeLeaderboardBtn.addEventListener("click", () => {
+      leaderboardModal?.classList.add("hidden");
+      stopLeaderboardListener();
+    });
   }
 
-  .hero-grid { 
-    grid-template-columns: 1fr; 
-    gap: 2.5rem; 
-    padding: 2.5rem 0;
-  }
+  leaderboardModal?.addEventListener("click", (e) => {
+    if (e.target === leaderboardModal) {
+      leaderboardModal.classList.add("hidden");
+      stopLeaderboardListener();
+    }
+  });
 
-  .hero-left { 
-    text-align: center; 
-  }
+  // ==========================================================================
+  // 6. CORE DOM RESOLVERS
+  // ==========================================================================
+  const claimInput = document.getElementById("claim-input") || document.getElementById("username-input");
+  const claimBtn = document.getElementById("claim-btn") || document.getElementById("btn-claim-hero");
 
-  .hero-subtitle {
-    margin-left: auto;
-    margin-right: auto;
-  }
+  const authModal = document.getElementById("auth-modal");
+  const googleLoginBtn = document.getElementById("google-login-btn") || document.getElementById("sign-in-btn");
+  const navUserContainer = document.getElementById("nav-user-container") || document.getElementById("user-menu-logged-in");
 
-  .claim-box { 
-    margin-left: auto; 
-    margin-right: auto; 
-  }
+  const accountModal = document.getElementById("account-modal");
+  const closeAccountBtn = document.getElementById("close-account-btn") || document.getElementById("cancel-modal-btn");
+  const saveAccountBtn = document.getElementById("save-account-btn") || document.getElementById("save-modal-btn");
+  const checkAvailBtn = document.getElementById("check-avail-btn") || document.getElementById("btn-check-avail");
+  const deleteProfileBtn = document.getElementById("delete-profile-btn");
+  const accStatusMsg = document.getElementById("acc-status-msg") || document.getElementById("availability-status");
 
-  .quick-tags { 
-    justify-content: center; 
-    margin-left: auto; 
-    margin-right: auto; 
-  }
-}
+  const openAuthModal = () => authModal?.classList.remove("hidden");
+  const closeAuthModal = () => authModal?.classList.add("hidden");
 
-@media (max-width: 768px) {
-  .main-container {
-    padding: 0 1rem 3rem;
-  }
+  const getHandleInput = () => document.getElementById("acc-handle-input") || document.getElementById("modal-username-handle");
+  const getNameInput = () => document.getElementById("acc-name-input") || document.getElementById("modal-display-name");
+  const getBioInput = () => document.getElementById("acc-bio-input") || document.getElementById("modal-tagline");
 
-  .navbar { 
-    padding: 0.75rem 1rem; 
-  }
+  const notifyStatus = (msg, isError = false) => {
+    if (accStatusMsg) {
+      accStatusMsg.textContent = msg;
+      accStatusMsg.style.color = isError ? "#ef4444" : "#16a34a";
+    }
+  };
 
-  .hero-title { 
-    font-size: 2.3rem; 
-  }
+  // ==========================================================================
+  // 7. NAVBAR RENDERING
+  // ==========================================================================
+  const renderNavbar = async (user) => {
+    const loggedOutNav = document.getElementById("user-menu-logged-out");
 
-  .guide-steps-grid, 
-  .guide-steps-list { 
-    grid-template-columns: 1fr; 
-  }
+    if (!user) {
+      if (loggedOutNav) loggedOutNav.classList.remove("hidden");
+      if (navUserContainer) navUserContainer.classList.add("hidden");
 
-  .guide-wrapper-card,
-  .guide-section {
-    padding: 1.25rem;
-  }
+      if (claimInput) {
+        claimInput.disabled = false;
+        claimInput.value = "";
+      }
+      if (claimBtn) {
+        claimBtn.innerHTML = `<i class="fa-solid fa-wand-magic-sparkles"></i> Claim Username`;
+      }
+      return;
+    }
 
-  .leaderboard-item,
-  .leaderboard-card {
-    padding: 8px 10px;
-  }
-}
+    if (loggedOutNav) loggedOutNav.classList.add("hidden");
+    if (navUserContainer) navUserContainer.classList.remove("hidden");
 
-@media (max-width: 576px) {
-  .hero-title {
-    font-size: 1.95rem;
-  }
+    let handle = "";
+    let displayName = user.displayName || "";
+    let finalPhotoURL = user.photoURL || "";
+    let isAdmin = false;
 
-  .claim-box {
-    flex-direction: column;
-    padding: 10px;
-    gap: 10px;
-    align-items: stretch;
-  }
+    try {
+      const userDocRef = doc(db, "users", user.uid);
+      const userSnap = await getDoc(userDocRef);
+      if (userSnap.exists()) {
+        const data = userSnap.data();
+        handle = data.handle || "";
+        isAdmin = !!data.isAdmin || data.role === "owner";
+        if (data.displayName && data.displayName !== "BioGram User") {
+          displayName = data.displayName;
+        }
+        if (data.photoURL) {
+          finalPhotoURL = data.photoURL;
+        }
+      }
+    } catch (err) {
+      console.error("Error fetching Firestore user info:", err);
+    }
 
-  .claim-box .prefix {
-    text-align: center;
-  }
+    if (!finalPhotoURL) {
+      finalPhotoURL = `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.uid}`;
+    }
 
-  .claim-box input {
-    text-align: center;
-  }
+    currentHandle = handle;
 
-  .btn-claim {
-    width: 100%;
-    justify-content: center;
-  }
+    const navAvatarImg = document.getElementById("nav-avatar-img");
+    if (navAvatarImg) {
+      navAvatarImg.src = finalPhotoURL;
+      navAvatarImg.alt = displayName || "User Avatar";
+      navAvatarImg.setAttribute("referrerpolicy", "no-referrer");
+    }
 
-  .clean-card {
-    max-width: 100%;
-    padding: 1.25rem;
-  }
+    const staticAdminBtn = document.getElementById("admin-nav-link");
+    if (staticAdminBtn) {
+      staticAdminBtn.classList.toggle("hidden", !isAdmin);
+    }
 
-  .modal-overlay {
-    padding: 0.5rem;
-  }
+    const openAccountBtn = document.getElementById("open-account-btn");
+    if (openAccountBtn) {
+      openAccountBtn.innerHTML = `<i class="fa-solid fa-gear"></i> Account`;
+    }
 
-  .modal-card,
-  .leaderboard-modal-card {
-    border-radius: 16px;
-    max-height: 92vh;
-  }
+    if (handle) {
+      if (claimInput) {
+        claimInput.value = handle;
+        claimInput.disabled = true; 
+      }
+      if (claimBtn) {
+        claimBtn.innerHTML = `<i class="fa-solid fa-copy"></i> Copy Link`;
+      }
+    } else {
+      if (claimInput) claimInput.disabled = false;
+      if (claimBtn) claimBtn.innerHTML = `<i class="fa-solid fa-wand-magic-sparkles"></i> Claim Username`;
+    }
+  };
 
-  .modal-header,
-  .modal-body,
-  .modal-footer {
-    padding: 1rem;
-  }
+  // ==========================================================================
+  // 8. ACCOUNT MODAL HANDLERS
+  // ==========================================================================
+  const openAccountModal = async () => {
+    const user = auth.currentUser;
+    if (!user) {
+      openAuthModal();
+      return;
+    }
 
-  .leaderboard-item,
-  .leaderboard-card {
-    flex-wrap: wrap;
-    gap: 8px;
-  }
+    notifyStatus("Loading account details...", false);
+    accountModal?.classList.remove("hidden");
 
-  .leaderboard-actions,
-  .rank-views,
-  .leaderboard-views {
-    width: 100%;
-    justify-content: space-between;
-    margin-top: 4px;
-    padding-top: 4px;
-    border-top: 1px dashed var(--border-light);
-  }
-}
+    try {
+      const userDocRef = doc(db, "users", user.uid);
+      const userSnap = await getDoc(userDocRef);
 
-@media (max-width: 400px) {
-  .logo span {
-    font-size: 1.1rem;
-  }
+      const handleInput = getHandleInput();
+      const nameInput = getNameInput();
+      const bioInput = getBioInput();
+      const emailInput = document.getElementById("modal-user-email");
+      const avatarImg = document.getElementById("acc-avatar-preview");
 
-  .nav-btn,
-  .btn-claim-small {
-    padding: 5px 8px;
-    font-size: 0.75rem;
-  }
+      if (emailInput) emailInput.value = user.email || "";
 
-  .quick-tags {
-    flex-direction: column;
-    gap: 8px;
-    align-items: center;
-  }
-}
+      if (handleInput) {
+        handleInput.disabled = false;
+        handleInput.readOnly = false;
+      }
+      if (checkAvailBtn) {
+        checkAvailBtn.style.display = "block";
+      }
+
+      const activePhoto = user.photoURL || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.uid}`;
+
+      if (userSnap.exists()) {
+        const data = userSnap.data();
+        currentHandle = data.handle || "";
+        currentAvatarSeed = data.avatarSeed || user.uid;
+
+        if (handleInput) handleInput.value = currentHandle;
+        if (nameInput) nameInput.value = (data.displayName && data.displayName !== "BioGram User") ? data.displayName : (user.displayName || "");
+        if (bioInput) bioInput.value = data.bio || data.tagline || "";
+        if (avatarImg) {
+          avatarImg.src = data.photoURL || activePhoto;
+          avatarImg.setAttribute("referrerpolicy", "no-referrer");
+        }
+      } else {
+        if (nameInput) nameInput.value = user.displayName || "";
+        if (handleInput) handleInput.value = "";
+        if (avatarImg) {
+          avatarImg.src = activePhoto;
+          avatarImg.setAttribute("referrerpolicy", "no-referrer");
+        }
+      }
+
+      notifyStatus("", false);
+    } catch (err) {
+      console.error("Error loading settings:", err);
+      notifyStatus(`❌ Error: ${err.message}`, true);
+    }
+  };
+
+  const closeAccountModal = () => {
+    accountModal?.classList.add("hidden");
+    notifyStatus("", false);
+  };
+
+  document.getElementById("open-account-btn")?.addEventListener("click", openAccountModal);
+  document.getElementById("open-auth-btn")?.addEventListener("click", openAuthModal);
+  document.getElementById("close-auth-btn")?.addEventListener("click", closeAuthModal);
+  document.getElementById("cancel-modal-btn")?.addEventListener("click", closeAccountModal);
+  closeAccountBtn?.addEventListener("click", closeAccountModal);
+
+  const handleCheckAvailability = async () => {
+    const handleInput = getHandleInput();
+    const handle = handleInput?.value.trim().toLowerCase().replace(/[^a-z0-9_]/g, "");
+
+    if (!handle || handle.length < 3) {
+      notifyStatus("⚠️ Handle must be at least 3 characters.", true);
+      return;
+    }
+
+    if (handle === currentHandle) {
+      notifyStatus(`ℹ️ '${handle}' is currently your active handle.`, false);
+      return;
+    }
+
+    try {
+      notifyStatus("Checking availability...", false);
+
+      const handleRef = doc(db, "handles", handle);
+      const handleSnap = await getDoc(handleRef);
+      const user = auth.currentUser;
+
+      if (handleSnap.exists() && handleSnap.data().uid !== user?.uid) {
+        notifyStatus(`❌ Handle '${handle}' is already taken!`, true);
+      } else {
+        notifyStatus(`✓ Handle '${handle}' is available!`, false);
+      }
+    } catch (err) {
+      notifyStatus(`❌ Error checking availability: ${err.message}`, true);
+    }
+  };
+
+  checkAvailBtn?.addEventListener("click", handleCheckAvailability);
+
+  saveAccountBtn?.addEventListener("click", async () => {
+    const user = auth.currentUser;
+    if (!user) return;
+
+    const name = getNameInput()?.value.trim();
+    const handleInput = getHandleInput();
+    const newHandle = handleInput?.value.trim().toLowerCase().replace(/[^a-z0-9_]/g, "");
+    const bio = getBioInput()?.value.trim();
+
+    try {
+      saveAccountBtn.disabled = true;
+      notifyStatus("Saving changes...", false);
+
+      let updatedPhotoURL = user.photoURL || "";
+      if (avatarCustomized) {
+        updatedPhotoURL = `https://api.dicebear.com/7.x/avataaars/svg?seed=${currentAvatarSeed}`;
+      }
+
+      await runTransaction(db, async (transaction) => {
+        if (newHandle && newHandle !== currentHandle) {
+          if (newHandle.length < 3) {
+            throw new Error("Handle must be at least 3 characters long.");
+          }
+
+          const newHandleRef = doc(db, "handles", newHandle);
+          const handleSnap = await transaction.get(newHandleRef);
+
+          if (handleSnap.exists() && handleSnap.data().uid !== user.uid) {
+            throw new Error(`Handle '${newHandle}' is already taken!`);
+          }
+
+          if (currentHandle && currentHandle.trim() !== "") {
+            transaction.delete(doc(db, "handles", currentHandle));
+          }
+
+          transaction.set(newHandleRef, { 
+            uid: user.uid, 
+            createdAt: new Date().toISOString() 
+          });
+        }
+
+        const userRef = doc(db, "users", user.uid);
+        transaction.set(userRef, {
+          displayName: name || user.displayName || newHandle,
+          handle: newHandle || currentHandle,
+          bio: bio || "",
+          photoURL: updatedPhotoURL,
+          avatarSeed: currentAvatarSeed,
+          views: increment(0),
+          updatedAt: new Date().toISOString()
+        }, { merge: true });
+      });
+
+      currentHandle = newHandle || currentHandle;
+      notifyStatus("✅ Profile and username updated successfully!", false);
+
+      await renderNavbar(user);
+      setTimeout(() => closeAccountModal(), 1000);
+    } catch (err) {
+      notifyStatus(`❌ Failed to save: ${err.message}`, true);
+    } finally {
+      if (saveAccountBtn) saveAccountBtn.disabled = false;
+    }
+  });
+
+  deleteProfileBtn?.addEventListener("click", async () => {
+    const user = auth.currentUser;
+    if (!user) return;
+
+    if (!confirm("Are you sure you want to reset your account profile?")) return;
+
+    try {
+      deleteProfileBtn.disabled = true;
+      await runTransaction(db, async (transaction) => {
+        if (currentHandle && currentHandle.trim() !== "") {
+          transaction.delete(doc(db, "handles", currentHandle));
+        }
+        transaction.delete(doc(db, "users", user.uid));
+      });
+
+      notifyStatus("🗑️ Profile reset completed!", false);
+      setTimeout(() => location.reload(), 1000);
+    } catch (err) {
+      notifyStatus(`❌ Reset failed: ${err.message}`, true);
+    } finally {
+      if (deleteProfileBtn) deleteProfileBtn.disabled = false;
+    }
+  });
+
+  claimBtn?.addEventListener("click", async () => {
+    if (currentHandle) {
+      const fullUrl = getProfileUrl(currentHandle);
+      try {
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          await navigator.clipboard.writeText(fullUrl);
+        } else {
+          throw new Error("Clipboard API unavailable");
+        }
+        const originalText = claimBtn.innerHTML;
+        claimBtn.innerHTML = `<i class="fa-solid fa-check"></i> Copied!`;
+        claimBtn.style.background = '#10b981';
+
+        setTimeout(() => {
+          claimBtn.innerHTML = originalText;
+          claimBtn.style.background = '';
+        }, 2000);
+      } catch (e) {
+        prompt("📋 Copy your profile link:", fullUrl);
+      }
+      return;
+    }
+
+    const handle = claimInput?.value.trim().toLowerCase().replace(/[^a-z0-9_]/g, "");
+    
+    if (!handle || handle.length < 3) {
+      alert("⚠️ Username must be at least 3 characters long.");
+      return;
+    }
+
+    let user = auth.currentUser;
+    if (!user) {
+      try {
+        const result = await signInWithPopup(auth, googleProvider);
+        user = result.user;
+      } catch (e) {
+        return;
+      }
+    }
+
+    try {
+      claimBtn.disabled = true;
+      await runTransaction(db, async (transaction) => {
+        const handleRef = doc(db, "handles", handle);
+        const handleSnap = await transaction.get(handleRef);
+
+        if (handleSnap.exists() && handleSnap.data().uid !== user.uid) {
+          throw new Error(`Handle '${handle}' is already taken!`);
+        }
+
+        transaction.set(handleRef, { 
+          uid: user.uid, 
+          createdAt: new Date().toISOString() 
+        });
+
+        transaction.set(doc(db, "users", user.uid), {
+          handle: handle,
+          displayName: user.displayName || handle,
+          email: user.email,
+          photoURL: user.photoURL || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.uid}`,
+          views: 0,
+          updatedAt: new Date().toISOString()
+        }, { merge: true });
+      });
+
+      currentHandle = handle;
+      await renderNavbar(user);
+
+      alert(`🎉 Success! Your handle '${handle}' is claimed!`);
+      
+    } catch (err) {
+      console.error("Claim Handle Error:", err);
+      alert(`❌ Failed to claim username: ${err.message}`);
+    } finally {
+      if (claimBtn) claimBtn.disabled = false;
+    }
+  });
+
+  const handleGoogleLogin = async () => {
+    try {
+      const result = await signInWithPopup(auth, googleProvider);
+      const user = result.user;
+
+      const userRef = doc(db, "users", user.uid);
+      const existingDoc = await getDoc(userRef);
+
+      if (!existingDoc.exists()) {
+        await setDoc(userRef, {
+          displayName: user.displayName || "",
+          email: user.email,
+          photoURL: user.photoURL || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.uid}`,
+          views: 0,
+          updatedAt: new Date().toISOString()
+        }, { merge: true });
+      }
+
+      closeAuthModal();
+      await renderNavbar(user);
+    } catch (err) {
+      alert(`Sign in failed: ${err.message}`);
+    }
+  };
+
+  googleLoginBtn?.addEventListener("click", handleGoogleLogin);
+  document.getElementById("sign-out-btn")?.addEventListener("click", () => signOut(auth));
+
+  // ==========================================================================
+  // 9. LEADERBOARD WITH REALTIME & ADMIN CONFIG
+  // ==========================================================================
+  
+  const startLeaderboardListener = () => {
+    const leaderboardContainer = document.getElementById("leaderboard-list");
+    if (!leaderboardContainer) return;
+
+    leaderboardContainer.innerHTML = `<div style="text-align:center; padding: 20px; color: #6b7280;"><i class="fa-solid fa-spinner fa-spin"></i> Loading rankings...</div>`;
+
+    if (unsubscribeLeaderboard) unsubscribeLeaderboard();
+
+    unsubscribeLeaderboard = onSnapshot(collection(db, "users"), (snapshot) => {
+      cachedUsers = [];
+      snapshot.forEach((docSnap) => {
+        cachedUsers.push({ id: docSnap.id, ...docSnap.data() });
+      });
+
+      renderLeaderboard(cachedUsers);
+    }, (err) => {
+      console.error("Leaderboard realtime error:", err);
+      leaderboardContainer.innerHTML = `<p class="error" style="color: #ef4444; text-align: center;">Failed to load rankings.</p>`;
+    });
+  };
+
+  const stopLeaderboardListener = () => {
+    if (unsubscribeLeaderboard) {
+      unsubscribeLeaderboard();
+      unsubscribeLeaderboard = null;
+    }
+  };
+
+  const renderLeaderboard = (users) => {
+    const leaderboardContainer = document.getElementById("leaderboard-list");
+    if (!leaderboardContainer) return;
+
+    // Get currently authenticated user
+    const currentUser = auth.currentUser;
+
+    // Filter Banned and Hidden Profiles
+    let displayUsers = users.filter((u) => !u.isBanned && !u.excludeFromLeaderboard);
+
+    // Sort by Views Descending
+    displayUsers.sort((a, b) => (Number(b.views) || 0) - (Number(a.views) || 0));
+
+    // Force Owner to Top if configured
+    if (systemConfig.forceOwnerTop !== false) {
+      const ownerIndex = displayUsers.findIndex(
+        (u) => u.role === "owner" || u.handle === "admin"
+      );
+      if (ownerIndex > 0) {
+        const [owner] = displayUsers.splice(ownerIndex, 1);
+        displayUsers.unshift(owner);
+      }
+    }
+
+    leaderboardContainer.innerHTML = "";
+    if (displayUsers.length === 0) {
+      leaderboardContainer.innerHTML = `<p style="text-align:center; color: #6b7280; margin: 12px 0;">No users on the leaderboard yet.</p>`;
+      return;
+    }
+
+    displayUsers.forEach((user, index) => {
+      const rank = index + 1;
+      
+      // Check if entry belongs to currently logged-in user
+      const isSelf = currentUser && (user.id === currentUser.uid || user.uid === currentUser.uid);
+      
+      const isBlurred = systemConfig.globalBlur || user.isBlurred || false;
+      const isVerified = user.isVerified || false;
+      const isOwner = user.role === "owner" || user.handle === "admin";
+
+      const item = document.createElement("div");
+      item.className = `leaderboard-item ${rank <= 3 ? `top-${rank}` : ''} ${isSelf ? 'is-self' : ''}`;
+
+      const avatar = user.photoURL || user.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.handle || user.id}`;
+      const handle = user.handle ? `@${user.handle}` : "@anonymous";
+      const name = escapeHtml(user.displayName || user.username || "User");
+      const views = Number(user.views) || 0;
+
+      // Render "You" badge for yourself instead of the "Visit" link
+      const actionButton = isSelf
+        ? `<span class="self-badge"><i class="fa-solid fa-user"></i> You</span>`
+        : `<a href="${getProfileUrl(user.handle || "")}" class="btn-visit-profile"><i class="fa-solid fa-arrow-up-right-from-square"></i> Visit</a>`;
+
+      item.innerHTML = `
+        <div class="leaderboard-user-info">
+          <span class="rank-badge">#${rank}</span>
+          <img src="${escapeHtml(avatar)}" class="nav-avatar ${isBlurred ? 'blurred-avatar' : ''}" alt="Avatar" referrerpolicy="no-referrer">
+          <div>
+            <div style="font-weight: 700; color: var(--text-main, #111827);" class="${isBlurred ? 'blurred-text' : ''}">
+              ${name}
+              ${isVerified ? '<i class="fa-solid fa-circle-check verified-badge" style="color:#1d9bf0; margin-left:4px;" title="Verified"></i>' : ''}
+              ${isOwner ? '<span class="badge owner-badge" style="background:#e11d48; color:#fff; font-size:0.65rem; padding:2px 6px; border-radius:4px; margin-left:4px;">OWNER</span>' : ''}
+            </div>
+            <div style="font-size: 0.8rem; color: var(--text-muted, #6b7280);" class="${isBlurred ? 'blurred-text' : ''}">${escapeHtml(handle)}</div>
+          </div>
+        </div>
+        <div class="leaderboard-actions">
+          <span class="leaderboard-views"><i class="fa-solid fa-eye"></i> ${views.toLocaleString()}</span>
+          ${actionButton}
+        </div>
+      `;
+      leaderboardContainer.appendChild(item);
+    });
+  };
+
+  // ==========================================================================
+  // 10. AUTH STATE OBSERVER
+  // ==========================================================================
+  onAuthStateChanged(auth, async (user) => {
+    await renderNavbar(user);
+  });
+
+});
