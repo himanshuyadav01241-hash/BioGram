@@ -82,22 +82,22 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Helper functions
   const getInputValue = (id1, id2) => {
-    const el = document.getElementById(id1) || (id2 ? document.getElementById(id2) : null);
+    const el = document.getElementById(id1) || document.getElementById(id2);
     return el ? el.value.trim() : "";
   };
 
   const getCheckboxValue = (id1, id2, defaultVal = true) => {
-    const el = document.getElementById(id1) || (id2 ? document.getElementById(id2) : null);
+    const el = document.getElementById(id1) || document.getElementById(id2);
     return el ? el.checked : defaultVal;
   };
 
   const setInputValue = (id1, id2, value) => {
-    const el = document.getElementById(id1) || (id2 ? document.getElementById(id2) : null);
+    const el = document.getElementById(id1) || document.getElementById(id2);
     if (el) el.value = value || "";
   };
 
   const setCheckboxValue = (id1, id2, value) => {
-    const el = document.getElementById(id1) || (id2 ? document.getElementById(id2) : null);
+    const el = document.getElementById(id1) || document.getElementById(id2);
     if (el) el.checked = !!value;
   };
 
@@ -256,9 +256,8 @@ document.addEventListener('DOMContentLoaded', () => {
       e.stopPropagation();
       if (!bgAudio.src) return;
       if (bgAudio.paused) {
-        bgAudio.play().then(() => {
-          if (audioIcon) audioIcon.className = "fa-solid fa-pause";
-        }).catch(err => console.warn("Playback error:", err));
+        bgAudio.play();
+        if (audioIcon) audioIcon.className = "fa-solid fa-pause";
       } else {
         bgAudio.pause();
         if (audioIcon) audioIcon.className = "fa-solid fa-play";
@@ -505,9 +504,11 @@ document.addEventListener('DOMContentLoaded', () => {
       const positions = getLayoutPositionsDict();
       activeSpaceConfig.widgetPositions = positions;
 
-      if (targetUserId && Object.keys(positions).length > 0) {
+      // FIX: Save layout under auth.currentUser.uid instead of targetUserId
+      const currentUid = auth.currentUser?.uid;
+      if (currentUid && Object.keys(positions).length > 0) {
         try {
-          await setDoc(doc(db, "users_spaces", targetUserId), { widgetPositions: positions }, { merge: true });
+          await setDoc(doc(db, "users_spaces", currentUid), { widgetPositions: positions }, { merge: true });
         } catch (err) {
           console.warn("Could not sync layout to database:", err);
         }
@@ -566,22 +567,6 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     });
     document.addEventListener('mouseup', endDrag);
-
-    // Touch Event Listeners for Touchscreens
-    card.addEventListener('touchstart', (e) => {
-      if (e.touches.length === 1) {
-        startDrag(e, e.touches[0].clientX, e.touches[0].clientY, e.target);
-      }
-    }, { passive: false });
-
-    document.addEventListener('touchmove', (e) => {
-      if (isDragging && e.touches.length === 1) {
-        e.preventDefault();
-        moveDrag(e.touches[0].clientX, e.touches[0].clientY);
-      }
-    }, { passive: false });
-
-    document.addEventListener('touchend', endDrag);
   };
 
   const initDragAndDrop = () => {
@@ -611,9 +596,11 @@ document.addEventListener('DOMContentLoaded', () => {
     activeSpaceConfig.widgetPositions = {};
     activeSpaceConfig.mobileWidgetOrder = [...DEFAULT_WIDGET_ORDER];
 
-    if (targetUserId) {
+    // FIX: Reset layout under auth.currentUser.uid
+    const currentUid = auth.currentUser?.uid;
+    if (currentUid) {
       try {
-        await setDoc(doc(db, "users_spaces", targetUserId), { 
+        await setDoc(doc(db, "users_spaces", currentUid), { 
           widgetPositions: {}, 
           mobileWidgetOrder: [...DEFAULT_WIDGET_ORDER] 
         }, { merge: true });
@@ -1123,17 +1110,6 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     }
 
-    const customPhotosInput = document.getElementById("edit-custom-photos-urls");
-    if (customPhotosInput) {
-      if (Array.isArray(activeSpaceConfig.customPhotos) && activeSpaceConfig.customPhotos.length > 0) {
-        customPhotosInput.value = activeSpaceConfig.customPhotos
-          .map(item => `${item.title || 'Photo'} | ${item.url || ''}`)
-          .join("\n");
-      } else {
-        customPhotosInput.value = "";
-      }
-    }
-
     if (editorModal) editorModal.classList.remove("hidden");
   });
 
@@ -1142,7 +1118,8 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   saveSpaceBtn?.addEventListener("click", async () => {
-    if (!canEditCurrentProfile(auth.currentUser)) {
+    const currentUid = auth.currentUser?.uid;
+    if (!currentUid || !canEditCurrentProfile(auth.currentUser)) {
       alert("Permission denied.");
       return;
     }
@@ -1171,19 +1148,6 @@ document.addEventListener('DOMContentLoaded', () => {
         return { platform: detectPlatformFromUrl(line), url: line };
       });
 
-    const rawCustomPhotos = getInputValue("edit-custom-photos-urls");
-    const parsedCustomPhotos = rawCustomPhotos
-      .split("\n")
-      .map(l => l.trim())
-      .filter(Boolean)
-      .map(l => {
-        const parts = l.split("|");
-        if (parts.length >= 2) {
-          return { title: parts[0].trim(), url: parts.slice(1).join("|").trim() };
-        }
-        return { title: "Photo", url: l.trim() };
-      });
-
     const updatedConfig = {
       ...activeSpaceConfig,
       displayName: getInputValue("edit-display-name"),
@@ -1206,25 +1170,23 @@ document.addEventListener('DOMContentLoaded', () => {
       showRankings: getCheckboxValue("edit-show-rankings"),
       mobileWidgetOrder: [...tempMobileOrder],
       socials: parsedSocials,
-      customPhotos: parsedCustomPhotos,
       mediaImages: getInputValue("edit-media-urls").split("\n").map(s => s.trim()).filter(Boolean)
     };
 
-    if (targetUserId) {
-      try {
-        await setDoc(doc(db, "users_spaces", targetUserId), updatedConfig, { merge: true });
+    // FIX: Always save to the authenticated user's own document ID (currentUid)
+    try {
+      await setDoc(doc(db, "users_spaces", currentUid), updatedConfig, { merge: true });
+      if (editorModal) editorModal.classList.add("hidden");
+      alert("Your space was updated successfully!");
+
+      // If editing own profile directly, re-render
+      if (targetUserId === currentUid) {
         activeSpaceConfig = updatedConfig;
         renderProfileSpace(currentLoadedUserData, activeSpaceConfig, auth.currentUser);
-        if (editorModal) editorModal.classList.add("hidden");
-        alert("Space updated successfully!");
-      } catch (err) {
-        console.error("Error saving space:", err);
-        alert("Failed to save settings.");
       }
-    } else {
-      activeSpaceConfig = updatedConfig;
-      renderProfileSpace(currentLoadedUserData, activeSpaceConfig, auth.currentUser);
-      if (editorModal) editorModal.classList.add("hidden");
+    } catch (err) {
+      console.error("Error saving space:", err);
+      alert("Failed to save settings.");
     }
   });
 
