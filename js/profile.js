@@ -13,7 +13,8 @@ import {
   query,
   where,
   orderBy,
-  getDocs
+  getDocs,
+  limit
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -91,8 +92,8 @@ document.addEventListener('DOMContentLoaded', () => {
   // Check if current user has edit rights
   const canEditCurrentProfile = (authUser) => {
     if (!targetUserId) return false;
-    if (isCurrentUserAdmin) return true; // Admin permission
-    return authUser && authUser.uid === targetUserId; // Profile owner check
+    if (isCurrentUserAdmin) return true; 
+    return authUser && authUser.uid === targetUserId; 
   };
 
   // Update UI permissions (Show/Hide floating editor buttons)
@@ -573,13 +574,13 @@ document.addEventListener('DOMContentLoaded', () => {
         let startTimeStamp = null;
 
         if (spotify) {
-          activityText = `<i class="fa-brands fa-spotify" style="color:#1db954;"></i> ${escapeHtml(spotify.song)}`;
+          activityText = `<i class="fa-brands fa-spotify" style="color:#1db954;"></i> Listening to <b>${escapeHtml(spotify.song)}</b>`;
         } else if (activities.length > 0) {
           const game = activities.find(a => a.type === 0 || a.type === 1 || a.type === 2);
           const customStatus = activities.find(a => a.type === 4);
 
           if (game) {
-            activityText = `Playing ${escapeHtml(game.name)}`;
+            activityText = `Playing <b>${escapeHtml(game.name)}</b>`;
             if (game.timestamps && game.timestamps.start) startTimeStamp = game.timestamps.start;
           } else if (customStatus && customStatus.state) {
             activityText = escapeHtml(customStatus.state);
@@ -606,7 +607,7 @@ document.addEventListener('DOMContentLoaded', () => {
           let timeStr = hours > 0 ? `${hours}h ${formattedMins}m` : `${formattedMins}:${formattedSecs}`;
 
           if (discordDetailEl) {
-            discordDetailEl.innerHTML = `${activityText} <span style="display: block; opacity: 0.75; font-size: 0.75rem; margin-top: 2px;">elapsed ${timeStr}</span>`;
+            discordDetailEl.innerHTML = `${activityText} <span style="display: block; opacity: 0.85; font-size: 0.75rem; margin-top: 2px;">elapsed ${timeStr}</span>`;
           }
         };
 
@@ -739,6 +740,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const widget = document.getElementById("rankings-card-widget");
     const rankEl = document.getElementById("user-rank-display");
     const viewsEl = document.getElementById("user-views-display");
+    const leaderboardListEl = document.getElementById("leaderboard-list");
 
     if (!showRankings) {
       widget?.classList.add("hidden");
@@ -752,29 +754,45 @@ document.addEventListener('DOMContentLoaded', () => {
       viewsEl.innerHTML = `<i class="fa-solid fa-eye" style="color: var(--primary-color, #3b82f6);"></i> ${Number(currentViews).toLocaleString()} Views`;
     }
 
-    if (rankEl) {
-      try {
-        const usersRef = collection(db, "users");
-        const q = query(usersRef, orderBy("views", "desc"));
-        const snapshot = await getDocs(q);
+    try {
+      const usersRef = collection(db, "users");
+      const q = query(usersRef, orderBy("views", "desc"), limit(10));
+      const snapshot = await getDocs(q);
 
-        let computedRank = null;
-        let pos = 1;
+      let computedRank = null;
+      let pos = 1;
 
-        snapshot.forEach((docSnap) => {
-          if (docSnap.id === targetUid) computedRank = pos;
-          pos++;
-        });
+      if (leaderboardListEl) leaderboardListEl.innerHTML = "";
 
+      snapshot.forEach((docSnap) => {
+        const data = docSnap.data();
+        const isCurrent = docSnap.id === targetUid;
+
+        if (isCurrent) computedRank = pos;
+
+        if (leaderboardListEl) {
+          const item = document.createElement("div");
+          item.className = `leaderboard-item ${isCurrent ? 'active-user' : ''}`;
+          item.innerHTML = `
+            <span><b>#${pos}</b> ${escapeHtml(data.displayName || data.handle || 'User')}</span>
+            <span style="opacity: 0.8; font-size: 0.75rem;">${Number(data.views || 0).toLocaleString()} views</span>
+          `;
+          leaderboardListEl.appendChild(item);
+        }
+
+        pos++;
+      });
+
+      if (rankEl) {
         if (computedRank !== null) {
           rankEl.textContent = `#${computedRank}`;
         } else {
           rankEl.textContent = userData?.rank ? `#${userData.rank}` : "#--";
         }
-      } catch (err) {
-        console.warn("Dynamic rank query error:", err);
-        rankEl.textContent = userData?.rank ? `#${userData.rank}` : "#--";
       }
+    } catch (err) {
+      console.warn("Dynamic rank/leaderboard query error:", err);
+      if (rankEl) rankEl.textContent = userData?.rank ? `#${userData.rank}` : "#--";
     }
   };
 
@@ -783,8 +801,18 @@ document.addEventListener('DOMContentLoaded', () => {
       document.documentElement.style.setProperty('--primary-color', config.accentColor);
     }
 
+    const glassStyleMode = config.glassDesignPreset || "standard";
     const cards = document.querySelectorAll('.glass-widget-card');
+
     cards.forEach(card => {
+      card.classList.remove('preset-glass-standard', 'preset-glass-dark');
+
+      if (glassStyleMode === "dark") {
+        card.classList.add('preset-glass-dark');
+      } else if (glassStyleMode === "standard") {
+        card.classList.add('preset-glass-standard');
+      }
+
       card.style.backgroundColor = config.cardBgColor || '';
       card.style.color = config.cardTextColor || '';
     });
@@ -793,10 +821,8 @@ document.addEventListener('DOMContentLoaded', () => {
   const incrementProfileViews = async (uid, authUser) => {
     if (!uid) return;
 
-    // Prevent counting self views
     if (authUser && authUser.uid === uid) return;
 
-    // Prevent duplicate views in the same browser session
     const sessionKey = `biogram_viewed_${uid}`;
     if (sessionStorage.getItem(sessionKey)) return;
 
@@ -864,7 +890,6 @@ document.addEventListener('DOMContentLoaded', () => {
     applySavedPositions(spaceData?.widgetPositions);
     updateLockStateUI();
 
-    // Prevent Ghost Profile Flicker: Reveal workspace only after render completes
     if (spaceContainer) {
       spaceContainer.style.opacity = "1";
       spaceContainer.style.pointerEvents = "auto";
@@ -893,6 +918,9 @@ document.addEventListener('DOMContentLoaded', () => {
     setInputValue("edit-card-bg-color", "modal-card-bg-color", activeSpaceConfig.cardBgColor || "");
     setInputValue("edit-card-text-color", "modal-card-text-color", activeSpaceConfig.cardTextColor || "");
 
+    const stylePresetSelect = document.getElementById("edit-glass-preset");
+    if (stylePresetSelect) stylePresetSelect.value = activeSpaceConfig.glassDesignPreset || "standard";
+
     const formatSelect = document.getElementById("edit-clock-format") || document.getElementById("modal-clock-format");
     if (formatSelect) formatSelect.value = activeSpaceConfig.clockFormat || "12h";
 
@@ -911,6 +939,15 @@ document.addEventListener('DOMContentLoaded', () => {
       mediaUrlsInput.value = Array.isArray(activeSpaceConfig.mediaImages) 
         ? activeSpaceConfig.mediaImages.join("\n") 
         : "";
+    }
+
+    const socialsInput = document.getElementById("edit-socials-data");
+    if (socialsInput) {
+      if (Array.isArray(activeSpaceConfig.socials)) {
+        socialsInput.value = activeSpaceConfig.socials.map(s => `${s.platform || 'Link'}:${s.url}`).join("\n");
+      } else {
+        socialsInput.value = "";
+      }
     }
 
     const customPhotosInput = document.getElementById("edit-custom-photos-urls") || document.getElementById("modal-custom-photos-urls");
@@ -954,6 +991,18 @@ document.addEventListener('DOMContentLoaded', () => {
       .map(url => url.trim())
       .filter(url => url.length > 0);
 
+    const socialsRaw = getInputValue("edit-socials-data", "");
+    const socialsArray = socialsRaw
+      .split("\n")
+      .map(line => {
+        const parts = line.split(":");
+        if (parts.length < 2) return null;
+        const platform = parts[0].trim();
+        const url = parts.slice(1).join(":").trim();
+        return url ? { platform, url } : null;
+      })
+      .filter(Boolean);
+
     const customPhotosRaw = getInputValue("edit-custom-photos-urls", "modal-custom-photos-urls");
     const customPhotosArray = customPhotosRaw
       .split("\n")
@@ -974,6 +1023,7 @@ document.addEventListener('DOMContentLoaded', () => {
       spotifyUrl: getInputValue("edit-spotify-url", "modal-spotify-url"),
       discordId: getInputValue("edit-discord-id", "modal-discord-id"),
 
+      glassDesignPreset: getInputValue("edit-glass-preset", "") || "standard",
       clockColor: getInputValue("edit-clock-color", "modal-clock-color"),
       accentColor: getInputValue("edit-accent-color", "modal-accent-color"),
       cardBgColor: getInputValue("edit-card-bg-color", "modal-card-bg-color"),
@@ -991,6 +1041,7 @@ document.addEventListener('DOMContentLoaded', () => {
       showSocials: getCheckboxValue("edit-show-socials", "modal-show-socials", true),
       showRankings: getCheckboxValue("edit-show-rankings", "modal-show-rankings", true),
 
+      socials: socialsArray,
       mediaImages: mediaImagesArray,
       customPhotos: customPhotosArray,
       widgetPositions: widgetPositions,
@@ -1032,7 +1083,6 @@ document.addEventListener('DOMContentLoaded', () => {
   // ==========================================================================
   const loadProfileData = async (authUser) => {
     try {
-      // Prevent Ghost Profile Flicker: Keep space container invisible during initial load
       if (spaceContainer) {
         spaceContainer.style.opacity = "0";
         spaceContainer.style.transition = "opacity 0.25s ease";
@@ -1044,7 +1094,6 @@ document.addEventListener('DOMContentLoaded', () => {
       targetUserId = null;
       isCurrentUserAdmin = false;
 
-      // 1. Check if logged-in user has admin privileges in Firestore
       if (authUser) {
         try {
           const authUserSnap = await getDoc(doc(db, "users", authUser.uid));
@@ -1057,7 +1106,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
       }
 
-      // 2. Resolve target user by handle parameter
       if (handleParam) {
         const q = query(collection(db, "users"), where("handle", "==", handleParam));
         const querySnap = await getDocs(q);
@@ -1068,12 +1116,10 @@ document.addEventListener('DOMContentLoaded', () => {
         }
       }
 
-      // 3. Fallback to logged-in user if viewing home profile
       if (!targetUserId && authUser) {
         targetUserId = authUser.uid;
       }
 
-      // 4. Fetch user space & user data documents
       if (targetUserId) {
         if (!userData) {
           const userSnap = await getDoc(doc(db, "users", targetUserId));
@@ -1083,7 +1129,6 @@ document.addEventListener('DOMContentLoaded', () => {
         const spaceSnap = await getDoc(doc(db, "users_spaces", targetUserId));
         if (spaceSnap.exists()) spaceData = spaceSnap.data();
 
-        // Increment view count safely (Excludes self-views & duplicate browser sessions)
         await incrementProfileViews(targetUserId, authUser);
       }
 
