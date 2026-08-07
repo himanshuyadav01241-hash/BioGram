@@ -147,6 +147,39 @@ document.addEventListener('DOMContentLoaded', () => {
   };
 
   // ==========================================================================
+  // VIEW TRACKING (PREVENTS SELF-VIEWS & REFRESH SPAM)
+  // ==========================================================================
+  const trackProfileView = async (targetUid, authUser) => {
+    if (!targetUid) return;
+
+    // 1. Do NOT count view if user is viewing their own profile
+    if (authUser && authUser.uid === targetUid) return;
+
+    // 2. Prevent duplicate view count in the same browser session
+    const sessionKey = `biogram_viewed_${targetUid}`;
+    if (sessionStorage.getItem(sessionKey)) return;
+
+    try {
+      sessionStorage.setItem(sessionKey, 'true');
+      const userRef = doc(db, "users", targetUid);
+      await updateDoc(userRef, {
+        views: increment(1)
+      });
+      
+      // Update local state views visually
+      if (currentLoadedUserData) {
+        currentLoadedUserData.views = (currentLoadedUserData.views || 0) + 1;
+        const viewsEl = document.getElementById("views-count");
+        if (viewsEl) {
+          viewsEl.textContent = Number(currentLoadedUserData.views).toLocaleString();
+        }
+      }
+    } catch (e) {
+      console.warn("Could not track profile view:", e);
+    }
+  };
+
+  // ==========================================================================
   // NOT FOUND STATE
   // ==========================================================================
   const renderNotFoundUI = (handle) => {
@@ -920,6 +953,9 @@ document.addEventListener('DOMContentLoaded', () => {
       spaceContainer.style.opacity = "1";
       spaceContainer.style.pointerEvents = "auto";
     }
+
+    // Trigger view count update for non-self visits
+    trackProfileView(targetUserId, authUser);
   };
 
   // ==========================================================================
