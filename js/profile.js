@@ -816,9 +816,6 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   };
 
-  // ==========================================================================
-  // DYNAMIC VIEWS INCREMENT (ONCE PER SESSION) & LIVE RANK CALCULATOR
-  // ==========================================================================
   const renderRankingsWidget = async (targetUid, userData, spaceData, showRankings) => {
     const widget = document.getElementById("rankings-card-widget");
     const rankEl = document.getElementById("user-rank-display");
@@ -831,55 +828,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
     widget?.classList.remove("hidden");
 
-    let currentViews = Number(userData?.views ?? spaceData?.views ?? 0);
-
-    // 1. Increment profile view count in Firestore ONLY ONCE per visitor session
-    if (targetUid) {
-      const viewSessionKey = `viewed_profile_${targetUid}`;
-      const hasViewedInSession = sessionStorage.getItem(viewSessionKey);
-
-      if (!hasViewedInSession) {
-        try {
-          // Immediately set key in sessionStorage to prevent multiple calls
-          sessionStorage.setItem(viewSessionKey, "true");
-
-          const userDocRef = doc(db, "users", targetUid);
-          await updateDoc(userDocRef, {
-            views: increment(1)
-          });
-          currentViews += 1;
-        } catch (e) {
-          console.warn("Could not increment view count:", e);
-        }
-      }
-    }
-
-    // Display formatted view count
+    const currentViews = userData?.views ?? spaceData?.views ?? 0;
     if (viewsEl) {
-      viewsEl.textContent = currentViews.toLocaleString();
+      viewsEl.textContent = Number(currentViews).toLocaleString();
     }
 
-    // 2. Compute dynamic rank by counting users with higher views count
     if (rankEl) {
-      if (targetUid) {
-        try {
-          const usersRef = collection(db, "users");
-          const higherRankQuery = query(usersRef, where("views", ">", currentViews));
-          const querySnap = await getDocs(higherRankQuery);
-          
-          // Current user rank = total users with higher views + 1
-          const computedRank = querySnap.size + 1;
-          rankEl.textContent = `#${computedRank}`;
-
-          // Sync rank back to user doc
-          await updateDoc(doc(db, "users", targetUid), { rank: computedRank }).catch(() => {});
-        } catch (err) {
-          console.warn("Could not compute live rank:", err);
-          rankEl.textContent = userData?.rank ? `#${userData.rank}` : "#1";
-        }
-      } else {
-        rankEl.textContent = "#1";
-      }
+      rankEl.textContent = userData?.rank ? `#${userData.rank}` : "#1";
     }
   };
 
