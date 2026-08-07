@@ -64,6 +64,37 @@
       padding: 20px;
     }
 
+    /* AUDIO CONTROLS TOP LEFT */
+    .audio-control-top-left {
+      position: fixed;
+      top: 16px;
+      left: 16px;
+      z-index: 999;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(0, 0, 0, 0.5);
+      backdrop-filter: blur(8px);
+      padding: 8px 12px;
+      border-radius: 20px;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
+    .audio-control-btn {
+      background: none;
+      border: none;
+      color: white;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+    }
+
+    .audio-volume-slider {
+      width: 60px;
+      cursor: pointer;
+      accent-color: var(--primary-color);
+    }
+
     /* WIDGET GRID CONTAINER CANVAS */
     .widgets-wrapper {
       position: relative;
@@ -110,7 +141,7 @@
       border: 1px solid rgba(255, 255, 255, 0.15) !important;
     }
 
-    /* NEW TRANSPARENT THEME PRESET */
+    /* TRANSPARENT THEME PRESET */
     .glass-widget-card.preset-glass-transparent,
     .preset-glass-transparent {
       background: rgba(18, 18, 20, 0.45) !important;
@@ -163,9 +194,29 @@
       text-align: center;
     }
 
+    .profile-avatar-img {
+      width: 88px;
+      height: 88px;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 3px solid var(--primary-color);
+      box-shadow: 0 8px 16px rgba(0,0,0,0.15);
+    }
+
     #discord-card-widget {
       width: 320px;
       color: #0f172a;
+    }
+
+    .discord-status-dot {
+      position: absolute;
+      bottom: 0;
+      right: -2px;
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: #22c55e;
+      border: 2px solid #ffffff;
     }
 
     #media-card-widget {
@@ -437,12 +488,12 @@
   <div id="space-bg-layer" class="space-bg-layer" aria-hidden="true"></div>
 
   <!-- AUDIO CONTROLS -->
-  <div class="audio-control-top-left" style="position: fixed; top: 16px; left: 16px; z-index: 999; display: flex; align-items: center; gap: 8px; background: rgba(0, 0, 0, 0.5); backdrop-filter: blur(8px); padding: 8px 12px; border-radius: 20px; border: 1px solid rgba(255, 255, 255, 0.2);">
-    <button type="button" id="btn-toggle-audio" aria-label="Toggle background audio" style="background: none; border: none; color: white; cursor: pointer; display: flex; align-items: center;">
+  <div class="audio-control-top-left">
+    <button type="button" id="btn-toggle-audio" class="audio-control-btn" aria-label="Toggle background audio">
       <i id="audio-icon" class="fa-solid fa-play"></i>
     </button>
     <i class="fa-solid fa-volume-high" style="color: white; font-size: 0.8rem;" aria-hidden="true"></i>
-    <input type="range" id="bg-audio-volume" min="0" max="100" value="50" aria-label="Audio Volume" style="width: 60px; cursor: pointer; accent-color: var(--primary-color);">
+    <input type="range" id="bg-audio-volume" class="audio-volume-slider" min="0" max="100" value="50" aria-label="Audio Volume">
     <audio id="bg-audio-player" loop></audio>
   </div>
 
@@ -471,10 +522,10 @@
         <div style="margin-bottom: 10px;">
           <img 
             id="space-avatar-img" 
+            class="profile-avatar-img"
             src="https://api.dicebear.com/7.x/avataaars/svg?seed=kaumudi" 
             alt="User Avatar" 
             loading="lazy"
-            style="width: 88px; height: 88px; border-radius: 50%; object-fit: cover; border: 3px solid var(--primary-color); box-shadow: 0 8px 16px rgba(0,0,0,0.15);"
             referrerpolicy="no-referrer"
           >
         </div>
@@ -492,7 +543,7 @@
         <div style="display: flex; align-items: center; gap: 12px;">
           <div style="position: relative;">
             <i class="fa-brands fa-discord" style="font-size: 2rem; color: #818cf8;" aria-hidden="true"></i>
-            <span id="discord-status-dot" style="position: absolute; bottom: 0; right: -2px; width: 10px; height: 10px; border-radius: 50%; background: #22c55e; border: 2px solid #ffffff;"></span>
+            <span id="discord-status-dot" class="discord-status-dot"></span>
           </div>
           <div style="flex: 1; min-width: 0;">
             <span style="display: block; font-size: 0.65rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; color: #cbd5e1;">Discord Activity</span>
@@ -539,7 +590,7 @@
         <div id="card-links-container" style="display: flex; flex-wrap: wrap; gap: 8px; justify-content: center;"></div>
       </div>
 
-      <!-- 7. COMPACT RANK & VIEWS WIDGET ONLY -->
+      <!-- 7. COMPACT RANK & VIEWS WIDGET -->
       <div id="rankings-card-widget" class="glass-widget-card preset-glass-transparent">
         <div class="rank-widget-inner">
           <div class="rank-label-title" style="font-size: 0.75rem; text-transform: uppercase; font-weight: 800; letter-spacing: 0.5px; color: #ffb703; display: flex; align-items: center; justify-content: center; gap: 6px;">
