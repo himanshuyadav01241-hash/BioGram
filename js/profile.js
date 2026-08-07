@@ -12,6 +12,7 @@ import {
   collection,
   query,
   where,
+  orderBy,
   getDocs,
   limit
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
@@ -35,36 +36,12 @@ document.addEventListener('DOMContentLoaded', () => {
   const saveSpaceBtn = document.getElementById("save-space-btn");
   const resetPositionsBtn = document.getElementById("reset-positions-btn");
   const toggleLockBtn = document.getElementById("toggle-lock-btn");
-  const mobileOrderListContainer = document.getElementById("mobile-order-list");
-  const toggleMobileOrderBtn = document.getElementById("toggle-mobile-order-header") || document.getElementById("toggle-mobile-order-btn");
-  const mobileOrderChevron = document.getElementById("mobile-order-chevron");
 
   const mediaPrevBtn = document.getElementById("media-prev-btn");
   const mediaNextBtn = document.getElementById("media-next-btn");
 
   const urlParams = new URLSearchParams(window.location.search);
   const handleParam = urlParams.get("u")?.toLowerCase().trim() || urlParams.get("handle")?.toLowerCase().trim();
-
-  const DEFAULT_WIDGET_ORDER = ['clock', 'profile', 'discord', 'media', 'spotify', 'socials', 'rankings'];
-  const WIDGET_LABELS = {
-    clock: "Clock Widget",
-    profile: "Profile Widget",
-    discord: "Discord Activity",
-    media: "Media Gallery",
-    spotify: "Spotify Player",
-    socials: "Social Links",
-    rankings: "Rank & Views"
-  };
-
-  const WIDGET_ELEMENT_IDS = {
-    clock: "clock-card-widget",
-    profile: "profile-card-widget",
-    discord: "discord-card-widget",
-    media: "media-card-widget",
-    spotify: "spotify-card-widget",
-    socials: "socials-card-widget",
-    rankings: "rankings-card-widget"
-  };
 
   let clockInterval = null;
   let activeSpaceConfig = {};
@@ -77,12 +54,31 @@ document.addEventListener('DOMContentLoaded', () => {
   let isLayoutAbsolute = false;
   let isLayoutLocked = true; 
   let discordTimerInterval = null;
-  let tempMobileOrder = [...DEFAULT_WIDGET_ORDER];
 
   const isMobile = () => window.innerWidth <= 600;
   const getLocalStorageKey = () => targetUserId ? `biogram_space_layout_cache_${targetUserId}` : 'biogram_space_layout_cache_guest';
 
   // Helper functions
+  const getInputValue = (id1, id2) => {
+    const el = document.getElementById(id1) || document.getElementById(id2);
+    return el ? el.value.trim() : "";
+  };
+
+  const getCheckboxValue = (id1, id2, defaultVal = true) => {
+    const el = document.getElementById(id1) || document.getElementById(id2);
+    return el ? el.checked : defaultVal;
+  };
+
+  const setInputValue = (id1, id2, value) => {
+    const el = document.getElementById(id1) || document.getElementById(id2);
+    if (el) el.value = value || "";
+  };
+
+  const setCheckboxValue = (id1, id2, value) => {
+    const el = document.getElementById(id1) || document.getElementById(id2);
+    if (el) el.checked = !!value;
+  };
+
   const escapeHtml = (str) => {
     if (!str) return "";
     return String(str)
@@ -93,6 +89,7 @@ document.addEventListener('DOMContentLoaded', () => {
       .replace(/'/g, "&#039;");
   };
 
+  // Smart URL Platform Detector
   const detectPlatformFromUrl = (urlStr = "") => {
     const u = urlStr.toLowerCase().trim();
     if (u.includes("instagram.com") || u.includes("instagr.am")) return "Instagram";
@@ -107,6 +104,7 @@ document.addEventListener('DOMContentLoaded', () => {
     return "Link";
   };
 
+  // Dynamic Social Icon Resolver
   const getSocialIconClass = (platformStr = "") => {
     const p = platformStr.toLowerCase().trim();
     if (p.includes("instagram") || p.includes("insta")) return "fa-brands fa-instagram";
@@ -149,12 +147,15 @@ document.addEventListener('DOMContentLoaded', () => {
   };
 
   // ==========================================================================
-  // VIEW TRACKING
+  // VIEW TRACKING (PREVENTS SELF-VIEWS & REFRESH SPAM)
   // ==========================================================================
   const trackProfileView = async (targetUid, authUser) => {
     if (!targetUid) return;
+
+    // 1. Do NOT count view if user is viewing their own profile
     if (authUser && authUser.uid === targetUid) return;
 
+    // 2. Prevent duplicate view count in the same browser session
     const sessionKey = `biogram_viewed_${targetUid}`;
     if (sessionStorage.getItem(sessionKey)) return;
 
@@ -165,6 +166,7 @@ document.addEventListener('DOMContentLoaded', () => {
         views: increment(1)
       });
       
+      // Update local state views visually
       if (currentLoadedUserData) {
         currentLoadedUserData.views = (currentLoadedUserData.views || 0) + 1;
         const viewsEl = document.getElementById("views-count");
@@ -253,180 +255,6 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // ==========================================================================
-  // EDITOR MODAL FUNCTIONALITY & FIXES
-  // ==========================================================================
-  const populateEditorModal = () => {
-    if (!editorModal) return;
-
-    const editDisplayName = document.getElementById("edit-display-name");
-    const editBio = document.getElementById("edit-bio");
-    const editAvatar = document.getElementById("edit-avatar-url");
-    const editBg = document.getElementById("edit-bg-url");
-    const editAudio = document.getElementById("edit-audio-url");
-    const editDiscord = document.getElementById("edit-discord-id");
-    const editSpotify = document.getElementById("edit-spotify-url");
-    const editAccent = document.getElementById("edit-accent-color");
-
-    if (editDisplayName) editDisplayName.value = activeSpaceConfig.displayName || currentLoadedUserData?.displayName || "";
-    if (editBio) editBio.value = activeSpaceConfig.bio || currentLoadedUserData?.bio || "";
-    if (editAvatar) editAvatar.value = activeSpaceConfig.customAvatarUrl || currentLoadedUserData?.photoURL || "";
-    if (editBg) editBg.value = activeSpaceConfig.bgUrl || activeSpaceConfig.bgAssetUrl || "";
-    if (editAudio) editAudio.value = activeSpaceConfig.audioUrl || activeSpaceConfig.bgAudioUrl || "";
-    if (editDiscord) editDiscord.value = activeSpaceConfig.discordId || "";
-    if (editSpotify) editSpotify.value = activeSpaceConfig.spotifyUrl || "";
-    if (editAccent) editAccent.value = activeSpaceConfig.accentColor || "#3b82f6";
-  };
-
-  openEditorBtn?.addEventListener("click", () => {
-    if (!canEditCurrentProfile(auth.currentUser)) return;
-    populateEditorModal();
-    if (editorModal) {
-      editorModal.classList.remove("hidden");
-      editorModal.style.display = "flex";
-    }
-  });
-
-  closeEditorBtn?.addEventListener("click", () => {
-    if (editorModal) {
-      editorModal.classList.add("hidden");
-      editorModal.style.display = "none";
-    }
-  });
-
-  saveSpaceBtn?.addEventListener("click", async () => {
-    const currentUser = auth.currentUser;
-    if (!currentUser || !canEditCurrentProfile(currentUser)) {
-      alert("Permission denied or not logged in.");
-      return;
-    }
-
-    const editDisplayName = document.getElementById("edit-display-name")?.value.trim() || "";
-    const editBio = document.getElementById("edit-bio")?.value.trim() || "";
-    const editAvatar = document.getElementById("edit-avatar-url")?.value.trim() || "";
-    const editBg = document.getElementById("edit-bg-url")?.value.trim() || "";
-    const editAudio = document.getElementById("edit-audio-url")?.value.trim() || "";
-    const editDiscord = document.getElementById("edit-discord-id")?.value.trim() || "";
-    const editSpotify = document.getElementById("edit-spotify-url")?.value.trim() || "";
-    const editAccent = document.getElementById("edit-accent-color")?.value || "#3b82f6";
-
-    const updatedSpace = {
-      displayName: editDisplayName,
-      bio: editBio,
-      customAvatarUrl: editAvatar,
-      bgUrl: editBg,
-      audioUrl: editAudio,
-      discordId: editDiscord,
-      spotifyUrl: editSpotify,
-      accentColor: editAccent,
-      updatedAt: new Date().toISOString()
-    };
-
-    try {
-      saveSpaceBtn.disabled = true;
-      saveSpaceBtn.textContent = "Saving...";
-
-      // Update users_spaces document
-      await setDoc(doc(db, "users_spaces", targetUserId), updatedSpace, { merge: true });
-
-      // Synchronize primary user details to main users collection (Fixes Leaderboard Names!)
-      await setDoc(doc(db, "users", targetUserId), {
-        displayName: editDisplayName || currentLoadedUserData?.displayName || "User",
-        photoURL: editAvatar || currentLoadedUserData?.photoURL || "",
-        bio: editBio
-      }, { merge: true });
-
-      alert("Space & Profile updated successfully!");
-      if (editorModal) {
-        editorModal.classList.add("hidden");
-        editorModal.style.display = "none";
-      }
-
-      location.reload();
-    } catch (err) {
-      console.error("Error saving customization:", err);
-      alert("Failed to save changes. Check console for details.");
-    } finally {
-      saveSpaceBtn.disabled = false;
-      saveSpaceBtn.textContent = "Save Changes";
-    }
-  });
-
-  // ==========================================================================
-  // MOBILE ORDER UI & EXPANDABLE ACCORDION
-  // ==========================================================================
-  toggleMobileOrderBtn?.addEventListener("click", () => {
-    if (!mobileOrderListContainer) return;
-    const isHidden = mobileOrderListContainer.classList.contains("hidden");
-    if (isHidden) {
-      mobileOrderListContainer.classList.remove("hidden");
-      if (mobileOrderChevron) mobileOrderChevron.style.transform = "rotate(180deg)";
-    } else {
-      mobileOrderListContainer.classList.add("hidden");
-      if (mobileOrderChevron) mobileOrderChevron.style.transform = "rotate(0deg)";
-    }
-  });
-
-  const renderMobileOrderList = () => {
-    if (!mobileOrderListContainer) return;
-    mobileOrderListContainer.innerHTML = "";
-
-    tempMobileOrder.forEach((key, index) => {
-      const itemRow = document.createElement("div");
-      itemRow.className = "mobile-order-item";
-
-      const label = document.createElement("span");
-      label.textContent = WIDGET_LABELS[key] || key;
-
-      const btnsGroup = document.createElement("div");
-      btnsGroup.className = "mobile-order-btns";
-
-      const upBtn = document.createElement("button");
-      upBtn.type = "button";
-      upBtn.className = "mobile-order-btn";
-      upBtn.innerHTML = '<i class="fa-solid fa-arrow-up"></i>';
-      upBtn.disabled = index === 0;
-      upBtn.addEventListener("click", () => moveMobileOrderItem(index, index - 1));
-
-      const downBtn = document.createElement("button");
-      downBtn.type = "button";
-      downBtn.className = "mobile-order-btn";
-      downBtn.innerHTML = '<i class="fa-solid fa-arrow-down"></i>';
-      downBtn.disabled = index === tempMobileOrder.length - 1;
-      downBtn.addEventListener("click", () => moveMobileOrderItem(index, index + 1));
-
-      btnsGroup.appendChild(upBtn);
-      btnsGroup.appendChild(downBtn);
-
-      itemRow.appendChild(label);
-      itemRow.appendChild(btnsGroup);
-      mobileOrderListContainer.appendChild(itemRow);
-    });
-  };
-
-  const moveMobileOrderItem = (fromIndex, toIndex) => {
-    if (toIndex < 0 || toIndex >= tempMobileOrder.length) return;
-    const item = tempMobileOrder.splice(fromIndex, 1)[0];
-    tempMobileOrder.splice(toIndex, 0, item);
-    renderMobileOrderList();
-  };
-
-  const applyMobileLayoutOrder = (orderArray) => {
-    if (!spaceContainer) return;
-
-    const currentOrder = (Array.isArray(orderArray) && orderArray.length > 0)
-      ? orderArray
-      : DEFAULT_WIDGET_ORDER;
-
-    currentOrder.forEach((key, index) => {
-      const elId = WIDGET_ELEMENT_IDS[key];
-      const widgetEl = elId ? document.getElementById(elId) : null;
-      if (widgetEl) {
-        widgetEl.style.order = index + 1;
-      }
-    });
-  };
-
-  // ==========================================================================
   // LAYOUT PERSISTENCE & LOCK/DRAG
   // ==========================================================================
   const getLayoutPositionsDict = () => {
@@ -470,7 +298,6 @@ document.addEventListener('DOMContentLoaded', () => {
       });
       if (spaceContainer) spaceContainer.style.minHeight = '';
       isLayoutAbsolute = false;
-      applyMobileLayoutOrder(activeSpaceConfig.mobileWidgetOrder);
       return;
     }
 
@@ -595,10 +422,9 @@ document.addEventListener('DOMContentLoaded', () => {
       const positions = getLayoutPositionsDict();
       activeSpaceConfig.widgetPositions = positions;
 
-      const currentUid = auth.currentUser?.uid;
-      if (currentUid && Object.keys(positions).length > 0) {
+      if (targetUserId && Object.keys(positions).length > 0) {
         try {
-          await setDoc(doc(db, "users_spaces", currentUid), { widgetPositions: positions }, { merge: true });
+          await setDoc(doc(db, "users_spaces", targetUserId), { widgetPositions: positions }, { merge: true });
         } catch (err) {
           console.warn("Could not sync layout to database:", err);
         }
@@ -670,7 +496,6 @@ document.addEventListener('DOMContentLoaded', () => {
   window.addEventListener('resize', () => {
     if (activeSpaceConfig) {
       applySavedPositions(activeSpaceConfig.widgetPositions);
-      applyMobileLayoutOrder(activeSpaceConfig.mobileWidgetOrder);
       updateLockStateUI();
     }
   });
@@ -685,15 +510,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     resetToFlexLayout();
     activeSpaceConfig.widgetPositions = {};
-    activeSpaceConfig.mobileWidgetOrder = [...DEFAULT_WIDGET_ORDER];
 
-    const currentUid = auth.currentUser?.uid;
-    if (currentUid) {
+    if (targetUserId) {
       try {
-        await setDoc(doc(db, "users_spaces", currentUid), { 
-          widgetPositions: {}, 
-          mobileWidgetOrder: [...DEFAULT_WIDGET_ORDER] 
-        }, { merge: true });
+        await setDoc(doc(db, "users_spaces", targetUserId), { widgetPositions: {} }, { merge: true });
       } catch (err) {
         console.warn("Error resetting layout on database:", err);
       }
@@ -1119,61 +939,213 @@ document.addEventListener('DOMContentLoaded', () => {
 
     renderProfileWidget(userData, spaceData, authUser, spaceData?.showProfile !== false);
     renderDiscordWidget(spaceData?.discordId, spaceData?.showDiscord !== false);
+    renderMediaWidget(spaceData?.mediaImages, spaceData?.showMedia !== false);
     renderSpotifyWidget(spaceData?.spotifyUrl, spaceData?.showSpotify !== false);
-    renderMediaWidget(spaceData?.mediaImages || spaceData?.galleryImages, spaceData?.showMedia !== false);
     renderSocialsWidget(spaceData?.socials, spaceData?.showSocials !== false);
     renderRankingsWidget(targetUserId, userData, spaceData, spaceData?.showRankings !== false);
 
     applyCustomSpaceStyles(spaceData);
     applySavedPositions(spaceData?.widgetPositions);
-    applyMobileLayoutOrder(spaceData?.mobileWidgetOrder);
     updateLockStateUI();
 
+    if (spaceContainer) {
+      spaceContainer.classList.remove("hidden");
+      spaceContainer.style.opacity = "1";
+      spaceContainer.style.pointerEvents = "auto";
+    }
+
+    // Trigger view count update for non-self visits
     trackProfileView(targetUserId, authUser);
   };
 
-  // Auth State Watcher & Data Loader Initialization
-  onAuthStateChanged(auth, async (user) => {
-    try {
-      if (user) {
-        const userDocRef = doc(db, "users", user.uid);
-        const userSnap = await getDoc(userDocRef);
-        if (userSnap.exists()) {
-          isCurrentUserAdmin = userSnap.data()?.isAdmin || false;
-        }
-      }
+  // ==========================================================================
+  // EDITOR MODAL CONTROLS & SAVE HANDLER
+  // ==========================================================================
+  openEditorBtn?.addEventListener("click", () => {
+    if (!canEditCurrentProfile(auth.currentUser)) {
+      alert("You do not have permission to edit this space.");
+      return;
+    }
 
+    setInputValue("edit-display-name", "modal-display-name", activeSpaceConfig.displayName || currentLoadedUserData?.displayName || "");
+    setInputValue("edit-bio", "modal-bio", activeSpaceConfig.bio || currentLoadedUserData?.bio || "");
+    setInputValue("edit-avatar-url", "modal-avatar-url", activeSpaceConfig.customAvatarUrl || "");
+    setInputValue("edit-bg-url", "modal-bg-url", activeSpaceConfig.bgUrl || activeSpaceConfig.bgAssetUrl || "");
+    setInputValue("edit-audio-url", "modal-audio-url", activeSpaceConfig.audioUrl || activeSpaceConfig.bgAudioUrl || "");
+    setInputValue("edit-spotify-url", "modal-spotify-url", activeSpaceConfig.spotifyUrl || "");
+    setInputValue("edit-discord-id", "modal-discord-id", activeSpaceConfig.discordId || "");
+
+    const stylePresetSelect = document.getElementById("edit-glass-preset");
+    if (stylePresetSelect) stylePresetSelect.value = activeSpaceConfig.glassDesignPreset || "transparent";
+
+    const formatSelect = document.getElementById("edit-clock-format") || document.getElementById("modal-clock-format");
+    if (formatSelect) formatSelect.value = activeSpaceConfig.clockFormat || "12h";
+
+    setCheckboxValue("edit-clock-show-seconds", "modal-clock-show-seconds", activeSpaceConfig.clockShowSeconds !== false);
+    setCheckboxValue("edit-clock-show-date", "modal-clock-show-date", activeSpaceConfig.clockShowDate !== false);
+    setCheckboxValue("edit-show-clock", "modal-show-clock", activeSpaceConfig.showClock !== false);
+    setCheckboxValue("edit-show-profile", "modal-show-profile", activeSpaceConfig.showProfile !== false);
+    setCheckboxValue("edit-show-discord", "modal-show-discord", activeSpaceConfig.showDiscord !== false);
+    setCheckboxValue("edit-show-spotify", "modal-show-spotify", activeSpaceConfig.showSpotify !== false);
+    setCheckboxValue("edit-show-media", "modal-show-media", activeSpaceConfig.showMedia !== false);
+    setCheckboxValue("edit-show-socials", "modal-show-socials", activeSpaceConfig.showSocials !== false);
+    setCheckboxValue("edit-show-rankings", "modal-show-rankings", activeSpaceConfig.showRankings !== false);
+
+    const mediaUrlsInput = document.getElementById("edit-media-urls");
+    if (mediaUrlsInput) {
+      mediaUrlsInput.value = Array.isArray(activeSpaceConfig.mediaImages) 
+        ? activeSpaceConfig.mediaImages.join("\n") 
+        : "";
+    }
+
+    const socialsInput = document.getElementById("edit-socials-data");
+    if (socialsInput) {
+      if (Array.isArray(activeSpaceConfig.socials) && activeSpaceConfig.socials.length > 0) {
+        socialsInput.value = activeSpaceConfig.socials
+          .map(item => {
+            let plat = item.platform || "";
+            if (!plat || plat.toLowerCase() === "https" || plat.toLowerCase() === "http") {
+              plat = detectPlatformFromUrl(item.url || "");
+            }
+            return `${plat}: ${item.url || ''}`;
+          })
+          .join("\n");
+      } else {
+        socialsInput.value = "GitHub: https://github.com\nInstagram: https://instagram.com";
+      }
+    }
+
+    if (editorModal) editorModal.classList.remove("hidden");
+  });
+
+  closeEditorBtn?.addEventListener("click", () => {
+    if (editorModal) editorModal.classList.add("hidden");
+  });
+
+  saveSpaceBtn?.addEventListener("click", async () => {
+    if (!canEditCurrentProfile(auth.currentUser)) {
+      alert("Permission denied.");
+      return;
+    }
+
+    const rawSocialsText = getInputValue("edit-socials-data");
+    const parsedSocials = rawSocialsText
+      .split("\n")
+      .map(line => line.trim())
+      .filter(Boolean)
+      .map(line => {
+        if (/^https?:\/\//i.test(line)) {
+          return { platform: detectPlatformFromUrl(line), url: line };
+        }
+        
+        const colonIdx = line.indexOf(":");
+        if (colonIdx !== -1) {
+          const prefix = line.substring(0, colonIdx).trim();
+          const remainder = line.substring(colonIdx + 1).trim();
+          
+          if (prefix.toLowerCase() === "http" || prefix.toLowerCase() === "https") {
+            return { platform: detectPlatformFromUrl(line), url: line };
+          }
+          return { platform: prefix || detectPlatformFromUrl(remainder), url: remainder };
+        }
+        
+        return { platform: detectPlatformFromUrl(line), url: line };
+      });
+
+    const updatedConfig = {
+      ...activeSpaceConfig,
+      displayName: getInputValue("edit-display-name"),
+      bio: getInputValue("edit-bio"),
+      customAvatarUrl: getInputValue("edit-avatar-url"),
+      bgUrl: getInputValue("edit-bg-url"),
+      audioUrl: getInputValue("edit-audio-url"),
+      spotifyUrl: getInputValue("edit-spotify-url"),
+      discordId: getInputValue("edit-discord-id"),
+      glassDesignPreset: document.getElementById("edit-glass-preset")?.value || "transparent",
+      clockFormat: document.getElementById("edit-clock-format")?.value || "12h",
+      clockShowSeconds: getCheckboxValue("edit-clock-show-seconds"),
+      clockShowDate: getCheckboxValue("edit-clock-show-date"),
+      showClock: getCheckboxValue("edit-show-clock"),
+      showProfile: getCheckboxValue("edit-show-profile"),
+      showDiscord: getCheckboxValue("edit-show-discord"),
+      showSpotify: getCheckboxValue("edit-show-spotify"),
+      showMedia: getCheckboxValue("edit-show-media"),
+      showSocials: getCheckboxValue("edit-show-socials"),
+      showRankings: getCheckboxValue("edit-show-rankings"),
+      socials: parsedSocials,
+      mediaImages: getInputValue("edit-media-urls").split("\n").map(s => s.trim()).filter(Boolean)
+    };
+
+    if (targetUserId) {
+      try {
+        await setDoc(doc(db, "users_spaces", targetUserId), updatedConfig, { merge: true });
+        activeSpaceConfig = updatedConfig;
+        renderProfileSpace(currentLoadedUserData, activeSpaceConfig, auth.currentUser);
+        if (editorModal) editorModal.classList.add("hidden");
+        alert("Space updated successfully!");
+      } catch (err) {
+        console.error("Error saving space:", err);
+        alert("Failed to save settings.");
+      }
+    } else {
+      activeSpaceConfig = updatedConfig;
+      renderProfileSpace(currentLoadedUserData, activeSpaceConfig, auth.currentUser);
+      if (editorModal) editorModal.classList.add("hidden");
+    }
+  });
+
+  // ==========================================================================
+  // INITIALIZE AUTH OBSERVER & TARGET USER RESOLUTION
+  // ==========================================================================
+  onAuthStateChanged(auth, async (authUser) => {
+    isCurrentUserAdmin = false;
+
+    if (authUser) {
+      try {
+        const adminDoc = await getDoc(doc(db, "users", authUser.uid));
+        if (adminDoc.exists()) {
+          const adminData = adminDoc.data();
+          isCurrentUserAdmin = adminData.isAdmin === true || adminData.role === "admin";
+        }
+      } catch (e) {
+        console.warn("Could not check admin status:", e);
+      }
+    }
+
+    try {
       if (handleParam) {
         const usersRef = collection(db, "users");
         const q = query(usersRef, where("handle", "==", handleParam), limit(1));
-        const querySnap = await getDocs(q);
+        const querySnapshot = await getDocs(q);
 
-        if (!querySnap.empty) {
-          const userDoc = querySnap.docs[0];
+        if (!querySnapshot.empty) {
+          const userDoc = querySnapshot.docs[0];
           targetUserId = userDoc.id;
           const userData = userDoc.data();
 
-          const spaceSnap = await getDoc(doc(db, "users_spaces", targetUserId));
-          const spaceData = spaceSnap.exists() ? spaceSnap.data() : {};
+          const spaceDoc = await getDoc(doc(db, "users_spaces", targetUserId));
+          const spaceData = spaceDoc.exists() ? spaceDoc.data() : {};
 
-          renderProfileSpace(userData, spaceData, user);
+          renderProfileSpace(userData, spaceData, authUser);
         } else {
+          targetUserId = null;
           renderNotFoundUI(handleParam);
         }
-      } else if (user) {
-        targetUserId = user.uid;
-        const userSnap = await getDoc(doc(db, "users", targetUserId));
-        const userData = userSnap.exists() ? userSnap.data() : { handle: "me", displayName: user.displayName };
+      } else if (authUser) {
+        targetUserId = authUser.uid;
+        const userDoc = await getDoc(doc(db, "users", authUser.uid));
+        const spaceDoc = await getDoc(doc(db, "users_spaces", authUser.uid));
 
-        const spaceSnap = await getDoc(doc(db, "users_spaces", targetUserId));
-        const spaceData = spaceSnap.exists() ? spaceSnap.data() : {};
+        const userData = userDoc.exists() ? userDoc.data() : { displayName: authUser.displayName, handle: "user" };
+        const spaceData = spaceDoc.exists() ? spaceDoc.data() : {};
 
-        renderProfileSpace(userData, spaceData, user);
+        renderProfileSpace(userData, spaceData, authUser);
       } else {
+        targetUserId = null;
         renderNotFoundUI(null);
       }
-    } catch (err) {
-      console.error("Initialization error:", err);
+    } catch (e) {
+      console.error("Error initializing space:", e);
       renderNotFoundUI(handleParam);
     }
   });
