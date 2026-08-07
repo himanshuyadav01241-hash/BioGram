@@ -75,7 +75,6 @@ body {
 /* ==========================================================================
    2.1 ADMIN BLUR & MODERATION STYLES
    ========================================================================== */
-/* Blurs the entire container, including text, icons, and layout */
 .blurred-text,
 .blurred-profile,
 .leaderboard-item.blurred-text {
@@ -85,7 +84,6 @@ body {
   opacity: 0.6 !important;
 }
 
-/* Forces profile images/avatars inside blurred cards to blur heavily */
 .blurred-text img,
 .blurred-profile img,
 .leaderboard-item.blurred-text img,
@@ -94,7 +92,6 @@ body {
   opacity: 0.4 !important;
 }
 
-/* Completely hides the Visit Profile button when a profile is blurred */
 .blurred-text .btn-visit-profile,
 .blurred-profile .btn-visit-profile,
 .leaderboard-item.blurred-text .btn-visit-profile {
@@ -902,7 +899,6 @@ body {
   flex-shrink: 0;
 }
 
-/* Explicitly force Visit Profile button to be visible and styled for normal users */
 .btn-visit-profile { 
   display: inline-flex !important;
   align-items: center;
@@ -1166,6 +1162,30 @@ body {
   background: rgba(255, 255, 255, 0.92) !important;
   color: #0f172a !important;
   border: 1px solid rgba(255, 255, 255, 0.5) !important;
+  backdrop-filter: blur(12px);
+}
+
+.glass-widget-card.preset-glass-dark {
+  background: rgba(15, 23, 42, 0.85) !important;
+  color: #f8fafc !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  backdrop-filter: blur(16px);
+}
+
+.glass-widget-card.preset-glass-frost {
+  background: rgba(255, 255, 255, 0.4) !important;
+  color: #0f172a !important;
+  border: 1px solid rgba(255, 255, 255, 0.6) !important;
+  backdrop-filter: blur(20px);
+  box-shadow: 0 8px 32px rgba(31, 38, 135, 0.15);
+}
+
+.glass-widget-card.preset-glass-neon {
+  background: rgba(13, 17, 23, 0.9) !important;
+  color: #00ffcc !important;
+  border: 1px solid rgba(0, 255, 204, 0.4) !important;
+  backdrop-filter: blur(12px);
+  box-shadow: 0 0 15px rgba(0, 255, 204, 0.25);
 }
 
 /* ==========================================================================
@@ -1183,7 +1203,6 @@ body {
   border-radius: 18px !important;
 }
 
-/* Scale title & icon down */
 #rankings-card-widget h3,
 #rankings-card-widget .widget-title,
 #rankings-card-widget .card-title {
@@ -1197,7 +1216,6 @@ body {
   gap: 4px;
 }
 
-/* Compact rank display number */
 #rankings-card-widget h2,
 #rankings-card-widget .rank-display,
 #rankings-card-widget .big-rank {
@@ -1207,14 +1225,12 @@ body {
   line-height: 1 !important;
 }
 
-/* Compact views count subtext */
 #rankings-card-widget .views-count,
 #rankings-card-widget p {
   font-size: 0.7rem !important;
   opacity: 0.75;
 }
 
-/* Hide the large full list inside this small card */
 #rankings-card-widget .leaderboard-section,
 #rankings-card-widget .leaderboard-list,
 #rankings-card-widget #leaderboard-list,
