@@ -10,8 +10,7 @@ import {
   collection,
   query,
   where,
-  getDocs,
-  orderBy
+  getDocs
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -40,7 +39,7 @@ document.addEventListener('DOMContentLoaded', () => {
   let clockInterval = null;
   let activeSpaceConfig = {};
   let currentLoadedUserData = null;
-  let targetUserId = null;     // ID of profile being viewed
+  let targetUserId = null;         // ID of profile being viewed/edited
   let isCurrentUserAdmin = false; // Admin status flag
   let mediaImages = [];
   let currentMediaIndex = 0;
@@ -80,22 +79,24 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Check if current user has edit rights for the profile currently rendered
   const canEditCurrentProfile = (authUser) => {
-    if (!authUser || !targetUserId) return false;
-    return authUser.uid === targetUserId || isCurrentUserAdmin;
+    if (!targetUserId) return false;
+    if (isCurrentUserAdmin) return true; // Admins can edit any space
+    return authUser && authUser.uid === targetUserId; // Profile owner check
   };
 
-  // Update UI permissions (Show/Hide editor buttons)
+  // Update UI permissions (Show/Hide floating editor buttons)
   const updateEditorPermissionUI = (authUser) => {
     const canEdit = canEditCurrentProfile(authUser);
-    if (openEditorBtn) {
-      openEditorBtn.style.display = canEdit ? "inline-flex" : "none";
+    const actionsBar = document.querySelector(".floating-actions-bar");
+
+    if (actionsBar) {
+      if (canEdit) actionsBar.classList.remove("hidden");
+      else actionsBar.classList.add("hidden");
     }
-    if (toggleLockBtn) {
-      toggleLockBtn.style.display = canEdit ? "inline-flex" : "none";
-    }
-    if (resetPositionsBtn) {
-      resetPositionsBtn.style.display = canEdit ? "inline-flex" : "none";
-    }
+
+    if (openEditorBtn) openEditorBtn.style.display = canEdit ? "inline-flex" : "none";
+    if (toggleLockBtn) toggleLockBtn.style.display = canEdit ? "inline-flex" : "none";
+    if (resetPositionsBtn) resetPositionsBtn.style.display = canEdit ? "inline-flex" : "none";
   };
 
   // ==========================================================================
@@ -474,7 +475,7 @@ document.addEventListener('DOMContentLoaded', () => {
       card.id = cardId;
       card.style.padding = '12px';
       card.innerHTML = `
-        <div class="card-header" style="display:flex; justify-space-between; align-items:center; margin-bottom:8px;">
+        <div class="card-header" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
           <span style="font-size:0.85rem; font-weight:600;"><i class="fa-solid fa-image"></i> ${escapeHtml(photoObj.title || 'Photo')}</span>
         </div>
         <div class="photo-widget-body" style="overflow:hidden; border-radius:12px;">
@@ -932,7 +933,7 @@ document.addEventListener('DOMContentLoaded', () => {
       saveSpaceBtn.disabled = true;
       saveSpaceBtn.textContent = "Saving...";
 
-      // Write strictly to targetUserId's documents
+      // Write strictly to targetUserId's documents (Kaumudi's space)
       await setDoc(doc(db, "users_spaces", targetUserId), updatedConfig, { merge: true });
 
       await setDoc(doc(db, "users", targetUserId), {
