@@ -80,20 +80,18 @@ document.addEventListener('DOMContentLoaded', () => {
     return String(str).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
   };
 
-  // Ensure all widget cards have unique stable DOM IDs
+  // Ensure widget cards have static unique IDs
   const ensureWidgetCardIds = () => {
     const cards = document.querySelectorAll('.glass-widget-card');
     cards.forEach((card, index) => {
-      if (!card.id) {
-        card.id = `widget_card_${index + 1}`;
-      }
+      if (!card.id) card.id = `widget_card_${index + 1}`;
     });
   };
 
-  // Check if current user has edit rights for the profile currently rendered
+  // Check if current user has edit rights
   const canEditCurrentProfile = (authUser) => {
     if (!targetUserId) return false;
-    if (isCurrentUserAdmin) return true; // Admins can edit any space
+    if (isCurrentUserAdmin) return true; // Admin permission
     return authUser && authUser.uid === targetUserId; // Profile owner check
   };
 
@@ -199,9 +197,7 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     }
 
-    if (!positionsToApply || Object.keys(positionsToApply).length === 0) {
-      return;
-    }
+    if (!positionsToApply || Object.keys(positionsToApply).length === 0) return;
 
     const cards = document.querySelectorAll('.glass-widget-card');
     let hasSaved = false;
@@ -306,7 +302,6 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!isLayoutLocked) {
       convertAllToAbsolute();
     } else {
-      // Locking the layout - Save positions permanently
       saveLayoutToLocalStorage();
       const positions = getLayoutPositionsDict();
       activeSpaceConfig.widgetPositions = positions;
@@ -324,24 +319,19 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   const makeCardDraggable = (card, index = 0) => {
-    if (!card.id) {
-      card.id = `widget_card_${index || Date.now()}`;
-    }
+    if (!card.id) card.id = `widget_card_${index || Date.now()}`;
 
     let isDragging = false;
     let offsetX = 0;
     let offsetY = 0;
 
-    card.querySelectorAll('img').forEach(img => {
-      img.ondragstart = (e) => e.preventDefault();
-    });
+    card.querySelectorAll('img').forEach(img => img.ondragstart = (e) => e.preventDefault());
 
     const startDrag = (e, clientX, clientY, target) => {
       if (isLayoutLocked || isMobile() || !canEditCurrentProfile(auth.currentUser)) return;
       if (target.closest('button, input, textarea, a, i, iframe, select, .no-drag')) return;
 
       if (e && e.preventDefault) e.preventDefault();
-
       if (!isLayoutAbsolute) convertAllToAbsolute();
 
       isDragging = true;
@@ -355,13 +345,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const moveDrag = (clientX, clientY) => {
       if (!isDragging || !spaceContainer) return;
-
       const wrapperRect = spaceContainer.getBoundingClientRect();
-      let newLeft = clientX - wrapperRect.left - offsetX;
-      let newTop = clientY - wrapperRect.top - offsetY;
-
-      card.style.left = `${newLeft}px`;
-      card.style.top = `${newTop}px`;
+      card.style.left = `${clientX - wrapperRect.left - offsetX}px`;
+      card.style.top = `${clientY - wrapperRect.top - offsetY}px`;
     };
 
     const endDrag = () => {
@@ -383,15 +369,11 @@ document.addEventListener('DOMContentLoaded', () => {
     document.addEventListener('mouseup', endDrag);
 
     card.addEventListener('touchstart', (e) => {
-      if (e.touches.length === 1) {
-        startDrag(e, e.touches[0].clientX, e.touches[0].clientY, e.target);
-      }
+      if (e.touches.length === 1) startDrag(e, e.touches[0].clientX, e.touches[0].clientY, e.target);
     }, { passive: false });
 
     document.addEventListener('touchmove', (e) => {
-      if (isDragging && e.touches.length === 1) {
-        moveDrag(e.touches[0].clientX, e.touches[0].clientY);
-      }
+      if (isDragging && e.touches.length === 1) moveDrag(e.touches[0].clientX, e.touches[0].clientY);
     }, { passive: true });
 
     document.addEventListener('touchend', endDrag);
@@ -399,8 +381,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   const initDragAndDrop = () => {
     ensureWidgetCardIds();
-    const cards = document.querySelectorAll('.glass-widget-card');
-    cards.forEach((card, index) => makeCardDraggable(card, index));
+    document.querySelectorAll('.glass-widget-card').forEach((card, index) => makeCardDraggable(card, index));
     updateLockStateUI();
   };
 
@@ -412,8 +393,7 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
 
-    const confirmed = confirm("Are you sure you want to reset all widget positions to default?");
-    if (!confirmed) return;
+    if (!confirm("Are you sure you want to reset all widget positions to default?")) return;
 
     resetToFlexLayout();
     activeSpaceConfig.widgetPositions = {};
@@ -755,7 +735,6 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   };
 
-  // Dynamic Global Rank Calculation & View Count Display
   const renderRankingsWidget = async (targetUid, userData, spaceData, showRankings) => {
     const widget = document.getElementById("rankings-card-widget");
     const rankEl = document.getElementById("user-rank-display");
@@ -768,13 +747,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
     widget?.classList.remove("hidden");
 
-    // Retrieve view count from document
     const currentViews = userData?.views ?? spaceData?.views ?? 0;
     if (viewsEl) {
       viewsEl.innerHTML = `<i class="fa-solid fa-eye" style="color: var(--primary-color, #3b82f6);"></i> ${Number(currentViews).toLocaleString()} Views`;
     }
 
-    // Dynamic global leaderboard position calculation
     if (rankEl) {
       try {
         const usersRef = collection(db, "users");
@@ -785,9 +762,7 @@ document.addEventListener('DOMContentLoaded', () => {
         let pos = 1;
 
         snapshot.forEach((docSnap) => {
-          if (docSnap.id === targetUid) {
-            computedRank = pos;
-          }
+          if (docSnap.id === targetUid) computedRank = pos;
           pos++;
         });
 
@@ -815,20 +790,15 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   };
 
-  // Increment views count safely (Excludes self-views & prevents infinite increments per session)
   const incrementProfileViews = async (uid, authUser) => {
     if (!uid) return;
 
-    // 1. Skip incrementing if the viewer is the profile owner/admin viewing themselves
-    if (authUser && authUser.uid === uid) {
-      return;
-    }
+    // Prevent counting self views
+    if (authUser && authUser.uid === uid) return;
 
-    // 2. Prevent repeated view count triggers in the same session
+    // Prevent duplicate views in the same browser session
     const sessionKey = `biogram_viewed_${uid}`;
-    if (sessionStorage.getItem(sessionKey)) {
-      return;
-    }
+    if (sessionStorage.getItem(sessionKey)) return;
 
     try {
       const userRef = doc(db, "users", uid);
@@ -893,6 +863,12 @@ document.addEventListener('DOMContentLoaded', () => {
     applyCustomSpaceStyles(spaceData);
     applySavedPositions(spaceData?.widgetPositions);
     updateLockStateUI();
+
+    // Prevent Ghost Profile Flicker: Reveal workspace only after render completes
+    if (spaceContainer) {
+      spaceContainer.style.opacity = "1";
+      spaceContainer.style.pointerEvents = "auto";
+    }
   };
 
   // ==========================================================================
@@ -1027,11 +1003,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
       await setDoc(doc(db, "users_spaces", targetUserId), updatedConfig, { merge: true });
 
-      await setDoc(doc(db, "users", targetUserId), {
-        displayName: updatedConfig.displayName || "BioGram User",
-        bio: updatedConfig.bio || "",
-        updatedAt: new Date().toISOString()
-      }, { merge: true });
+      try {
+        await setDoc(doc(db, "users", targetUserId), {
+          displayName: updatedConfig.displayName || "BioGram User",
+          bio: updatedConfig.bio || "",
+          updatedAt: new Date().toISOString()
+        }, { merge: true });
+      } catch (userDocErr) {
+        console.warn("Could not write to user core doc:", userDocErr);
+      }
 
       saveLayoutToLocalStorage();
       activeSpaceConfig = { ...activeSpaceConfig, ...updatedConfig };
@@ -1052,12 +1032,19 @@ document.addEventListener('DOMContentLoaded', () => {
   // ==========================================================================
   const loadProfileData = async (authUser) => {
     try {
+      // Prevent Ghost Profile Flicker: Keep space container invisible during initial load
+      if (spaceContainer) {
+        spaceContainer.style.opacity = "0";
+        spaceContainer.style.transition = "opacity 0.25s ease";
+        spaceContainer.style.pointerEvents = "none";
+      }
+
       let userData = null;
       let spaceData = null;
       targetUserId = null;
       isCurrentUserAdmin = false;
 
-      // 1. Check logged-in user admin privileges from Firestore
+      // 1. Check if logged-in user has admin privileges in Firestore
       if (authUser) {
         try {
           const authUserSnap = await getDoc(doc(db, "users", authUser.uid));
@@ -1070,7 +1057,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
       }
 
-      // 2. Resolve Target User ID via URL handle parameter
+      // 2. Resolve target user by handle parameter
       if (handleParam) {
         const q = query(collection(db, "users"), where("handle", "==", handleParam));
         const querySnap = await getDocs(q);
@@ -1081,12 +1068,12 @@ document.addEventListener('DOMContentLoaded', () => {
         }
       }
 
-      // 3. Fallback to logged-in user ID if viewing home space
+      // 3. Fallback to logged-in user if viewing home profile
       if (!targetUserId && authUser) {
         targetUserId = authUser.uid;
       }
 
-      // 4. Fetch target user profile & space documents
+      // 4. Fetch user space & user data documents
       if (targetUserId) {
         if (!userData) {
           const userSnap = await getDoc(doc(db, "users", targetUserId));
@@ -1096,13 +1083,17 @@ document.addEventListener('DOMContentLoaded', () => {
         const spaceSnap = await getDoc(doc(db, "users_spaces", targetUserId));
         if (spaceSnap.exists()) spaceData = spaceSnap.data();
 
-        // Increment profile view count safely (Excludes self-views & repeat sessions)
+        // Increment view count safely (Excludes self-views & duplicate browser sessions)
         await incrementProfileViews(targetUserId, authUser);
       }
 
       renderProfileSpace(userData, spaceData, authUser);
     } catch (err) {
       console.error("Profile loading error:", err);
+      if (spaceContainer) {
+        spaceContainer.style.opacity = "1";
+        spaceContainer.style.pointerEvents = "auto";
+      }
     }
   };
 
