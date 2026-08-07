@@ -253,6 +253,105 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // ==========================================================================
+  // EDITOR MODAL FUNCTIONALITY & FIXES
+  // ==========================================================================
+  const populateEditorModal = () => {
+    if (!editorModal) return;
+
+    const editDisplayName = document.getElementById("edit-display-name");
+    const editBio = document.getElementById("edit-bio");
+    const editAvatar = document.getElementById("edit-avatar-url");
+    const editBg = document.getElementById("edit-bg-url");
+    const editAudio = document.getElementById("edit-audio-url");
+    const editDiscord = document.getElementById("edit-discord-id");
+    const editSpotify = document.getElementById("edit-spotify-url");
+    const editAccent = document.getElementById("edit-accent-color");
+
+    if (editDisplayName) editDisplayName.value = activeSpaceConfig.displayName || currentLoadedUserData?.displayName || "";
+    if (editBio) editBio.value = activeSpaceConfig.bio || currentLoadedUserData?.bio || "";
+    if (editAvatar) editAvatar.value = activeSpaceConfig.customAvatarUrl || currentLoadedUserData?.photoURL || "";
+    if (editBg) editBg.value = activeSpaceConfig.bgUrl || activeSpaceConfig.bgAssetUrl || "";
+    if (editAudio) editAudio.value = activeSpaceConfig.audioUrl || activeSpaceConfig.bgAudioUrl || "";
+    if (editDiscord) editDiscord.value = activeSpaceConfig.discordId || "";
+    if (editSpotify) editSpotify.value = activeSpaceConfig.spotifyUrl || "";
+    if (editAccent) editAccent.value = activeSpaceConfig.accentColor || "#3b82f6";
+  };
+
+  openEditorBtn?.addEventListener("click", () => {
+    if (!canEditCurrentProfile(auth.currentUser)) return;
+    populateEditorModal();
+    if (editorModal) {
+      editorModal.classList.remove("hidden");
+      editorModal.style.display = "flex";
+    }
+  });
+
+  closeEditorBtn?.addEventListener("click", () => {
+    if (editorModal) {
+      editorModal.classList.add("hidden");
+      editorModal.style.display = "none";
+    }
+  });
+
+  saveSpaceBtn?.addEventListener("click", async () => {
+    const currentUser = auth.currentUser;
+    if (!currentUser || !canEditCurrentProfile(currentUser)) {
+      alert("Permission denied or not logged in.");
+      return;
+    }
+
+    const editDisplayName = document.getElementById("edit-display-name")?.value.trim() || "";
+    const editBio = document.getElementById("edit-bio")?.value.trim() || "";
+    const editAvatar = document.getElementById("edit-avatar-url")?.value.trim() || "";
+    const editBg = document.getElementById("edit-bg-url")?.value.trim() || "";
+    const editAudio = document.getElementById("edit-audio-url")?.value.trim() || "";
+    const editDiscord = document.getElementById("edit-discord-id")?.value.trim() || "";
+    const editSpotify = document.getElementById("edit-spotify-url")?.value.trim() || "";
+    const editAccent = document.getElementById("edit-accent-color")?.value || "#3b82f6";
+
+    const updatedSpace = {
+      displayName: editDisplayName,
+      bio: editBio,
+      customAvatarUrl: editAvatar,
+      bgUrl: editBg,
+      audioUrl: editAudio,
+      discordId: editDiscord,
+      spotifyUrl: editSpotify,
+      accentColor: editAccent,
+      updatedAt: new Date().toISOString()
+    };
+
+    try {
+      saveSpaceBtn.disabled = true;
+      saveSpaceBtn.textContent = "Saving...";
+
+      // Update users_spaces document
+      await setDoc(doc(db, "users_spaces", targetUserId), updatedSpace, { merge: true });
+
+      // Synchronize primary user details to main users collection (Fixes Leaderboard Names!)
+      await setDoc(doc(db, "users", targetUserId), {
+        displayName: editDisplayName || currentLoadedUserData?.displayName || "User",
+        photoURL: editAvatar || currentLoadedUserData?.photoURL || "",
+        bio: editBio
+      }, { merge: true });
+
+      alert("Space & Profile updated successfully!");
+      if (editorModal) {
+        editorModal.classList.add("hidden");
+        editorModal.style.display = "none";
+      }
+
+      location.reload();
+    } catch (err) {
+      console.error("Error saving customization:", err);
+      alert("Failed to save changes. Check console for details.");
+    } finally {
+      saveSpaceBtn.disabled = false;
+      saveSpaceBtn.textContent = "Save Changes";
+    }
+  });
+
+  // ==========================================================================
   // MOBILE ORDER UI & EXPANDABLE ACCORDION
   // ==========================================================================
   toggleMobileOrderBtn?.addEventListener("click", () => {
