@@ -668,12 +668,15 @@ document.addEventListener("DOMContentLoaded", () => {
       // Check if entry belongs to currently logged-in user
       const isSelf = currentUser && (user.id === currentUser.uid || user.uid === currentUser.uid);
       
-      const isBlurred = systemConfig.globalBlur || user.isBlurred || false;
+      // Admin/System Blur Flag Evaluation
+      const isBlurred = systemConfig.globalBlur || user.isBlurred || user.isBlurredByAdmin || false;
       const isVerified = user.isVerified || false;
       const isOwner = user.role === "owner" || user.handle === "admin";
 
       const item = document.createElement("div");
-      item.className = `leaderboard-item ${rank <= 3 ? `top-${rank}` : ''} ${isSelf ? 'is-self' : ''}`;
+      
+      // Applied 'blurred-text' directly to the parent item element when isBlurred is true
+      item.className = `leaderboard-item ${rank <= 3 ? `top-${rank}` : ''} ${isSelf ? 'is-self' : ''} ${isBlurred ? 'blurred-text' : ''}`;
 
       const avatar = user.photoURL || user.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.handle || user.id}`;
       const handle = user.handle ? `@${user.handle}` : "@anonymous";
@@ -690,12 +693,12 @@ document.addEventListener("DOMContentLoaded", () => {
           <span class="rank-badge">#${rank}</span>
           <img src="${escapeHtml(avatar)}" class="nav-avatar ${isBlurred ? 'blurred-avatar' : ''}" alt="Avatar" referrerpolicy="no-referrer">
           <div>
-            <div style="font-weight: 700; color: var(--text-main, #111827);" class="${isBlurred ? 'blurred-text' : ''}">
+            <div style="font-weight: 700; color: var(--text-main, #111827);">
               ${name}
               ${isVerified ? '<i class="fa-solid fa-circle-check verified-badge" style="color:#1d9bf0; margin-left:4px;" title="Verified"></i>' : ''}
               ${isOwner ? '<span class="badge owner-badge" style="background:#e11d48; color:#fff; font-size:0.65rem; padding:2px 6px; border-radius:4px; margin-left:4px;">OWNER</span>' : ''}
             </div>
-            <div style="font-size: 0.8rem; color: var(--text-muted, #6b7280);" class="${isBlurred ? 'blurred-text' : ''}">${escapeHtml(handle)}</div>
+            <div style="font-size: 0.8rem; color: var(--text-muted, #6b7280);">${escapeHtml(handle)}</div>
           </div>
         </div>
         <div class="leaderboard-actions">
@@ -715,3 +718,4 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
 });
+```[cite: 9]
