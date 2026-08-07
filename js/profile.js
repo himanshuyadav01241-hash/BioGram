@@ -40,7 +40,7 @@ document.addEventListener('DOMContentLoaded', () => {
   let clockInterval = null;
   let activeSpaceConfig = {};
   let currentLoadedUserData = null;
-  let targetUserId = null; // FIXED: Explicitly track target profile ID
+  let targetUserId = null; // Scoped ID of the profile currently being viewed
   let mediaImages = [];
   let currentMediaIndex = 0;
   let mediaInterval = null;
@@ -53,6 +53,9 @@ document.addEventListener('DOMContentLoaded', () => {
   let discordTimerInterval = null;
 
   const isMobile = () => window.innerWidth <= 600;
+
+  // Helper for user-scoped localStorage keys
+  const getLocalStorageKey = () => targetUserId ? `biogram_space_layout_cache_${targetUserId}` : 'biogram_space_layout_cache_guest';
 
   // Helper functions for modal & state binding
   const getInputValue = (id1, id2) => {
@@ -146,10 +149,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
   const saveLayoutToLocalStorage = () => {
     const positions = getLayoutPositionsDict();
+    const cacheKey = getLocalStorageKey();
     if (Object.keys(positions).length > 0) {
-      localStorage.setItem('biogram_space_layout_cache', JSON.stringify(positions));
+      localStorage.setItem(cacheKey, JSON.stringify(positions));
     } else {
-      localStorage.removeItem('biogram_space_layout_cache');
+      localStorage.removeItem(cacheKey);
     }
   };
 
@@ -159,7 +163,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let positionsToApply = savedPositions;
     if (!positionsToApply || Object.keys(positionsToApply).length === 0) {
       try {
-        const localCache = localStorage.getItem('biogram_space_layout_cache');
+        const localCache = localStorage.getItem(getLocalStorageKey());
         if (localCache) positionsToApply = JSON.parse(localCache);
       } catch (e) {
         console.warn("Could not load local layout cache:", e);
@@ -233,7 +237,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
     if (spaceContainer) spaceContainer.style.minHeight = '';
     isLayoutAbsolute = false;
-    localStorage.removeItem('biogram_space_layout_cache');
+    localStorage.removeItem(getLocalStorageKey());
   };
 
   // ==========================================================================
@@ -275,7 +279,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
       if (targetUserId && Object.keys(positions).length > 0) {
         try {
-          // FIXED: Save to targeted user ID, not currentUser
           await setDoc(doc(db, "users_spaces", targetUserId), { widgetPositions: positions }, { merge: true });
         } catch (err) {
           console.warn("Could not sync locked layout to database:", err);
@@ -377,7 +380,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (targetUserId) {
       try {
-        // FIXED: Reset layout on targetUserId document
         await setDoc(doc(db, "users_spaces", targetUserId), { widgetPositions: {} }, { merge: true });
       } catch (err) {
         console.warn("Error resetting layout on database:", err);
@@ -410,9 +412,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     widget?.classList.remove("hidden");
 
-    if (clockEl) {
-      clockEl.style.color = clockColor || '';
-    }
+    if (clockEl) clockEl.style.color = clockColor || '';
 
     if (dateEl) {
       dateEl.style.display = showDate ? 'block' : 'none';
@@ -422,14 +422,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const updateTime = () => {
       const now = new Date();
       if (clockEl) {
-        const timeOptions = {
-          hour: '2-digit',
-          minute: '2-digit',
-          hour12: !is24Hour
-        };
-        if (showSeconds) {
-          timeOptions.second = '2-digit';
-        }
+        const timeOptions = { hour: '2-digit', minute: '2-digit', hour12: !is24Hour };
+        if (showSeconds) timeOptions.second = '2-digit';
         clockEl.textContent = now.toLocaleTimeString('en-US', timeOptions);
       }
       if (dateEl && showDate) {
@@ -486,7 +480,7 @@ document.addEventListener('DOMContentLoaded', () => {
     widget?.classList.remove("hidden");
 
     if (avatarImg) {
-      let photoUrl = spaceData?.customAvatarUrl || userData?.photoURL || (targetUserId === authUser?.uid ? authUser?.photoURL : "");
+      let photoUrl = spaceData?.customAvatarUrl || userData?.photoURL;
       if (!photoUrl || !photoUrl.trim()) {
         const seed = spaceData?.handle || userData?.handle || handleParam || "biogram";
         photoUrl = `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(seed)}`;
@@ -749,7 +743,6 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   };
 
-  // FIXED: Dynamic Leaderboard & View Calculation
   const renderRankingsWidget = async (userData, spaceData, showRankings) => {
     const widget = document.getElementById("rankings-card-widget");
     const rankEl = document.getElementById("user-rank-display");
@@ -765,20 +758,17 @@ document.addEventListener('DOMContentLoaded', () => {
     const rawRank = userData?.rank ?? userData?.profileRank ?? userData?.ranking ?? spaceData?.rank;
     const rawViews = userData?.views ?? userData?.profileViews ?? spaceData?.views;
 
-    // Display views
     if (viewsEl) {
       const viewsNum = (rawViews !== undefined && rawViews !== null && rawViews !== "") ? Number(rawViews) : 0;
       const formattedViews = isNaN(viewsNum) ? "0" : viewsNum.toLocaleString();
       viewsEl.innerHTML = `<i class="fa-solid fa-eye" style="color: var(--primary-color, #3b82f6);"></i> ${formattedViews} Views`;
     }
 
-    // Dynamic Rank Query: If no hardcoded rank field exists, calculate rank by views order
     if (rankEl) {
       if (rawRank !== undefined && rawRank !== null && rawRank !== "") {
         rankEl.textContent = String(rawRank).startsWith('#') ? rawRank : `#${rawRank}`;
       } else if (targetUserId) {
         try {
-          // Query leaderboard dynamically sorted by views
           const q = query(collection(db, "users"), orderBy("views", "desc"));
           const querySnap = await getDocs(q);
           let foundRank = -1;
@@ -829,7 +819,6 @@ document.addEventListener('DOMContentLoaded', () => {
     activeSpaceConfig = spaceData || {};
     currentLoadedUserData = userData;
 
-    // Background Audio Handler
     const audioUrl = spaceData?.audioUrl || spaceData?.bgAudioUrl || "";
     if (bgAudio) {
       if (audioUrl && audioUrl.trim() !== "") {
@@ -843,7 +832,6 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     }
 
-    // Background Asset Handler
     const bgUrl = spaceData?.bgUrl || spaceData?.bgAssetUrl || "";
     if (bgLayer) {
       if (bgUrl && bgUrl.trim() !== "") {
@@ -931,13 +919,13 @@ document.addEventListener('DOMContentLoaded', () => {
   saveSpaceBtn?.addEventListener("click", async () => {
     const user = auth.currentUser;
     if (!user) {
-      alert("Please log in to save your space!");
+      alert("Please log in to save changes!");
       return;
     }
 
-    // FIXED: Verify we have a target user document to write to
+    // STRICT CHECK: Ensure targetUserId is set and valid
     if (!targetUserId) {
-      alert("No target profile loaded to save to.");
+      alert("Error: No target user loaded. Cannot save space.");
       return;
     }
 
@@ -996,7 +984,7 @@ document.addEventListener('DOMContentLoaded', () => {
       saveSpaceBtn.disabled = true;
       saveSpaceBtn.textContent = "Saving...";
 
-      // FIXED: Write updates to targetUserId document instead of user.uid
+      // Write ONLY to targetUserId document in both collections
       await setDoc(doc(db, "users_spaces", targetUserId), updatedConfig, { merge: true });
 
       await setDoc(doc(db, "users", targetUserId), {
@@ -1019,24 +1007,31 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   // ==========================================================================
-  // 9. DATA LOADING
+  // 9. DATA LOADING & RESOLUTION
   // ==========================================================================
   const loadProfileData = async (authUser) => {
     try {
-      targetUserId = authUser?.uid || null;
       let userData = null;
       let spaceData = null;
+      targetUserId = null;
 
+      // 1. Resolve Target User ID via URL handle parameter first
       if (handleParam) {
         const q = query(collection(db, "users"), where("handle", "==", handleParam));
         const querySnap = await getDocs(q);
         if (!querySnap.empty) {
           const userDoc = querySnap.docs[0];
-          targetUserId = userDoc.id; // FIXED: Lock target ID to viewed handle owner
+          targetUserId = userDoc.id;
           userData = userDoc.data();
         }
       }
 
+      // 2. If no valid handle query result, fall back to logged in user ID
+      if (!targetUserId && authUser) {
+        targetUserId = authUser.uid;
+      }
+
+      // 3. Fetch data for target profile
       if (targetUserId) {
         if (!userData) {
           const userSnap = await getDoc(doc(db, "users", targetUserId));
