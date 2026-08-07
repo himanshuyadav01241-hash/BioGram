@@ -113,6 +113,7 @@ document.addEventListener('DOMContentLoaded', () => {
       .replace(/'/g, "&#039;");
   };
 
+  // Smart URL Platform Detector
   const detectPlatformFromUrl = (urlStr = "") => {
     const u = urlStr.toLowerCase().trim();
     if (u.includes("instagram.com") || u.includes("instagr.am")) return "Instagram";
@@ -127,6 +128,7 @@ document.addEventListener('DOMContentLoaded', () => {
     return "Link";
   };
 
+  // Dynamic Social Icon Resolver
   const getSocialIconClass = (platformStr = "") => {
     const p = platformStr.toLowerCase().trim();
     if (p.includes("instagram") || p.includes("insta")) return "fa-brands fa-instagram";
@@ -331,24 +333,18 @@ document.addEventListener('DOMContentLoaded', () => {
     renderMobileOrderList();
   };
 
-  // FIXED MOBILE LAYOUT REORDERING FUNCTION
   const applyMobileLayoutOrder = (orderArray) => {
+    if (!spaceContainer) return;
+
     const currentOrder = (Array.isArray(orderArray) && orderArray.length > 0)
       ? orderArray
       : DEFAULT_WIDGET_ORDER;
 
-    currentOrder.forEach((key, index) => {
+    currentOrder.forEach(key => {
       const elId = WIDGET_ELEMENT_IDS[key];
       const widgetEl = elId ? document.getElementById(elId) : null;
-      if (widgetEl) {
-        // Apply CSS order for flexbox/grid containers
-        widgetEl.style.order = String(index);
-
-        // Dynamically append element to its parent container to reorder DOM
-        const parentContainer = widgetEl.parentElement || spaceContainer;
-        if (parentContainer) {
-          parentContainer.appendChild(widgetEl);
-        }
+      if (widgetEl && widgetEl.parentElement === spaceContainer) {
+        spaceContainer.appendChild(widgetEl);
       }
     });
   };
@@ -390,9 +386,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (isMobile()) {
       cards.forEach(card => {
-        card.style.position = 'relative';
-        card.style.left = 'auto';
-        card.style.top = 'auto';
+        card.style.position = '';
+        card.style.left = '';
+        card.style.top = '';
         card.style.margin = '';
       });
       if (spaceContainer) spaceContainer.style.minHeight = '';
@@ -471,7 +467,6 @@ document.addEventListener('DOMContentLoaded', () => {
       card.style.top = '';
       card.style.margin = '';
       card.style.zIndex = '';
-      card.style.order = '';
     });
     if (spaceContainer) spaceContainer.style.minHeight = '';
     isLayoutAbsolute = false;
@@ -1099,6 +1094,7 @@ document.addEventListener('DOMContentLoaded', () => {
     setCheckboxValue("edit-show-socials", "modal-show-socials", activeSpaceConfig.showSocials !== false);
     setCheckboxValue("edit-show-rankings", "modal-show-rankings", activeSpaceConfig.showRankings !== false);
 
+    // Populate Mobile Order List
     tempMobileOrder = Array.isArray(activeSpaceConfig.mobileWidgetOrder) && activeSpaceConfig.mobileWidgetOrder.length > 0
       ? [...activeSpaceConfig.mobileWidgetOrder]
       : [...DEFAULT_WIDGET_ORDER];
