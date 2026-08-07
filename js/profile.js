@@ -7,10 +7,14 @@ import {
   doc, 
   getDoc, 
   setDoc,
+  updateDoc,
+  increment,
   collection,
   query,
   where,
-  getDocs
+  getDocs,
+  orderBy,
+  limit
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -84,7 +88,7 @@ document.addEventListener('DOMContentLoaded', () => {
     return authUser && authUser.uid === targetUserId; // Profile owner check
   };
 
-  // Update UI permissions (Show/Hide floating editor buttons)
+  // Update UI permissions
   const updateEditorPermissionUI = (authUser) => {
     const canEdit = canEditCurrentProfile(authUser);
     const actionsBar = document.querySelector(".floating-actions-bar");
@@ -173,7 +177,7 @@ document.addEventListener('DOMContentLoaded', () => {
   };
 
   const applySavedPositions = (savedPositions) => {
-    if (isMobile()) return;
+    if (isMobile() || !spaceContainer) return;
 
     let positionsToApply = savedPositions;
     if (!positionsToApply || Object.keys(positionsToApply).length === 0) {
@@ -190,8 +194,10 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
 
+    spaceContainer.style.position = 'relative';
     const cards = document.querySelectorAll('.glass-widget-card');
     let hasSaved = false;
+    let maxBottom = 0;
 
     cards.forEach((card, index) => {
       const cardId = card.id || `widget_card_${index}`;
@@ -202,15 +208,27 @@ document.addEventListener('DOMContentLoaded', () => {
         card.style.left = pos.left;
         card.style.top = pos.top;
         hasSaved = true;
+
+        const topPx = parseFloat(pos.top) || 0;
+        const cardHeight = card.offsetHeight || 200;
+        if (topPx + cardHeight > maxBottom) {
+          maxBottom = topPx + cardHeight;
+        }
       }
     });
 
-    if (hasSaved) isLayoutAbsolute = true;
+    if (hasSaved) {
+      isLayoutAbsolute = true;
+      if (maxBottom > 0) {
+        spaceContainer.style.minHeight = `${maxBottom + 60}px`;
+      }
+    }
   };
 
   const convertAllToAbsolute = () => {
     if (isMobile() || !spaceContainer) return;
 
+    spaceContainer.style.position = 'relative';
     const currentContainerHeight = spaceContainer.offsetHeight;
     if (currentContainerHeight > 0) {
       spaceContainer.style.minHeight = `${currentContainerHeight}px`;
@@ -712,6 +730,9 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   };
 
+  // ==========================================================================
+  // RANKINGS & LEADERBOARD WIDGET
+  // ==========================================================================
   const renderRankingsWidget = async (userData, spaceData, showRankings) => {
     const widget = document.getElementById("rankings-card-widget");
     const rankEl = document.getElementById("user-rank-display");
@@ -724,19 +745,57 @@ document.addEventListener('DOMContentLoaded', () => {
 
     widget?.classList.remove("hidden");
 
-    const rawViews = userData?.views ?? userData?.profileViews ?? spaceData?.views;
+    // Display views from user document
+    const viewsCount = userData?.views || 0;
     if (viewsEl) {
-      const viewsNum = (rawViews !== undefined && rawViews !== null && rawViews !== "") ? Number(rawViews) : 0;
-      viewsEl.innerHTML = `<i class="fa-solid fa-eye" style="color: var(--primary-color, #3b82f6);"></i> ${viewsNum.toLocaleString()} Views`;
+      viewsEl.innerHTML = `<i class="fa-solid fa-eye" style="color: var(--primary-color, #3b82f6);"></i> ${viewsCount.toLocaleString()} Views`;
     }
 
-    if (rankEl) {
-      const rawRank = userData?.rank ?? userData?.profileRank ?? spaceData?.rank;
-      if (rawRank) {
-        rankEl.textContent = String(rawRank).startsWith('#') ? rawRank : `#${rawRank}`;
-      } else {
-        rankEl.textContent = "#-";
+    // Fetch Leaderboard & Calculate Rank dynamically
+    try {
+      const topUsersQuery = query(collection(db, "users"), orderBy("views", "desc"), limit(10));
+      const querySnap = await getDocs(topUsersQuery);
+
+      let computedRank = "#-";
+      let leaderboardListHtml = "";
+      let index = 1;
+
+      querySnap.forEach((userDoc) => {
+        const uData = userDoc.data();
+        const uId = userDoc.id;
+        const name = uData.displayName || `@${uData.handle || 'user'}`;
+        const views = uData.views || 0;
+
+        if (uId === targetUserId) {
+          computedRank = `#${index}`;
+        }
+
+        leaderboardListHtml += `
+          <div style="display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-bottom: 1px solid rgba(255,255,255,0.08); font-size: 0.85rem;">
+            <span><strong>#${index}</strong> ${escapeHtml(name)}</span>
+            <span style="opacity: 0.8;"><i class="fa-solid fa-eye"></i> ${views.toLocaleString()}</span>
+          </div>
+        `;
+        index++;
+      });
+
+      if (rankEl) {
+        rankEl.textContent = computedRank;
       }
+
+      // Container for Leaderboard
+      let listContainer = widget.querySelector(".leaderboard-dynamic-list");
+      if (!listContainer) {
+        listContainer = document.createElement("div");
+        listContainer.className = "leaderboard-dynamic-list";
+        listContainer.style.marginTop = "12px";
+        widget.appendChild(listContainer);
+      }
+      listContainer.innerHTML = leaderboardListHtml || `<div style="opacity:0.6; font-size:0.8rem; margin-top:8px;">No rankings available yet.</div>`;
+
+    } catch (e) {
+      console.warn("Leaderboard load failed:", e);
+      if (rankEl) rankEl.textContent = "#-";
     }
   };
 
@@ -933,7 +992,6 @@ document.addEventListener('DOMContentLoaded', () => {
       saveSpaceBtn.disabled = true;
       saveSpaceBtn.textContent = "Saving...";
 
-      // Write strictly to targetUserId's documents (Kaumudi's space)
       await setDoc(doc(db, "users_spaces", targetUserId), updatedConfig, { merge: true });
 
       await setDoc(doc(db, "users", targetUserId), {
@@ -972,7 +1030,6 @@ document.addEventListener('DOMContentLoaded', () => {
           const authUserSnap = await getDoc(doc(db, "users", authUser.uid));
           if (authUserSnap.exists()) {
             const authUserData = authUserSnap.data();
-            // Accepts role === 'admin' OR isAdmin === true
             isCurrentUserAdmin = authUserData.role === 'admin' || authUserData.isAdmin === true;
           }
         } catch (e) {
@@ -996,12 +1053,17 @@ document.addEventListener('DOMContentLoaded', () => {
         targetUserId = authUser.uid;
       }
 
-      // 4. Fetch target user profile & space documents
+      // 4. Fetch target user profile & space documents + Auto Increment Views
       if (targetUserId) {
-        if (!userData) {
-          const userSnap = await getDoc(doc(db, "users", targetUserId));
-          if (userSnap.exists()) userData = userSnap.data();
+        // Auto-increment views for profile visit
+        try {
+          await updateDoc(doc(db, "users", targetUserId), { views: increment(1) });
+        } catch (err) {
+          await setDoc(doc(db, "users", targetUserId), { views: 1 }, { merge: true });
         }
+
+        const userSnap = await getDoc(doc(db, "users", targetUserId));
+        if (userSnap.exists()) userData = userSnap.data();
 
         const spaceSnap = await getDoc(doc(db, "users_spaces", targetUserId));
         if (spaceSnap.exists()) spaceData = spaceSnap.data();
