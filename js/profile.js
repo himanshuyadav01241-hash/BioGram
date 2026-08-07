@@ -10,7 +10,8 @@ import {
   collection,
   query,
   where,
-  getDocs
+  getDocs,
+  orderBy
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -39,6 +40,7 @@ document.addEventListener('DOMContentLoaded', () => {
   let clockInterval = null;
   let activeSpaceConfig = {};
   let currentLoadedUserData = null;
+  let targetUserId = null; // FIXED: Explicitly track target profile ID
   let mediaImages = [];
   let currentMediaIndex = 0;
   let mediaInterval = null;
@@ -271,10 +273,10 @@ document.addEventListener('DOMContentLoaded', () => {
       const positions = getLayoutPositionsDict();
       activeSpaceConfig.widgetPositions = positions;
 
-      const user = auth.currentUser;
-      if (user && Object.keys(positions).length > 0) {
+      if (targetUserId && Object.keys(positions).length > 0) {
         try {
-          await setDoc(doc(db, "users_spaces", user.uid), { widgetPositions: positions }, { merge: true });
+          // FIXED: Save to targeted user ID, not currentUser
+          await setDoc(doc(db, "users_spaces", targetUserId), { widgetPositions: positions }, { merge: true });
         } catch (err) {
           console.warn("Could not sync locked layout to database:", err);
         }
@@ -373,10 +375,10 @@ document.addEventListener('DOMContentLoaded', () => {
     resetToFlexLayout();
     activeSpaceConfig.widgetPositions = {};
 
-    const user = auth.currentUser;
-    if (user) {
+    if (targetUserId) {
       try {
-        await setDoc(doc(db, "users_spaces", user.uid), { widgetPositions: {} }, { merge: true });
+        // FIXED: Reset layout on targetUserId document
+        await setDoc(doc(db, "users_spaces", targetUserId), { widgetPositions: {} }, { merge: true });
       } catch (err) {
         console.warn("Error resetting layout on database:", err);
       }
@@ -389,7 +391,6 @@ document.addEventListener('DOMContentLoaded', () => {
   // 6. WIDGET RENDERERS & CUSTOMIZATIONS
   // ==========================================================================
 
-  // CLOCK WIDGET WITH COLOR CUSTOMIZATION
   const renderClockWidget = (clockConfig = {}) => {
     const widget = document.getElementById("clock-card-widget");
     const clockEl = document.getElementById("clock-time");
@@ -443,7 +444,6 @@ document.addEventListener('DOMContentLoaded', () => {
     clockInterval = setInterval(updateTime, 1000);
   };
 
-  // MULTIPLE CUSTOM PHOTO CARDS
   const renderCustomPhotoWidgets = (customPhotosList = []) => {
     document.querySelectorAll('.custom-photo-widget-card').forEach(el => el.remove());
 
@@ -471,7 +471,6 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   };
 
-  // PROFILE WIDGET
   const renderProfileWidget = (userData, spaceData, authUser, showProfile) => {
     const widget = document.getElementById("profile-card-widget");
     const avatarImg = document.getElementById("space-avatar-img");
@@ -487,7 +486,7 @@ document.addEventListener('DOMContentLoaded', () => {
     widget?.classList.remove("hidden");
 
     if (avatarImg) {
-      let photoUrl = spaceData?.customAvatarUrl || userData?.photoURL || authUser?.photoURL;
+      let photoUrl = spaceData?.customAvatarUrl || userData?.photoURL || (targetUserId === authUser?.uid ? authUser?.photoURL : "");
       if (!photoUrl || !photoUrl.trim()) {
         const seed = spaceData?.handle || userData?.handle || handleParam || "biogram";
         photoUrl = `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(seed)}`;
@@ -496,7 +495,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     if (displayNameEl) {
-      const name = spaceData?.displayName || userData?.displayName || authUser?.displayName || "BioGram User";
+      const name = spaceData?.displayName || userData?.displayName || "BioGram User";
       displayNameEl.innerHTML = `${escapeHtml(name)} <i class="fa-solid fa-circle-check" style="color: var(--primary-color, #3b82f6);"></i>`;
     }
 
@@ -517,7 +516,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   };
 
-  // DISCORD WIDGET
   const renderDiscordWidget = async (discordId, showDiscord) => {
     const widget = document.getElementById("discord-card-widget");
     const discordStatusEl = document.getElementById("discord-status-text");
@@ -602,7 +600,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   };
 
-  // SPOTIFY PLAYER
   const renderSpotifyWidget = (spotifyUrl, showSpotify) => {
     const widget = document.getElementById("spotify-card-widget");
     const iframe = document.getElementById("spotify-iframe");
@@ -628,7 +625,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   };
 
-  // MEDIA GALLERY
   const renderMediaWidget = (imagesArray, showMedia) => {
     const widget = document.getElementById("media-card-widget");
     const imgEl = document.getElementById("media-display-img");
@@ -670,7 +666,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   };
 
-  // HELPER: DETECT PLATFORM BRANDING & ICONS FOR SOCIAL LINKS
   const getSocialLinkDetails = (item) => {
     const rawUrl = item.url ? item.url.trim() : "";
     let fullUrl = rawUrl.startsWith("http") ? rawUrl : `https://${rawUrl}`;
@@ -727,7 +722,6 @@ document.addEventListener('DOMContentLoaded', () => {
     return { fullUrl, platformName, iconClass, domain };
   };
 
-  // SOCIALS / CONNECTED WITH ME WIDGET RENDERER
   const renderSocialsWidget = (socialsArray, showSocials) => {
     const widget = document.getElementById("socials-card-widget");
     const container = document.getElementById("card-links-container");
@@ -755,8 +749,8 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   };
 
-  // RANKINGS & VIEWS WIDGET
-  const renderRankingsWidget = (userData, spaceData, showRankings) => {
+  // FIXED: Dynamic Leaderboard & View Calculation
+  const renderRankingsWidget = async (userData, spaceData, showRankings) => {
     const widget = document.getElementById("rankings-card-widget");
     const rankEl = document.getElementById("user-rank-display");
     const viewsEl = document.getElementById("user-views-display");
@@ -771,22 +765,43 @@ document.addEventListener('DOMContentLoaded', () => {
     const rawRank = userData?.rank ?? userData?.profileRank ?? userData?.ranking ?? spaceData?.rank;
     const rawViews = userData?.views ?? userData?.profileViews ?? spaceData?.views;
 
-    if (rankEl) {
-      if (rawRank !== undefined && rawRank !== null && rawRank !== "") {
-        rankEl.textContent = String(rawRank).startsWith('#') ? rawRank : `#${rawRank}`;
-      } else {
-        rankEl.textContent = "#1";
-      }
-    }
-
+    // Display views
     if (viewsEl) {
       const viewsNum = (rawViews !== undefined && rawViews !== null && rawViews !== "") ? Number(rawViews) : 0;
       const formattedViews = isNaN(viewsNum) ? "0" : viewsNum.toLocaleString();
       viewsEl.innerHTML = `<i class="fa-solid fa-eye" style="color: var(--primary-color, #3b82f6);"></i> ${formattedViews} Views`;
     }
+
+    // Dynamic Rank Query: If no hardcoded rank field exists, calculate rank by views order
+    if (rankEl) {
+      if (rawRank !== undefined && rawRank !== null && rawRank !== "") {
+        rankEl.textContent = String(rawRank).startsWith('#') ? rawRank : `#${rawRank}`;
+      } else if (targetUserId) {
+        try {
+          // Query leaderboard dynamically sorted by views
+          const q = query(collection(db, "users"), orderBy("views", "desc"));
+          const querySnap = await getDocs(q);
+          let foundRank = -1;
+          let index = 1;
+
+          querySnap.forEach((docSnap) => {
+            if (docSnap.id === targetUserId) {
+              foundRank = index;
+            }
+            index++;
+          });
+
+          rankEl.textContent = foundRank !== -1 ? `#${foundRank}` : "#N/A";
+        } catch (e) {
+          console.warn("Dynamic rank fetch failed:", e);
+          rankEl.textContent = "#-";
+        }
+      } else {
+        rankEl.textContent = "#-";
+      }
+    }
   };
 
-  // APPLY SPACE STYLES & COLOR CUSTOMIZATIONS
   const applyCustomSpaceStyles = (config = {}) => {
     if (config.accentColor) {
       document.documentElement.style.setProperty('--primary-color', config.accentColor);
@@ -864,7 +879,6 @@ document.addEventListener('DOMContentLoaded', () => {
   // 8. EDITOR MODAL & PERSISTENCE LINKING
   // ==========================================================================
   openEditorBtn?.addEventListener("click", () => {
-    // Text inputs
     setInputValue("edit-display-name", "modal-display-name", activeSpaceConfig.displayName || currentLoadedUserData?.displayName || "");
     setInputValue("edit-bio", "modal-bio", activeSpaceConfig.bio || currentLoadedUserData?.bio || "");
     setInputValue("edit-avatar-url", "modal-avatar-url", activeSpaceConfig.customAvatarUrl || "");
@@ -873,17 +887,14 @@ document.addEventListener('DOMContentLoaded', () => {
     setInputValue("edit-spotify-url", "modal-spotify-url", activeSpaceConfig.spotifyUrl || "");
     setInputValue("edit-discord-id", "modal-discord-id", activeSpaceConfig.discordId || "");
 
-    // Color & styling inputs
     setInputValue("edit-clock-color", "modal-clock-color", activeSpaceConfig.clockColor || "");
     setInputValue("edit-accent-color", "modal-accent-color", activeSpaceConfig.accentColor || "");
     setInputValue("edit-card-bg-color", "modal-card-bg-color", activeSpaceConfig.cardBgColor || "");
     setInputValue("edit-card-text-color", "modal-card-text-color", activeSpaceConfig.cardTextColor || "");
 
-    // Clock format
     const formatSelect = document.getElementById("edit-clock-format") || document.getElementById("modal-clock-format");
     if (formatSelect) formatSelect.value = activeSpaceConfig.clockFormat || "12h";
 
-    // Toggle checkboxes
     setCheckboxValue("edit-clock-show-seconds", "modal-clock-show-seconds", activeSpaceConfig.clockShowSeconds !== false);
     setCheckboxValue("edit-clock-show-date", "modal-clock-show-date", activeSpaceConfig.clockShowDate !== false);
     setCheckboxValue("edit-show-clock", "modal-show-clock", activeSpaceConfig.showClock !== false);
@@ -894,7 +905,6 @@ document.addEventListener('DOMContentLoaded', () => {
     setCheckboxValue("edit-show-socials", "modal-show-socials", activeSpaceConfig.showSocials !== false);
     setCheckboxValue("edit-show-rankings", "modal-show-rankings", activeSpaceConfig.showRankings !== false);
 
-    // Media images gallery
     const mediaUrlsInput = document.getElementById("edit-media-urls") || document.getElementById("modal-media-urls");
     if (mediaUrlsInput) {
       mediaUrlsInput.value = Array.isArray(activeSpaceConfig.mediaImages) 
@@ -902,7 +912,6 @@ document.addEventListener('DOMContentLoaded', () => {
         : "";
     }
 
-    // Custom photo cards
     const customPhotosInput = document.getElementById("edit-custom-photos-urls") || document.getElementById("modal-custom-photos-urls");
     if (customPhotosInput) {
       if (Array.isArray(activeSpaceConfig.customPhotos)) {
@@ -926,16 +935,20 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
 
+    // FIXED: Verify we have a target user document to write to
+    if (!targetUserId) {
+      alert("No target profile loaded to save to.");
+      return;
+    }
+
     const widgetPositions = getLayoutPositionsDict();
 
-    // Parse media gallery URLs
     const mediaUrlsInput = getInputValue("edit-media-urls", "modal-media-urls");
     const mediaImagesArray = mediaUrlsInput
       .split("\n")
       .map(url => url.trim())
       .filter(url => url.length > 0);
 
-    // Parse custom photo cards
     const customPhotosRaw = getInputValue("edit-custom-photos-urls", "modal-custom-photos-urls");
     const customPhotosArray = customPhotosRaw
       .split("\n")
@@ -956,7 +969,6 @@ document.addEventListener('DOMContentLoaded', () => {
       spotifyUrl: getInputValue("edit-spotify-url", "modal-spotify-url"),
       discordId: getInputValue("edit-discord-id", "modal-discord-id"),
 
-      // Styling & colors
       clockColor: getInputValue("edit-clock-color", "modal-clock-color"),
       accentColor: getInputValue("edit-accent-color", "modal-accent-color"),
       cardBgColor: getInputValue("edit-card-bg-color", "modal-card-bg-color"),
@@ -984,11 +996,11 @@ document.addEventListener('DOMContentLoaded', () => {
       saveSpaceBtn.disabled = true;
       saveSpaceBtn.textContent = "Saving...";
 
-      await setDoc(doc(db, "users_spaces", user.uid), updatedConfig, { merge: true });
+      // FIXED: Write updates to targetUserId document instead of user.uid
+      await setDoc(doc(db, "users_spaces", targetUserId), updatedConfig, { merge: true });
 
-      // Update main user document for global consistency
-      await setDoc(doc(db, "users", user.uid), {
-        displayName: updatedConfig.displayName || user.displayName || "BioGram User",
+      await setDoc(doc(db, "users", targetUserId), {
+        displayName: updatedConfig.displayName || "BioGram User",
         bio: updatedConfig.bio || "",
         updatedAt: new Date().toISOString()
       }, { merge: true });
@@ -1011,7 +1023,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // ==========================================================================
   const loadProfileData = async (authUser) => {
     try {
-      let targetUid = authUser?.uid;
+      targetUserId = authUser?.uid || null;
       let userData = null;
       let spaceData = null;
 
@@ -1020,18 +1032,18 @@ document.addEventListener('DOMContentLoaded', () => {
         const querySnap = await getDocs(q);
         if (!querySnap.empty) {
           const userDoc = querySnap.docs[0];
-          targetUid = userDoc.id;
+          targetUserId = userDoc.id; // FIXED: Lock target ID to viewed handle owner
           userData = userDoc.data();
         }
       }
 
-      if (targetUid) {
+      if (targetUserId) {
         if (!userData) {
-          const userSnap = await getDoc(doc(db, "users", targetUid));
+          const userSnap = await getDoc(doc(db, "users", targetUserId));
           if (userSnap.exists()) userData = userSnap.data();
         }
 
-        const spaceSnap = await getDoc(doc(db, "users_spaces", targetUid));
+        const spaceSnap = await getDoc(doc(db, "users_spaces", targetUserId));
         if (spaceSnap.exists()) spaceData = spaceSnap.data();
       }
 
