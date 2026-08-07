@@ -458,6 +458,55 @@
       gap: 6px;
     }
 
+    /* MOBILE ORDER CONTROLS INSIDE MODAL */
+    .mobile-order-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 14px;
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      margin-bottom: 6px;
+    }
+
+    .mobile-order-item span {
+      font-weight: 700;
+      font-size: 0.85rem;
+      color: #334155;
+      text-transform: capitalize;
+    }
+
+    .mobile-order-btns {
+      display: flex;
+      gap: 6px;
+    }
+
+    .mobile-order-btn {
+      background: #e2e8f0;
+      border: none;
+      color: #334155;
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.85rem;
+      transition: all 0.2s ease;
+    }
+
+    .mobile-order-btn:hover:not(:disabled) {
+      background: var(--primary-color);
+      color: #ffffff;
+    }
+
+    .mobile-order-btn:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+
     .hidden { display: none !important; }
 
     /* MOBILE SCREEN OVERRIDE - FORCED UNHIDE & COMPACT BUTTONS */
@@ -670,6 +719,16 @@
       <div class="form-group">
         <label for="edit-audio-url" class="editor-label">Background MP3 Audio URL</label>
         <input type="url" id="edit-audio-url" class="editor-input" placeholder="https://...">
+      </div>
+
+      <hr class="modal-divider">
+
+      <!-- MOBILE LAYOUT ORDER (TOP TO BOTTOM) -->
+      <h4 class="modal-section-title">
+        <i class="fa-solid fa-sort" style="color: var(--primary-color);" aria-hidden="true"></i> Mobile Layout Order (Top to Bottom)
+      </h4>
+      <div id="mobile-order-list" style="margin-bottom: 12px;">
+        <!-- DYNAMICALLY POPULATED BY JS -->
       </div>
 
       <hr class="modal-divider">
