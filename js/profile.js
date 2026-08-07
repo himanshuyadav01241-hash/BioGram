@@ -11,7 +11,6 @@ import {
   increment,
   collection,
   query,
-  where,
   orderBy,
   getDocs,
   limit
@@ -43,8 +42,8 @@ document.addEventListener('DOMContentLoaded', () => {
   let clockInterval = null;
   let activeSpaceConfig = {};
   let currentLoadedUserData = null;
-  let targetUserId = null;         // ID of profile being viewed/edited
-  let isCurrentUserAdmin = false; // Admin status flag
+  let targetUserId = null;
+  let isCurrentUserAdmin = false;
   let mediaImages = [];
   let currentMediaIndex = 0;
   let mediaInterval = null;
@@ -55,7 +54,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const isMobile = () => window.innerWidth <= 600;
   const getLocalStorageKey = () => targetUserId ? `biogram_space_layout_cache_${targetUserId}` : 'biogram_space_layout_cache_guest';
 
-  // Helper functions for modal & state binding
+  // Helper functions
   const getInputValue = (id1, id2) => {
     const el = document.getElementById(id1) || document.getElementById(id2);
     return el ? el.value.trim() : "";
@@ -81,7 +80,21 @@ document.addEventListener('DOMContentLoaded', () => {
     return String(str).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
   };
 
-  // Ensure widget cards have static unique IDs
+  // Dynamic Social Icon Resolver (Instagram, Github, Twitter, etc.)
+  const getSocialIconClass = (platformStr = "") => {
+    const p = platformStr.toLowerCase().trim();
+    if (p.includes("instagram") || p.includes("insta")) return "fa-brands fa-instagram";
+    if (p.includes("github")) return "fa-brands fa-github";
+    if (p.includes("twitter") || p.includes("x.com")) return "fa-brands fa-x-twitter";
+    if (p.includes("discord")) return "fa-brands fa-discord";
+    if (p.includes("youtube")) return "fa-brands fa-youtube";
+    if (p.includes("spotify")) return "fa-brands fa-spotify";
+    if (p.includes("twitch")) return "fa-brands fa-twitch";
+    if (p.includes("linkedin")) return "fa-brands fa-linkedin";
+    if (p.includes("tiktok")) return "fa-brands fa-tiktok";
+    return "fa-solid fa-link";
+  };
+
   const ensureWidgetCardIds = () => {
     const cards = document.querySelectorAll('.glass-widget-card');
     cards.forEach((card, index) => {
@@ -89,14 +102,12 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   };
 
-  // Check if current user has edit rights
   const canEditCurrentProfile = (authUser) => {
     if (!targetUserId) return false;
     if (isCurrentUserAdmin) return true; 
     return authUser && authUser.uid === targetUserId; 
   };
 
-  // Update UI permissions (Show/Hide floating editor buttons)
   const updateEditorPermissionUI = (authUser) => {
     const canEdit = canEditCurrentProfile(authUser);
     const actionsBar = document.querySelector(".floating-actions-bar");
@@ -112,7 +123,7 @@ document.addEventListener('DOMContentLoaded', () => {
   };
 
   // ==========================================================================
-  // AUDIO & TAP OVERLAY
+  // AUDIO & OVERLAY
   // ==========================================================================
   if (overlay) {
     overlay.addEventListener('click', () => {
@@ -155,7 +166,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // ==========================================================================
-  // LAYOUT PERSISTENCE ENGINE
+  // LAYOUT PERSISTENCE & LOCK/DRAG
   // ==========================================================================
   const getLayoutPositionsDict = () => {
     ensureWidgetCardIds();
@@ -265,9 +276,6 @@ document.addEventListener('DOMContentLoaded', () => {
     localStorage.removeItem(getLocalStorageKey());
   };
 
-  // ==========================================================================
-  // LOCK & DRAG ENGINE
-  // ==========================================================================
   const updateLockStateUI = () => {
     const cards = document.querySelectorAll('.glass-widget-card');
     
@@ -407,7 +415,7 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     }
 
-    alert("Layout reset to default flow successfully!");
+    alert("Layout reset successfully!");
   });
 
   // ==========================================================================
@@ -455,33 +463,6 @@ document.addEventListener('DOMContentLoaded', () => {
     updateTime();
     if (clockInterval) clearInterval(clockInterval);
     clockInterval = setInterval(updateTime, 1000);
-  };
-
-  const renderCustomPhotoWidgets = (customPhotosList = []) => {
-    document.querySelectorAll('.custom-photo-widget-card').forEach(el => el.remove());
-
-    if (!Array.isArray(customPhotosList) || customPhotosList.length === 0) return;
-
-    customPhotosList.forEach((photoObj, index) => {
-      if (!photoObj || !photoObj.url || !photoObj.url.trim()) return;
-
-      const cardId = photoObj.id || `custom_photo_${index + 1}`;
-      const card = document.createElement('div');
-      card.className = 'glass-widget-card custom-photo-widget-card';
-      card.id = cardId;
-      card.style.padding = '12px';
-      card.innerHTML = `
-        <div class="card-header" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
-          <span style="font-size:0.85rem; font-weight:600;"><i class="fa-solid fa-image"></i> ${escapeHtml(photoObj.title || 'Photo')}</span>
-        </div>
-        <div class="photo-widget-body" style="overflow:hidden; border-radius:12px;">
-          <img src="${escapeHtml(photoObj.url.trim())}" alt="Photo Widget" style="width:100%; max-height: 250px; display:block; border-radius:12px; object-fit:cover;">
-        </div>
-      `;
-
-      spaceContainer?.appendChild(card);
-      makeCardDraggable(card);
-    });
   };
 
   const renderProfileWidget = (userData, spaceData, authUser, showProfile) => {
@@ -642,7 +623,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!cleanSpotifyUrl) {
       if (widget) {
         widget.innerHTML = `
-          <div style="padding: 16px; text-align: center; color: rgba(255,255,255,0.6); font-size: 0.85rem;">
+          <div style="padding: 16px; text-align: center; color: rgba(0,0,0,0.5); font-size: 0.85rem;">
             <i class="fa-brands fa-spotify" style="font-size: 1.5rem; margin-bottom: 6px; color: #1db954; display:block;"></i>
             <span>No Music Playlist Connected</span>
           </div>`;
@@ -707,6 +688,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   };
 
+  // Fixed Render Socials Widget with Instagram / Brand Icons Support
   const renderSocialsWidget = (socialsArray, showSocials) => {
     const widget = document.getElementById("socials-card-widget");
     const container = document.getElementById("card-links-container");
@@ -726,16 +708,20 @@ document.addEventListener('DOMContentLoaded', () => {
       let fullUrl = rawUrl.startsWith("http") ? rawUrl : `https://${rawUrl}`;
       let platformName = item.platform || item.label || "Link";
 
+      // Detect icon based on URL or Platform name
+      const iconClass = getSocialIconClass(platformName.concat(" ", rawUrl));
+
       const a = document.createElement("a");
       a.href = fullUrl;
       a.target = "_blank";
       a.rel = "noopener noreferrer";
       a.className = "social-link-btn";
-      a.innerHTML = `<i class="fa-solid fa-link"></i> <span>${escapeHtml(platformName)}</span>`;
+      a.innerHTML = `<i class="${iconClass}" aria-hidden="true"></i> <span>${escapeHtml(platformName)}</span>`;
       container.appendChild(a);
     });
   };
 
+  // Fixed Leaderboard Rendering Across Profiles
   const renderRankingsWidget = async (targetUid, userData, spaceData, showRankings) => {
     const widget = document.getElementById("rankings-card-widget");
     const rankEl = document.getElementById("user-rank-display");
@@ -756,7 +742,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     try {
       const usersRef = collection(db, "users");
-      const q = query(usersRef, orderBy("views", "desc"), limit(10));
+      const q = query(usersRef, orderBy("views", "desc"), limit(5));
       const snapshot = await getDocs(q);
 
       let computedRank = null;
@@ -764,35 +750,39 @@ document.addEventListener('DOMContentLoaded', () => {
 
       if (leaderboardListEl) leaderboardListEl.innerHTML = "";
 
-      snapshot.forEach((docSnap) => {
-        const data = docSnap.data();
-        const isCurrent = docSnap.id === targetUid;
+      if (!snapshot.empty) {
+        snapshot.forEach((docSnap) => {
+          const data = docSnap.data();
+          const isCurrent = docSnap.id === targetUid;
 
-        if (isCurrent) computedRank = pos;
+          if (isCurrent) computedRank = pos;
 
-        if (leaderboardListEl) {
-          const item = document.createElement("div");
-          item.className = `leaderboard-item ${isCurrent ? 'active-user' : ''}`;
-          item.innerHTML = `
-            <span><b>#${pos}</b> ${escapeHtml(data.displayName || data.handle || 'User')}</span>
-            <span style="opacity: 0.8; font-size: 0.75rem;">${Number(data.views || 0).toLocaleString()} views</span>
-          `;
-          leaderboardListEl.appendChild(item);
-        }
-
-        pos++;
-      });
+          if (leaderboardListEl) {
+            const item = document.createElement("div");
+            item.className = `leaderboard-item ${isCurrent ? 'active-user' : ''}`;
+            item.innerHTML = `
+              <span><b>#${pos}</b> ${escapeHtml(data.displayName || data.handle || 'User')}</span>
+              <span style="opacity: 0.8; font-size: 0.75rem;">${Number(data.views || 0).toLocaleString()}</span>
+            `;
+            leaderboardListEl.appendChild(item);
+          }
+          pos++;
+        });
+      }
 
       if (rankEl) {
-        if (computedRank !== null) {
-          rankEl.textContent = `#${computedRank}`;
-        } else {
-          rankEl.textContent = userData?.rank ? `#${userData.rank}` : "#--";
-        }
+        rankEl.textContent = computedRank !== null ? `#${computedRank}` : `#1`;
       }
     } catch (err) {
-      console.warn("Dynamic rank/leaderboard query error:", err);
-      if (rankEl) rankEl.textContent = userData?.rank ? `#${userData.rank}` : "#--";
+      console.warn("Dynamic rank query warning (falling back to local user profile views):", err);
+      if (rankEl) rankEl.textContent = userData?.rank ? `#${userData.rank}` : "#1";
+      if (leaderboardListEl) {
+        leaderboardListEl.innerHTML = `
+          <div class="leaderboard-item active-user">
+            <span><b>#1</b> ${escapeHtml(userData?.displayName || 'User')}</span>
+            <span style="opacity: 0.8; font-size: 0.75rem;">${Number(currentViews).toLocaleString()}</span>
+          </div>`;
+      }
     }
   };
 
@@ -805,22 +795,25 @@ document.addEventListener('DOMContentLoaded', () => {
     const cards = document.querySelectorAll('.glass-widget-card');
 
     cards.forEach(card => {
-      card.classList.remove('preset-glass-standard', 'preset-glass-dark');
+      card.classList.remove('preset-glass-standard', 'preset-glass-dark', 'preset-glass-frost', 'preset-glass-neon');
 
       if (glassStyleMode === "dark") {
         card.classList.add('preset-glass-dark');
-      } else if (glassStyleMode === "standard") {
+      } else if (glassStyleMode === "frost") {
+        card.classList.add('preset-glass-frost');
+      } else if (glassStyleMode === "neon") {
+        card.classList.add('preset-glass-neon');
+      } else {
         card.classList.add('preset-glass-standard');
       }
 
-      card.style.backgroundColor = config.cardBgColor || '';
-      card.style.color = config.cardTextColor || '';
+      if (config.cardBgColor) card.style.backgroundColor = config.cardBgColor;
+      if (config.cardTextColor) card.style.color = config.cardTextColor;
     });
   };
 
   const incrementProfileViews = async (uid, authUser) => {
     if (!uid) return;
-
     if (authUser && authUser.uid === uid) return;
 
     const sessionKey = `biogram_viewed_${uid}`;
@@ -884,7 +877,6 @@ document.addEventListener('DOMContentLoaded', () => {
     renderSpotifyWidget(spaceData?.spotifyUrl, spaceData?.showSpotify !== false);
     renderSocialsWidget(spaceData?.socials, spaceData?.showSocials !== false);
     renderRankingsWidget(targetUserId, userData, spaceData, spaceData?.showRankings !== false);
-    renderCustomPhotoWidgets(spaceData?.customPhotos || []);
 
     applyCustomSpaceStyles(spaceData);
     applySavedPositions(spaceData?.widgetPositions);
@@ -897,7 +889,7 @@ document.addEventListener('DOMContentLoaded', () => {
   };
 
   // ==========================================================================
-  // EDITOR MODAL & PERSISTENCE
+  // EDITOR MODAL & SAVING
   // ==========================================================================
   openEditorBtn?.addEventListener("click", () => {
     if (!canEditCurrentProfile(auth.currentUser)) {
@@ -912,11 +904,6 @@ document.addEventListener('DOMContentLoaded', () => {
     setInputValue("edit-audio-url", "modal-audio-url", activeSpaceConfig.audioUrl || activeSpaceConfig.bgAudioUrl || "");
     setInputValue("edit-spotify-url", "modal-spotify-url", activeSpaceConfig.spotifyUrl || "");
     setInputValue("edit-discord-id", "modal-discord-id", activeSpaceConfig.discordId || "");
-
-    setInputValue("edit-clock-color", "modal-clock-color", activeSpaceConfig.clockColor || "");
-    setInputValue("edit-accent-color", "modal-accent-color", activeSpaceConfig.accentColor || "");
-    setInputValue("edit-card-bg-color", "modal-card-bg-color", activeSpaceConfig.cardBgColor || "");
-    setInputValue("edit-card-text-color", "modal-card-text-color", activeSpaceConfig.cardTextColor || "");
 
     const stylePresetSelect = document.getElementById("edit-glass-preset");
     if (stylePresetSelect) stylePresetSelect.value = activeSpaceConfig.glassDesignPreset || "standard";
@@ -944,18 +931,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const socialsInput = document.getElementById("edit-socials-data");
     if (socialsInput) {
       if (Array.isArray(activeSpaceConfig.socials)) {
-        socialsInput.value = activeSpaceConfig.socials.map(s => `${s.platform || 'Link'}:${s.url}`).join("\n");
+        socialsInput.value = activeSpaceConfig.socials.map(s => `${s.platform || 'Instagram'}:${s.url}`).join("\n");
       } else {
         socialsInput.value = "";
-      }
-    }
-
-    const customPhotosInput = document.getElementById("edit-custom-photos-urls") || document.getElementById("modal-custom-photos-urls");
-    if (customPhotosInput) {
-      if (Array.isArray(activeSpaceConfig.customPhotos)) {
-        customPhotosInput.value = activeSpaceConfig.customPhotos.map(p => `${p.title || 'Photo'} | ${p.url}`).join("\n");
-      } else {
-        customPhotosInput.value = "";
       }
     }
 
@@ -968,18 +946,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
   saveSpaceBtn?.addEventListener("click", async () => {
     const user = auth.currentUser;
-    if (!user) {
-      alert("Please log in to save changes!");
-      return;
-    }
-
-    if (!canEditCurrentProfile(user)) {
-      alert("Unauthorized: You cannot edit this user's profile.");
-      return;
-    }
-
-    if (!targetUserId) {
-      alert("Error: No target user ID found.");
+    if (!user || !canEditCurrentProfile(user) || !targetUserId) {
+      alert("Unauthorized or target user missing.");
       return;
     }
 
@@ -1003,17 +971,6 @@ document.addEventListener('DOMContentLoaded', () => {
       })
       .filter(Boolean);
 
-    const customPhotosRaw = getInputValue("edit-custom-photos-urls", "modal-custom-photos-urls");
-    const customPhotosArray = customPhotosRaw
-      .split("\n")
-      .map((line, idx) => {
-        const parts = line.split("|");
-        const title = parts.length > 1 ? parts[0].trim() : `Photo ${idx + 1}`;
-        const url = parts.length > 1 ? parts[1].trim() : parts[0].trim();
-        return url ? { id: `custom_photo_${idx + 1}`, title, url } : null;
-      })
-      .filter(Boolean);
-
     const updatedConfig = {
       displayName: getInputValue("edit-display-name", "modal-display-name"),
       bio: getInputValue("edit-bio", "modal-bio"),
@@ -1024,11 +981,6 @@ document.addEventListener('DOMContentLoaded', () => {
       discordId: getInputValue("edit-discord-id", "modal-discord-id"),
 
       glassDesignPreset: getInputValue("edit-glass-preset", "") || "standard",
-      clockColor: getInputValue("edit-clock-color", "modal-clock-color"),
-      accentColor: getInputValue("edit-accent-color", "modal-accent-color"),
-      cardBgColor: getInputValue("edit-card-bg-color", "modal-card-bg-color"),
-      cardTextColor: getInputValue("edit-card-text-color", "modal-card-text-color"),
-
       clockFormat: getInputValue("edit-clock-format", "modal-clock-format") || "12h",
       clockShowSeconds: getCheckboxValue("edit-clock-show-seconds", "modal-clock-show-seconds", true),
       clockShowDate: getCheckboxValue("edit-clock-show-date", "modal-clock-show-date", true),
@@ -1043,7 +995,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
       socials: socialsArray,
       mediaImages: mediaImagesArray,
-      customPhotos: customPhotosArray,
       widgetPositions: widgetPositions,
       updatedAt: new Date().toISOString()
     };
@@ -1053,16 +1004,11 @@ document.addEventListener('DOMContentLoaded', () => {
       saveSpaceBtn.textContent = "Saving...";
 
       await setDoc(doc(db, "users_spaces", targetUserId), updatedConfig, { merge: true });
-
-      try {
-        await setDoc(doc(db, "users", targetUserId), {
-          displayName: updatedConfig.displayName || "BioGram User",
-          bio: updatedConfig.bio || "",
-          updatedAt: new Date().toISOString()
-        }, { merge: true });
-      } catch (userDocErr) {
-        console.warn("Could not write to user core doc:", userDocErr);
-      }
+      await setDoc(doc(db, "users", targetUserId), {
+        displayName: updatedConfig.displayName || "BioGram User",
+        bio: updatedConfig.bio || "",
+        updatedAt: new Date().toISOString()
+      }, { merge: true });
 
       saveLayoutToLocalStorage();
       activeSpaceConfig = { ...activeSpaceConfig, ...updatedConfig };
@@ -1079,7 +1025,7 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   // ==========================================================================
-  // DATA INITIALIZATION & AUTH RESOLUTION
+  // INITIALIZATION
   // ==========================================================================
   const loadProfileData = async (authUser) => {
     try {
@@ -1102,7 +1048,7 @@ document.addEventListener('DOMContentLoaded', () => {
             isCurrentUserAdmin = authUserData.role === 'admin' || authUserData.isAdmin === true;
           }
         } catch (e) {
-          console.warn("Admin check failed:", e);
+          console.warn("Admin check warning:", e);
         }
       }
 
