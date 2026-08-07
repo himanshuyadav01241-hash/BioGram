@@ -78,10 +78,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
   const escapeHtml = (str) => {
     if (!str) return "";
-    return String(str).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    return String(str)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#039;");
   };
 
-  // Dynamic Social Icon Resolver (Instagram, Github, Twitter, etc.)
+  // Dynamic Social Icon Resolver
   const getSocialIconClass = (platformStr = "") => {
     const p = platformStr.toLowerCase().trim();
     if (p.includes("instagram") || p.includes("insta")) return "fa-brands fa-instagram";
@@ -124,7 +129,7 @@ document.addEventListener('DOMContentLoaded', () => {
   };
 
   // ==========================================================================
-  // NOT FOUND / GHOST PROFILE DELETION STATE
+  // NOT FOUND / DELETION STATE
   // ==========================================================================
   const renderNotFoundUI = (handle) => {
     if (overlay) overlay.classList.add('hidden');
@@ -543,7 +548,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (displayNameEl) {
       const name = spaceData?.displayName || userData?.displayName || "User";
-      displayNameEl.innerHTML = `${escapeHtml(name)} <i class="fa-solid fa-circle-check" style="color: var(--primary-color, #3b82f6);"></i>`;
+      displayNameEl.innerHTML = `${escapeHtml(name)} <i class="fa-solid fa-circle-check verified-icon" style="color: var(--primary-color, #3b82f6);"></i>`;
     }
 
     if (handleEl) {
