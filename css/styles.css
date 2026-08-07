@@ -720,20 +720,20 @@ body {
 }
 
 /* ==========================================================================
-   6. MODAL OVERLAYS & LEADERBOARD MODAL
+   6. HIGH-CONTRAST LEADERBOARD MODAL & TOP 100 LIST
    ========================================================================== */
 .modal-overlay { 
   position: fixed !important; 
   inset: 0 !important; 
   width: 100vw;
   height: 100vh;
-  background: rgba(0, 0, 0, 0.6) !important; 
-  backdrop-filter: blur(4px);
+  background: rgba(3, 7, 18, 0.75) !important; 
+  backdrop-filter: blur(8px);
   display: flex; 
   align-items: center; 
   justify-content: center; 
   z-index: 1000; 
-  padding: 1rem; 
+  padding: 1.25rem; 
 }
 
 .modal-overlay.hidden {
@@ -742,22 +742,24 @@ body {
 
 .modal-card,
 .leaderboard-modal-card { 
-  background: var(--bg-card); 
-  border: 1px solid var(--border-light); 
-  border-radius: 18px; 
+  background: #111827 !important; /* Rich Dark Background for visibility */
+  border: 1px solid #374151 !important; 
+  border-radius: 20px; 
   width: 100%; 
-  max-width: 460px;
-  max-height: 80vh;
+  max-width: 540px !important; /* Expanded for Top 100 layout */
+  max-height: 85vh;
   display: flex;
   flex-direction: column;
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.35); 
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.6); 
   overflow: hidden; 
 }
 
+/* Modal Header */
 .leaderboard-modal-header,
 .modal-header { 
-  padding: 14px 18px;
-  border-bottom: 1px solid var(--border-light);
+  padding: 16px 20px;
+  background: #1f2937;
+  border-bottom: 1px solid #374151;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -766,112 +768,151 @@ body {
 
 .leaderboard-modal-header h3,
 .modal-header h3 { 
-  font-size: 0.95rem; 
-  font-weight: 700; 
-  color: var(--text-main); 
+  font-size: 1.05rem; 
+  font-weight: 800; 
+  color: #f9fafb !important; 
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .close-btn { 
-  background: none; 
+  background: #374151; 
   border: none; 
-  color: var(--text-muted); 
-  font-size: 1.25rem; 
+  color: #9ca3af; 
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  font-size: 1.1rem; 
+  display: flex;
+  align-items: center;
+  justify-content: center;
   cursor: pointer; 
-  transition: color 0.2s; 
+  transition: all 0.2s ease; 
 }
 
 .close-btn:hover { 
-  color: var(--text-main); 
+  background: #4b5563;
+  color: #ffffff; 
 }
 
+/* Modal Scrollable Body */
 .leaderboard-modal-body,
 .modal-body { 
-  padding: 12px 16px;
+  padding: 16px;
   overflow-y: auto;
   overflow-x: hidden;
 }
 
-.modal-tabs { 
-  display: flex; 
-  gap: 6px; 
-  margin-bottom: 0.75rem; 
-  border-bottom: 1px solid var(--border-light); 
-  padding-bottom: 6px; 
+/* Custom Sleek Scrollbar for 100+ items */
+.leaderboard-modal-body::-webkit-scrollbar,
+.modal-body::-webkit-scrollbar {
+  width: 6px;
 }
 
-.tab-btn { 
-  background: none; 
-  border: none; 
-  color: var(--text-muted); 
-  font-size: 0.75rem; 
-  font-weight: 600; 
-  padding: 4px 8px; 
-  border-radius: 6px; 
-  cursor: pointer; 
-  display: flex; 
-  align-items: center; 
-  gap: 4px; 
+.leaderboard-modal-body::-webkit-scrollbar-track,
+.modal-body::-webkit-scrollbar-track {
+  background: rgba(31, 41, 55, 0.5);
 }
 
-.tab-btn.active { 
-  background: rgba(99, 102, 241, 0.1); 
-  color: #6366f1; 
+.leaderboard-modal-body::-webkit-scrollbar-thumb,
+.modal-body::-webkit-scrollbar-thumb {
+  background: #4b5563;
+  border-radius: 10px;
 }
 
-.tab-content { 
-  display: none; 
-}
-
-.tab-content.active { 
-  display: block; 
+.leaderboard-modal-body::-webkit-scrollbar-thumb:hover {
+  background: #6366f1;
 }
 
 .leaderboard-list,
 #leaderboard-list { 
   display: flex; 
   flex-direction: column; 
-  gap: 8px; 
+  gap: 10px; 
 }
 
-/* Leaderboard Row Item Inside Modal */
+/* Leaderboard Row Item */
 .leaderboard-modal-card .leaderboard-item,
 .leaderboard-modal-card .leaderboard-card { 
   display: flex; 
   justify-content: space-between; 
   align-items: center; 
-  padding: 10px 12px; 
-  background: var(--bg-subtle); 
-  border: 1px solid var(--border-light);
-  border-radius: 12px; 
+  padding: 10px 14px; 
+  background: #1f2937 !important; 
+  border: 1px solid #374151 !important;
+  border-radius: 14px; 
   gap: 12px; 
-  transition: border-color 0.2s, transform 0.2s; 
+  transition: all 0.2s ease; 
 }
 
 .leaderboard-modal-card .leaderboard-item:hover { 
-  border-color: #6366f1; 
-  transform: translateY(-1px); 
+  border-color: #6366f1 !important; 
+  background: #263346 !important;
+  transform: translateX(2px); 
 }
 
+/* User Profile Container */
 .leaderboard-user-info,
 .rank-details-wrapper { 
   display: flex; 
   align-items: center; 
-  gap: 10px; 
+  gap: 12px; 
   min-width: 0;
   flex: 1;
 }
 
-/* Explicitly Display Avatars and Details in Modal */
+/* Rank Badges (Top 3 Special Styling) */
+.rank-badge,
+.rank-number { 
+  font-weight: 800;
+  font-size: 0.82rem;
+  width: 30px;
+  height: 30px;
+  min-width: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: #374151;
+  color: #9ca3af;
+  flex-shrink: 0;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+/* Top 3 Podium Highlights */
+.leaderboard-item:nth-child(1) .rank-badge,
+.leaderboard-item:nth-child(1) .rank-number {
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  color: #ffffff;
+  box-shadow: 0 0 12px rgba(245, 158, 11, 0.4);
+}
+
+.leaderboard-item:nth-child(2) .rank-badge,
+.leaderboard-item:nth-child(2) .rank-number {
+  background: linear-gradient(135deg, #9ca3af, #6b7280);
+  color: #ffffff;
+}
+
+.leaderboard-item:nth-child(3) .rank-badge,
+.leaderboard-item:nth-child(3) .rank-number {
+  background: linear-gradient(135deg, #b45309, #78350f);
+  color: #ffffff;
+}
+
+/* User Avatars */
 .leaderboard-modal-card .leaderboard-avatar,
 .leaderboard-modal-card .rank-avatar {
   display: block !important;
-  width: 36px;
-  height: 36px;
+  width: 40px;
+  height: 40px;
   border-radius: 50%;
   object-fit: cover;
   flex-shrink: 0;
+  border: 2px solid #374151;
 }
 
+/* Profile Details & Text Contrast */
 .leaderboard-modal-card .leaderboard-details,
 .leaderboard-modal-card .rank-details {
   display: flex !important;
@@ -880,117 +921,81 @@ body {
   overflow: hidden;
 }
 
-.leaderboard-modal-card .btn-visit-profile {
-  display: inline-flex !important;
+.leaderboard-modal-card .user-name,
+.leaderboard-modal-card .leaderboard-name {
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: #f9fafb !important;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-/* Compact Rank Badge Circle */
-.rank-badge,
-.rank-number { 
-  font-weight: 800;
-  font-size: 0.75rem;
-  width: 26px;
-  height: 26px;
-  min-width: 26px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 50%;
-  background: #e0e7ff;
-  color: #4f46e5;
-  flex-shrink: 0;
+.leaderboard-modal-card .user-handle,
+.leaderboard-modal-card .leaderboard-handle {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #9ca3af !weight;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-/* Views & Action Elements */
+/* Views Counter Styling */
 .leaderboard-actions,
 .rank-views,
 .leaderboard-views { 
   display: flex; 
   align-items: center; 
   gap: 6px; 
-  font-size: 0.8rem; 
+  font-size: 0.82rem; 
   font-weight: 700; 
-  color: var(--text-muted); 
+  color: #cbd5e1 !important; 
   white-space: nowrap; 
   flex-shrink: 0;
+  background: rgba(0, 0, 0, 0.2);
+  padding: 4px 8px;
+  border-radius: 8px;
 }
 
-.form-group { 
-  margin-bottom: 1rem; 
+.rank-views i,
+.leaderboard-views i {
+  color: #818cf8;
 }
 
-.form-group label { 
-  display: block; 
-  font-size: 0.78rem; 
-  font-weight: 600; 
-  color: var(--text-muted); 
-  margin-bottom: 6px; 
+/* Upgraded Visit Profile Button */
+.leaderboard-modal-card .btn-visit-profile {
+  display: inline-flex !important;
+  align-items: center;
+  gap: 5px;
+  background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%) !important;
+  color: #ffffff !important;
+  font-size: 0.78rem !weight;
+  font-weight: 700;
+  padding: 6px 12px;
+  border-radius: 8px;
+  text-decoration: none;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 8px rgba(99, 102, 241, 0.25);
+  border: none;
 }
 
-.modal-input { 
-  width: 100%; 
-  background: var(--bg-subtle); 
-  border: 1px solid var(--border-light); 
-  border-radius: 10px; 
-  padding: 9px 12px; 
-  color: var(--text-main); 
-  font-size: 0.88rem; 
-  outline: none; 
-  transition: border-color 0.2s, background 0.2s; 
+.leaderboard-modal-card .btn-visit-profile:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.4);
+  background: linear-gradient(135deg, #4f46e5 0%, #4338ca) !important;
 }
 
-.modal-input:focus { 
-  border-color: #6366f1; 
-  background: var(--bg-card); 
+/* Current User Badge (If applicable) */
+.you-badge {
+  background: rgba(16, 185, 129, 0.15);
+  color: #10b981;
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 12px;
 }
-
-.input-with-prefix { 
-  display: flex; 
-  align-items: center; 
-  background: var(--bg-subtle); 
-  border: 1px solid var(--border-light); 
-  border-radius: 10px; 
-  padding-left: 10px; 
-}
-
-.input-with-prefix span { 
-  color: var(--text-dim); 
-  font-size: 0.82rem; 
-  font-weight: 600; 
-}
-
-.input-with-prefix input { 
-  border: none; 
-  background: transparent; 
-}
-
-.modal-footer { 
-  display: flex; 
-  justify-content: flex-end; 
-  gap: 10px; 
-  padding: 1rem 1.5rem; 
-  background: var(--bg-subtle); 
-  border-top: 1px solid var(--border-light); 
-  flex-shrink: 0;
-}
-
-.status-msg { 
-  font-size: 0.78rem; 
-  font-weight: 600; 
-  margin-top: 8px; 
-  text-align: center; 
-}
-
-.full-width { 
-  width: 100%; 
-}
-
-/* Widget Specific Hide Logic (Profile Widget context only) */
-.profile-widget .leaderboard-avatar,
-.profile-widget .btn-visit-profile {
-  display: none;
-}
-
 /* ==========================================================================
    7. MEDIA QUERIES
    ========================================================================== */
