@@ -534,12 +534,13 @@
 
     .hidden { display: none !important; }
 
-    /* MOBILE SCREEN OVERRIDE - ADJUSTED PADDING TO AVOID ACTION BAR OVERLAP */
+    /* MOBILE SCREEN OVERRIDE - STACKS WIDGETS VERTICALLY */
     @media (max-width: 600px) {
       .widgets-wrapper {
         padding: 4.5rem 12px 6.5rem 12px !important;
-        flex-direction: column;
-        align-items: center;
+        flex-direction: column !important;
+        align-items: center !important;
+        justify-content: flex-start !important;
       }
       .glass-widget-card {
         width: 100% !important;
@@ -547,7 +548,7 @@
         position: relative !important;
         left: auto !important;
         top: auto !important;
-        margin-bottom: 12px;
+        margin-bottom: 12px !important;
       }
       .floating-actions-bar {
         position: fixed !important;
