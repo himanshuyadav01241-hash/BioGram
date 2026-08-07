@@ -458,6 +458,26 @@
       gap: 6px;
     }
 
+    /* MOBILE ORDER ACCORDION TOGGLE */
+    .mobile-order-accordion-btn {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: #f1f5f9;
+      border: 1px solid #cbd5e1;
+      padding: 10px 14px;
+      border-radius: 12px;
+      cursor: pointer;
+      font-family: inherit;
+      transition: background 0.2s ease;
+      margin-bottom: 8px;
+    }
+
+    .mobile-order-accordion-btn:hover {
+      background: #e2e8f0;
+    }
+
     /* MOBILE ORDER CONTROLS INSIDE MODAL */
     .mobile-order-item {
       display: flex;
@@ -723,11 +743,15 @@
 
       <hr class="modal-divider">
 
-      <!-- MOBILE LAYOUT ORDER (TOP TO BOTTOM) -->
-      <h4 class="modal-section-title">
-        <i class="fa-solid fa-sort" style="color: var(--primary-color);" aria-hidden="true"></i> Mobile Layout Order (Top to Bottom)
-      </h4>
-      <div id="mobile-order-list" style="margin-bottom: 12px;">
+      <!-- EXPANDABLE MOBILE LAYOUT ORDER (TOP TO BOTTOM) -->
+      <button type="button" id="toggle-mobile-order-btn" class="mobile-order-accordion-btn">
+        <span class="modal-section-title" style="margin: 0;">
+          <i class="fa-solid fa-sort" style="color: var(--primary-color);" aria-hidden="true"></i> Mobile Layout Order (Top to Bottom)
+        </span>
+        <i id="mobile-order-chevron" class="fa-solid fa-chevron-down" style="color: #64748b; font-size: 0.85rem; transition: transform 0.2s ease;" aria-hidden="true"></i>
+      </button>
+      
+      <div id="mobile-order-list" class="hidden" style="margin-bottom: 12px;">
         <!-- DYNAMICALLY POPULATED BY JS -->
       </div>
 
