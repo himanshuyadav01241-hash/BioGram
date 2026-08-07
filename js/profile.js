@@ -817,7 +817,7 @@ document.addEventListener('DOMContentLoaded', () => {
   };
 
   // ==========================================================================
-  // DYNAMIC VIEWS INCREMENT & LIVE RANK CALCULATOR
+  // DYNAMIC VIEWS INCREMENT (ONCE PER SESSION) & LIVE RANK CALCULATOR
   // ==========================================================================
   const renderRankingsWidget = async (targetUid, userData, spaceData, showRankings) => {
     const widget = document.getElementById("rankings-card-widget");
@@ -833,16 +833,24 @@ document.addEventListener('DOMContentLoaded', () => {
 
     let currentViews = Number(userData?.views ?? spaceData?.views ?? 0);
 
-    // 1. Increment profile view count in Firestore
+    // 1. Increment profile view count in Firestore ONLY ONCE per visitor session
     if (targetUid) {
-      try {
-        const userDocRef = doc(db, "users", targetUid);
-        await updateDoc(userDocRef, {
-          views: increment(1)
-        });
-        currentViews += 1;
-      } catch (e) {
-        console.warn("Could not increment view count:", e);
+      const viewSessionKey = `viewed_profile_${targetUid}`;
+      const hasViewedInSession = sessionStorage.getItem(viewSessionKey);
+
+      if (!hasViewedInSession) {
+        try {
+          // Immediately set key in sessionStorage to prevent multiple calls
+          sessionStorage.setItem(viewSessionKey, "true");
+
+          const userDocRef = doc(db, "users", targetUid);
+          await updateDoc(userDocRef, {
+            views: increment(1)
+          });
+          currentViews += 1;
+        } catch (e) {
+          console.warn("Could not increment view count:", e);
+        }
       }
     }
 
