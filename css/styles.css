@@ -44,7 +44,10 @@ body.dark-theme {
   font-family: 'Plus Jakarta Sans', sans-serif; 
 }
 
-html { 
+html, body { 
+  width: 100%;
+  max-width: 100vw;
+  overflow-x: hidden; 
   scroll-behavior: smooth; 
 }
 
@@ -52,14 +55,14 @@ body {
   background: var(--bg-page); 
   color: var(--text-main); 
   min-height: 100vh; 
-  overflow-x: hidden; 
   transition: background-color 0.3s, color 0.3s; 
 }
 
 .main-container { 
+  width: 100%;
   max-width: 1140px; 
   margin: 0 auto; 
-  padding: 0 1.5rem 4rem; 
+  padding: 0 1.25rem 4rem; 
 }
 
 .hidden { 
@@ -99,20 +102,22 @@ body {
 }
 
 /* ==========================================================================
-   3. GRID-BASED NAVIGATION
+   3. RESPONSIVE NAVIGATION
    ========================================================================== */
 .navbar { 
-  display: grid;
-  grid-template-columns: auto 1fr auto;
+  display: flex;
   align-items: center;
-  padding: 10px 24px;
-  gap: 16px;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  padding: 10px 20px;
+  gap: 12px;
   background: var(--bg-card); 
   border-bottom: 1px solid rgba(0, 0, 0, 0.06); 
   position: sticky; 
   top: 0; 
   z-index: 100; 
   width: 100%;
+  max-width: 100vw;
   transition: background-color 0.3s, border-color 0.3s; 
 }
 
@@ -136,6 +141,7 @@ body {
   align-items: center;
   justify-content: center;
   gap: 8px;
+  flex-wrap: wrap;
 }
 
 .nav-tab-link {
@@ -172,7 +178,7 @@ body {
   align-items: center; 
   justify-content: flex-end;
   gap: 8px; 
-  flex-wrap: nowrap;
+  flex-wrap: wrap;
 }
 
 .nav-avatar,
@@ -286,6 +292,7 @@ body {
   gap: 3.5rem; 
   align-items: center; 
   padding: 3.5rem 0 3rem; 
+  width: 100%;
 }
 
 .pill-badge { 
@@ -303,10 +310,10 @@ body {
 }
 
 .hero-title { 
-  font-size: 3.1rem; 
+  font-size: clamp(2rem, 5vw, 3.1rem); 
   font-weight: 800; 
   line-height: 1.15; 
-  letter-spacing: -1px; 
+  letter-spacing: -0.5px; 
   margin-bottom: 1rem; 
   color: var(--text-main) !important;
   opacity: 1 !important;
@@ -403,7 +410,8 @@ body {
 
 .quick-tags { 
   display: flex; 
-  gap: 18px; 
+  flex-wrap: wrap;
+  gap: 14px; 
   margin-top: 1.25rem; 
   font-size: 0.85rem; 
   color: var(--text-muted); 
@@ -418,6 +426,7 @@ body {
 .hero-right { 
   display: flex; 
   justify-content: center; 
+  width: 100%;
 }
 
 .clean-card,
@@ -733,7 +742,7 @@ body {
   align-items: center; 
   justify-content: center; 
   z-index: 1000; 
-  padding: 1.25rem; 
+  padding: 1rem; 
 }
 
 .modal-overlay.hidden {
@@ -746,7 +755,7 @@ body {
   border: 1px solid var(--border-light) !important; 
   border-radius: 20px; 
   width: 100%; 
-  max-width: 540px !important; /* Expanded for Top 100 layout */
+  max-width: 540px !important;
   max-height: 85vh;
   display: flex;
   flex-direction: column;
@@ -803,33 +812,13 @@ body {
   overflow-x: hidden;
 }
 
-/* Custom Sleek Scrollbar for 100+ items */
-.leaderboard-modal-body::-webkit-scrollbar,
-.modal-body::-webkit-scrollbar {
-  width: 6px;
-}
-
-.leaderboard-modal-body::-webkit-scrollbar-track,
-.modal-body::-webkit-scrollbar-track {
-  background: var(--bg-subtle);
-}
-
-.leaderboard-modal-body::-webkit-scrollbar-thumb,
-.modal-body::-webkit-scrollbar-thumb {
-  background: var(--border-hover);
-  border-radius: 10px;
-}
-
-.leaderboard-modal-body::-webkit-scrollbar-thumb:hover {
-  background: var(--primary-purple);
-}
-
 .modal-tabs { 
   display: flex; 
   gap: 6px; 
   margin-bottom: 0.75rem; 
   border-bottom: 1px solid var(--border-light); 
   padding-bottom: 6px; 
+  overflow-x: auto;
 }
 
 .tab-btn { 
@@ -844,6 +833,7 @@ body {
   display: flex; 
   align-items: center; 
   gap: 6px; 
+  white-space: nowrap;
 }
 
 .tab-btn.active { 
@@ -866,7 +856,6 @@ body {
   gap: 10px; 
 }
 
-/* Leaderboard Row Item */
 .leaderboard-item,
 .leaderboard-card { 
   display: flex; 
@@ -876,7 +865,7 @@ body {
   background: var(--bg-subtle) !important; 
   border: 1px solid var(--border-light) !important;
   border-radius: 14px; 
-  gap: 12px; 
+  gap: 10px; 
   transition: all 0.2s ease; 
 }
 
@@ -890,31 +879,29 @@ body {
 .rank-details-wrapper { 
   display: flex; 
   align-items: center; 
-  gap: 12px; 
+  gap: 10px; 
   min-width: 0;
   flex: 1;
 }
 
-/* Avatar Styling */
 .leaderboard-avatar,
 .rank-avatar { 
   display: block !important;
-  width: 40px;
-  height: 40px;
+  width: 38px;
+  height: 38px;
   border-radius: 50%;
   object-fit: cover !important;
   flex-shrink: 0;
   border: 2px solid var(--border-light);
 }
 
-/* Rank Badge Circle */
 .rank-badge,
 .rank-number { 
   font-weight: 800;
-  font-size: 0.82rem;
-  width: 32px;
-  height: 32px;
-  min-width: 32px;
+  font-size: 0.8rem;
+  width: 28px;
+  height: 28px;
+  min-width: 28px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -924,7 +911,6 @@ body {
   flex-shrink: 0;
 }
 
-/* Top 3 Podium Highlights */
 .leaderboard-item:nth-child(1) .rank-badge,
 .leaderboard-item.top-1 .rank-badge {
   background: linear-gradient(135deg, #f59e0b, #d97706);
@@ -954,7 +940,7 @@ body {
 
 .user-name,
 .leaderboard-name {
-  font-size: 0.92rem;
+  font-size: 0.88rem;
   font-weight: 700;
   color: var(--text-main) !important;
   white-space: nowrap;
@@ -964,7 +950,7 @@ body {
 
 .user-handle,
 .leaderboard-handle {
-  font-size: 0.78rem;
+  font-size: 0.75rem;
   font-weight: 600;
   color: var(--text-muted) !important;
   white-space: nowrap;
@@ -972,11 +958,10 @@ body {
   text-overflow: ellipsis;
 }
 
-/* Views Counter Styling */
 .leaderboard-actions {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   flex-shrink: 0;
 }
 
@@ -984,58 +969,45 @@ body {
 .leaderboard-views { 
   display: flex; 
   align-items: center; 
-  gap: 6px; 
-  font-size: 0.82rem; 
+  gap: 4px; 
+  font-size: 0.78rem; 
   font-weight: 700; 
   color: var(--text-main) !important; 
   white-space: nowrap; 
   flex-shrink: 0;
   background: var(--bg-card);
-  padding: 5px 10px;
+  padding: 4px 8px;
   border-radius: 8px;
   border: 1px solid var(--border-light);
 }
 
-.rank-views i,
-.leaderboard-views i {
-  color: var(--primary-purple);
-}
-
-/* Upgraded Visit Profile Button */
 .btn-visit-profile { 
   display: inline-flex !important;
   align-items: center;
-  gap: 6px;
+  gap: 4px;
   background: var(--primary-purple-gradient) !important;
   color: #ffffff !important;
-  font-size: 0.78rem;
+  font-size: 0.75rem;
   font-weight: 700;
-  padding: 6px 14px;
+  padding: 5px 10px;
   border-radius: 8px;
   text-decoration: none;
   transition: all 0.2s ease;
-  box-shadow: 0 2px 8px rgba(99, 102, 241, 0.25);
   border: none;
+  white-space: nowrap;
 }
 
-.btn-visit-profile:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.4);
-  opacity: 0.92;
-}
-
-/* "You" Indicator Badge */
 .you-badge,
 .self-badge {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
+  gap: 4px;
   background: rgba(16, 185, 129, 0.15);
   color: #10b981;
   border: 1px solid rgba(16, 185, 129, 0.3);
-  font-size: 0.75rem;
+  font-size: 0.72rem;
   font-weight: 700;
-  padding: 5px 12px;
+  padding: 4px 8px;
   border-radius: 8px;
 }
 
@@ -1068,26 +1040,6 @@ body {
   background: var(--bg-card); 
 }
 
-.input-with-prefix { 
-  display: flex; 
-  align-items: center; 
-  background: var(--bg-subtle); 
-  border: 1px solid var(--border-light); 
-  border-radius: 10px; 
-  padding-left: 10px; 
-}
-
-.input-with-prefix span { 
-  color: var(--text-dim); 
-  font-size: 0.82rem; 
-  font-weight: 600; 
-}
-
-.input-with-prefix input { 
-  border: none; 
-  background: transparent; 
-}
-
 .modal-footer { 
   display: flex; 
   justify-content: flex-end; 
@@ -1105,29 +1057,10 @@ body {
   text-align: center; 
 }
 
-.full-width { 
-  width: 100%; 
-}
-
 /* ==========================================================================
-   7. MEDIA QUERIES
+   7. COMPREHENSIVE MEDIA QUERIES (MOBILE FIXES)
    ========================================================================== */
 @media (max-width: 900px) {
-  .navbar {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: space-between;
-    padding: 0.85rem 1.5rem;
-    gap: 10px;
-  }
-
-  .nav-center-menu {
-    order: 3;
-    width: 100%;
-    margin-top: 6px;
-    justify-content: center;
-  }
-
   .hero-grid { 
     grid-template-columns: 1fr; 
     gap: 2.5rem; 
@@ -1150,22 +1083,34 @@ body {
 
   .quick-tags { 
     justify-content: center; 
-    margin-left: auto; 
-    margin-right: auto; 
   }
 }
 
 @media (max-width: 768px) {
+  .navbar {
+    padding: 10px 12px;
+    gap: 8px;
+  }
+
+  .nav-center-menu {
+    width: 100%;
+    order: 3;
+    justify-content: center;
+    margin-top: 4px;
+  }
+
+  .nav-user-menu,
+  .user-menu-wrapper {
+    gap: 6px;
+  }
+
+  .nav-btn {
+    padding: 5px 10px;
+    font-size: 0.78rem;
+  }
+
   .main-container {
     padding: 0 1rem 3rem;
-  }
-
-  .navbar { 
-    padding: 0.75rem 1rem; 
-  }
-
-  .hero-title { 
-    font-size: 2.3rem; 
   }
 
   .guide-steps-grid, 
@@ -1177,16 +1122,28 @@ body {
   .guide-section {
     padding: 1.25rem;
   }
-
-  .leaderboard-item,
-  .leaderboard-card {
-    padding: 8px 10px;
-  }
 }
 
 @media (max-width: 576px) {
-  .hero-title {
-    font-size: 1.95rem;
+  .logo {
+    font-size: 1.1rem;
+  }
+
+  .nav-avatar {
+    width: 32px !important;
+    height: 32px !important;
+    min-width: 32px !important;
+    min-height: 32px !important;
+  }
+
+  .nav-btn {
+    font-size: 0.75rem;
+    padding: 5px 8px;
+  }
+
+  .nav-tab-link {
+    font-size: 0.8rem;
+    padding: 5px 10px;
   }
 
   .claim-box {
@@ -1196,10 +1153,7 @@ body {
     align-items: stretch;
   }
 
-  .claim-box .prefix {
-    text-align: center;
-  }
-
+  .claim-box .prefix,
   .claim-box input {
     text-align: center;
   }
@@ -1220,7 +1174,17 @@ body {
 
   .modal-card,
   .leaderboard-modal-card {
-    max-width: 100%;
+    max-width: 100% !important;
     border-radius: 14px;
+  }
+
+  .leaderboard-item,
+  .leaderboard-card {
+    padding: 8px;
+  }
+
+  .btn-visit-profile {
+    padding: 4px 8px;
+    font-size: 0.7rem;
   }
 }
