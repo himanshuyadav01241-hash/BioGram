@@ -91,7 +91,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Smart URL Platform Detector
   const detectPlatformFromUrl = (urlStr = "") => {
-    const u = urlStr.toLowerCase();
+    const u = urlStr.toLowerCase().trim();
     if (u.includes("instagram.com") || u.includes("instagr.am")) return "Instagram";
     if (u.includes("github.com")) return "GitHub";
     if (u.includes("twitter.com") || u.includes("x.com")) return "X / Twitter";
@@ -242,6 +242,7 @@ document.addEventListener('DOMContentLoaded', () => {
   };
 
   const saveLayoutToLocalStorage = () => {
+    if (isMobile()) return;
     const positions = getLayoutPositionsDict();
     const cacheKey = getLocalStorageKey();
     if (Object.keys(positions).length > 0) {
@@ -252,9 +253,23 @@ document.addEventListener('DOMContentLoaded', () => {
   };
 
   const applySavedPositions = (savedPositions) => {
-    if (isMobile()) return;
     ensureWidgetCardIds();
+    const cards = document.querySelectorAll('.glass-widget-card');
 
+    // MOBILE RESET: Clear absolute styling so mobile displays clean flex stack
+    if (isMobile()) {
+      cards.forEach(card => {
+        card.style.position = '';
+        card.style.left = '';
+        card.style.top = '';
+        card.style.margin = '';
+      });
+      if (spaceContainer) spaceContainer.style.minHeight = '';
+      isLayoutAbsolute = false;
+      return;
+    }
+
+    // DESKTOP POSITIONING
     let positionsToApply = savedPositions;
     if (!positionsToApply || Object.keys(positionsToApply).length === 0) {
       try {
@@ -267,7 +282,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (!positionsToApply || Object.keys(positionsToApply).length === 0) return;
 
-    const cards = document.querySelectorAll('.glass-widget-card');
     let hasSaved = false;
 
     cards.forEach((card) => {
@@ -336,7 +350,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const cards = document.querySelectorAll('.glass-widget-card');
     
     cards.forEach(card => {
-      if (isLayoutLocked) {
+      if (isLayoutLocked || isMobile()) {
         card.style.cursor = 'default';
         card.classList.remove('can-drag');
       } else {
@@ -346,17 +360,23 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     if (toggleLockBtn) {
-      if (isLayoutLocked) {
-        toggleLockBtn.innerHTML = `<i class="fa-solid fa-lock"></i> <span>Locked</span>`;
-        toggleLockBtn.classList.remove('active-unlock');
+      if (isMobile()) {
+        toggleLockBtn.style.display = "none";
       } else {
-        toggleLockBtn.innerHTML = `<i class="fa-solid fa-lock-open"></i> <span>Move Widgets</span>`;
-        toggleLockBtn.classList.add('active-unlock');
+        toggleLockBtn.style.display = canEditCurrentProfile(auth.currentUser) ? "inline-flex" : "none";
+        if (isLayoutLocked) {
+          toggleLockBtn.innerHTML = `<i class="fa-solid fa-lock"></i> <span>Locked</span>`;
+          toggleLockBtn.classList.remove('active-unlock');
+        } else {
+          toggleLockBtn.innerHTML = `<i class="fa-solid fa-lock-open"></i> <span>Move Widgets</span>`;
+          toggleLockBtn.classList.add('active-unlock');
+        }
       }
     }
   };
 
   toggleLockBtn?.addEventListener('click', async () => {
+    if (isMobile()) return;
     if (!canEditCurrentProfile(auth.currentUser)) {
       alert("You don't have permission to modify this space.");
       return;
@@ -409,7 +429,7 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     const moveDrag = (clientX, clientY) => {
-      if (!isDragging || !spaceContainer) return;
+      if (!isDragging || isMobile() || !spaceContainer) return;
       const wrapperRect = spaceContainer.getBoundingClientRect();
       card.style.left = `${clientX - wrapperRect.left - offsetX}px`;
       card.style.top = `${clientY - wrapperRect.top - offsetY}px`;
@@ -419,7 +439,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if (isDragging) {
         isDragging = false;
         card.style.zIndex = '10';
-        card.style.cursor = isLayoutLocked ? 'default' : 'grab';
+        card.style.cursor = (isLayoutLocked || isMobile()) ? 'default' : 'grab';
         saveLayoutToLocalStorage();
       }
     };
@@ -432,16 +452,6 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     });
     document.addEventListener('mouseup', endDrag);
-
-    card.addEventListener('touchstart', (e) => {
-      if (e.touches.length === 1) startDrag(e, e.touches[0].clientX, e.touches[0].clientY, e.target);
-    }, { passive: false });
-
-    document.addEventListener('touchmove', (e) => {
-      if (isDragging && e.touches.length === 1) moveDrag(e.touches[0].clientX, e.touches[0].clientY);
-    }, { passive: true });
-
-    document.addEventListener('touchend', endDrag);
   };
 
   const initDragAndDrop = () => {
@@ -451,6 +461,14 @@ document.addEventListener('DOMContentLoaded', () => {
   };
 
   initDragAndDrop();
+
+  // Reset viewport orientation changes gracefully
+  window.addEventListener('resize', () => {
+    if (activeSpaceConfig) {
+      applySavedPositions(activeSpaceConfig.widgetPositions);
+      updateLockStateUI();
+    }
+  });
 
   resetPositionsBtn?.addEventListener('click', async () => {
     if (!canEditCurrentProfile(auth.currentUser)) {
@@ -757,7 +775,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  // SMART CONNECT WITH ME RENDERER (FIXED)
+  // CONNECT WITH ME WIDGET RENDERER (FULLY FIXED FOR LOGOS & URLS)
   const renderSocialsWidget = (socialsArray, showSocials) => {
     const widget = document.getElementById("socials-card-widget");
     const container = document.getElementById("card-links-container");
@@ -797,7 +815,7 @@ document.addEventListener('DOMContentLoaded', () => {
       a.target = "_blank";
       a.rel = "noopener noreferrer";
       a.className = "social-link-btn";
-      a.innerHTML = `<i class="${iconClass}" aria-hidden="true"></i> <span>${escapeHtml(platformName)}</span>`;
+      a.innerHTML = `<i class="${iconClass}" aria-hidden="true"></i><span>${escapeHtml(platformName)}</span>`;
       container.appendChild(a);
     });
   };
