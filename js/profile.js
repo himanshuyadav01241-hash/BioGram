@@ -7,12 +7,9 @@ import {
   doc, 
   getDoc, 
   setDoc,
-  updateDoc,
-  increment,
   collection,
   query,
   where,
-  orderBy,
   getDocs,
   limit
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
@@ -41,7 +38,8 @@ document.addEventListener('DOMContentLoaded', () => {
   const mediaNextBtn = document.getElementById("media-next-btn");
 
   const urlParams = new URLSearchParams(window.location.search);
-  const handleParam = urlParams.get("u")?.toLowerCase().trim() || urlParams.get("handle")?.toLowerCase().trim();
+  const rawHandleParam = urlParams.get("u")?.trim() || urlParams.get("handle")?.trim() || "";
+  const handleParam = rawHandleParam.toLowerCase();
 
   let clockInterval = null;
   let activeSpaceConfig = {};
@@ -56,9 +54,9 @@ document.addEventListener('DOMContentLoaded', () => {
   let discordTimerInterval = null;
 
   const isMobile = () => window.innerWidth <= 600;
-  const getLocalStorageKey = () => targetUserId ? `biogram_space_layout_cache_${targetUserId}` : 'biogram_space_layout_cache_guest';
+  const getLocalStorageKey = () => targetUserId ? `biogram_space_layout_cache_${targetUserId}` : null;
 
-  // Helper functions
+  // Helpers
   const getInputValue = (id1, id2) => {
     const el = document.getElementById(id1) || document.getElementById(id2);
     return el ? el.value.trim() : "";
@@ -89,7 +87,6 @@ document.addEventListener('DOMContentLoaded', () => {
       .replace(/'/g, "&#039;");
   };
 
-  // Smart URL Platform Detector
   const detectPlatformFromUrl = (urlStr = "") => {
     const u = urlStr.toLowerCase().trim();
     if (u.includes("instagram.com") || u.includes("instagr.am")) return "Instagram";
@@ -104,7 +101,6 @@ document.addEventListener('DOMContentLoaded', () => {
     return "Link";
   };
 
-  // Dynamic Social Icon Resolver
   const getSocialIconClass = (platformStr = "") => {
     const p = platformStr.toLowerCase().trim();
     if (p.includes("instagram") || p.includes("insta")) return "fa-brands fa-instagram";
@@ -146,16 +142,28 @@ document.addEventListener('DOMContentLoaded', () => {
     if (resetPositionsBtn) resetPositionsBtn.style.display = canEdit ? "inline-flex" : "none";
   };
 
+  const clearAllTimersAndState = () => {
+    if (clockInterval) clearInterval(clockInterval);
+    if (discordTimerInterval) clearInterval(discordTimerInterval);
+    if (mediaInterval) clearInterval(mediaInterval);
+    mediaImages = [];
+    currentMediaIndex = 0;
+  };
+
   // ==========================================================================
-  // NOT FOUND STATE
+  // NOT FOUND STATE (REMOVES GHOST ELEMENTS)
   // ==========================================================================
   const renderNotFoundUI = (handle) => {
+    clearAllTimersAndState();
+
     if (overlay) overlay.classList.add('hidden');
     if (bgAudio) {
       bgAudio.pause();
       bgAudio.src = "";
     }
     if (btnToggleAudio) btnToggleAudio.style.display = "none";
+    if (bgLayer) bgLayer.innerHTML = "";
+
     const actionsBar = document.querySelector(".floating-actions-bar");
     if (actionsBar) actionsBar.classList.add("hidden");
 
@@ -165,7 +173,7 @@ document.addEventListener('DOMContentLoaded', () => {
           <i class="fa-solid fa-user-slash" style="font-size: 3.5rem; color: #ef4444; margin-bottom: 1.25rem;"></i>
           <h2 style="font-size: 1.8rem; font-weight: 800; margin-bottom: 0.5rem;">Profile Not Found</h2>
           <p style="opacity: 0.75; max-width: 420px; margin-bottom: 1.5rem; font-size: 0.95rem; line-height: 1.5;">
-            ${handle ? `The profile <b>@${escapeHtml(handle)}</b> does not exist or has been removed.` : 'No user handle specified or you are not logged in.'}
+            ${handle ? `The profile <b>@${escapeHtml(handle)}</b> does not exist or has been removed.` : 'No profile handle specified or user does not exist.'}
           </p>
           <a href="/" style="padding: 10px 22px; background: linear-gradient(135deg, #6366f1, #8b5cf6); color: #ffffff; text-decoration: none; border-radius: 12px; font-weight: 700; font-size: 0.9rem; display: inline-flex; align-items: center; gap: 8px;">
             <i class="fa-solid fa-house"></i> Return Home
@@ -222,7 +230,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // ==========================================================================
-  // LAYOUT PERSISTENCE & LOCK/DRAG
+  // LAYOUT POSITIONS & DRAG
   // ==========================================================================
   const getLayoutPositionsDict = () => {
     ensureWidgetCardIds();
@@ -231,10 +239,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     cards.forEach((card) => {
       if (card.style.left && card.style.top) {
-        positions[card.id] = {
-          left: card.style.left,
-          top: card.style.top
-        };
+        positions[card.id] = { left: card.style.left, top: card.style.top };
       }
     });
 
@@ -243,8 +248,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
   const saveLayoutToLocalStorage = () => {
     if (isMobile()) return;
-    const positions = getLayoutPositionsDict();
     const cacheKey = getLocalStorageKey();
+    if (!cacheKey) return;
+
+    const positions = getLayoutPositionsDict();
     if (Object.keys(positions).length > 0) {
       localStorage.setItem(cacheKey, JSON.stringify(positions));
     } else {
@@ -269,19 +276,19 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     let positionsToApply = savedPositions;
-    if (!positionsToApply || Object.keys(positionsToApply).length === 0) {
+    const cacheKey = getLocalStorageKey();
+    if ((!positionsToApply || Object.keys(positionsToApply).length === 0) && cacheKey) {
       try {
-        const localCache = localStorage.getItem(getLocalStorageKey());
+        const localCache = localStorage.getItem(cacheKey);
         if (localCache) positionsToApply = JSON.parse(localCache);
       } catch (e) {
-        console.warn("Could not load local layout cache:", e);
+        console.warn("Could not load layout cache:", e);
       }
     }
 
     if (!positionsToApply || Object.keys(positionsToApply).length === 0) return;
 
     let hasSaved = false;
-
     cards.forEach((card) => {
       const pos = positionsToApply[card.id];
       if (pos && pos.left && pos.top) {
@@ -341,12 +348,13 @@ document.addEventListener('DOMContentLoaded', () => {
     });
     if (spaceContainer) spaceContainer.style.minHeight = '';
     isLayoutAbsolute = false;
-    localStorage.removeItem(getLocalStorageKey());
+    
+    const cacheKey = getLocalStorageKey();
+    if (cacheKey) localStorage.removeItem(cacheKey);
   };
 
   const updateLockStateUI = () => {
     const cards = document.querySelectorAll('.glass-widget-card');
-    
     cards.forEach(card => {
       if (isLayoutLocked || isMobile()) {
         card.style.cursor = 'default';
@@ -490,7 +498,7 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   // ==========================================================================
-  // WIDGET RENDERERS
+  // CLEAN WIDGET RENDERERS (NO GHOST / HARDCODED FALLBACKS)
   // ==========================================================================
   const renderClockWidget = (clockConfig = {}) => {
     const widget = document.getElementById("clock-card-widget");
@@ -504,12 +512,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (!showClock) {
       widget?.classList.add("hidden");
-      if (clockInterval) clearInterval(clockInterval);
       return;
     }
 
     widget?.classList.remove("hidden");
-
     if (dateEl) dateEl.style.display = showDate ? 'block' : 'none';
 
     const updateTime = () => {
@@ -531,7 +537,7 @@ document.addEventListener('DOMContentLoaded', () => {
     clockInterval = setInterval(updateTime, 1000);
   };
 
-  const renderProfileWidget = (userData, spaceData, authUser, showProfile) => {
+  const renderProfileWidget = (userData, spaceData, showProfile) => {
     const widget = document.getElementById("profile-card-widget");
     const avatarImg = document.getElementById("space-avatar-img");
     const displayNameEl = document.getElementById("space-display-name");
@@ -545,23 +551,23 @@ document.addEventListener('DOMContentLoaded', () => {
 
     widget?.classList.remove("hidden");
 
+    const activeHandle = spaceData?.handle || userData?.handle || rawHandleParam || "user";
+    const name = spaceData?.displayName || userData?.displayName || activeHandle;
+
     if (avatarImg) {
       let photoUrl = spaceData?.customAvatarUrl || userData?.photoURL;
       if (!photoUrl || !photoUrl.trim()) {
-        const seed = spaceData?.handle || userData?.handle || handleParam || "biogram";
-        photoUrl = `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(seed)}`;
+        photoUrl = `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(activeHandle)}`;
       }
       avatarImg.src = photoUrl;
     }
 
     if (displayNameEl) {
-      const name = spaceData?.displayName || userData?.displayName || "User";
       displayNameEl.innerHTML = `${escapeHtml(name)} <i class="fa-solid fa-circle-check verified-icon" style="color: var(--primary-color, #3b82f6);"></i>`;
     }
 
     if (handleEl) {
-      const handle = spaceData?.handle || userData?.handle || handleParam || "user";
-      handleEl.textContent = `@${handle}`;
+      handleEl.textContent = `@${activeHandle}`;
     }
 
     if (bioEl) {
@@ -585,13 +591,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const cleanDiscordId = (discordId || "").trim();
 
     if (!showDiscord || !cleanDiscordId) {
-      if (!cleanDiscordId && discordStatusEl) {
-        discordStatusEl.textContent = "Discord Not Linked";
-        if (discordDetailEl) discordDetailEl.textContent = "Add Discord ID in settings";
-        if (statusDot) statusDot.style.background = "#64748b";
-      }
-      if (!showDiscord) widget?.classList.add("hidden");
-      if (discordTimerInterval) clearInterval(discordTimerInterval);
+      widget?.classList.add("hidden");
       return;
     }
 
@@ -599,7 +599,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     try {
       const res = await fetch(`https://api.lanyard.rest/v1/users/${cleanDiscordId}`);
-      if (!res.ok) throw new Error("Discord status request failed");
+      if (!res.ok) throw new Error("Discord API error");
       const data = await res.json();
 
       if (data.success && data.data) {
@@ -614,8 +614,6 @@ document.addEventListener('DOMContentLoaded', () => {
         if (discordStatusEl) {
           discordStatusEl.textContent = `${dUser.global_name || dUser.username}`;
         }
-
-        if (discordTimerInterval) clearInterval(discordTimerInterval);
 
         let activityText = "";
         let startTimeStamp = null;
@@ -659,17 +657,14 @@ document.addEventListener('DOMContentLoaded', () => {
         };
 
         updateElapsedTime();
+        if (discordTimerInterval) clearInterval(discordTimerInterval);
         if (startTimeStamp) discordTimerInterval = setInterval(updateElapsedTime, 1000);
       } else {
-        if (discordStatusEl) discordStatusEl.textContent = "Discord Status";
-        if (discordDetailEl) discordDetailEl.textContent = "Offline or User Not Found";
-        if (statusDot) statusDot.style.background = "#64748b";
+        widget?.classList.add("hidden");
       }
     } catch (err) {
       console.warn("Discord fetch error:", err);
-      if (discordStatusEl) discordStatusEl.textContent = "Discord Status";
-      if (discordDetailEl) discordDetailEl.textContent = "Unable to load presence";
-      if (statusDot) statusDot.style.background = "#64748b";
+      widget?.classList.add("hidden");
     }
   };
 
@@ -679,23 +674,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const cleanSpotifyUrl = (spotifyUrl || "").trim();
 
-    if (!showSpotify) {
+    if (!showSpotify || !cleanSpotifyUrl) {
       widget?.classList.add("hidden");
       return;
     }
 
     widget?.classList.remove("hidden");
-
-    if (!cleanSpotifyUrl) {
-      if (widget) {
-        widget.innerHTML = `
-          <div style="padding: 16px; text-align: center; color: rgba(255,255,255,0.7); font-size: 0.85rem;">
-            <i class="fa-brands fa-spotify" style="font-size: 1.5rem; margin-bottom: 6px; color: #1db954; display:block;"></i>
-            <span>No Music Playlist Connected</span>
-          </div>`;
-      }
-      return;
-    }
 
     try {
       let embedUrl = cleanSpotifyUrl;
@@ -710,6 +694,7 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     } catch (e) {
       console.warn("Spotify render error:", e);
+      widget?.classList.add("hidden");
     }
   };
 
@@ -760,33 +745,24 @@ document.addEventListener('DOMContentLoaded', () => {
 
   mediaPrevBtn?.addEventListener("click", (e) => {
     e.stopPropagation();
-    if (mediaImages.length > 0) {
-      showMediaSlide(currentMediaIndex - 1);
-    }
+    if (mediaImages.length > 0) showMediaSlide(currentMediaIndex - 1);
   });
 
   mediaNextBtn?.addEventListener("click", (e) => {
     e.stopPropagation();
-    if (mediaImages.length > 0) {
-      showMediaSlide(currentMediaIndex + 1);
-    }
+    if (mediaImages.length > 0) showMediaSlide(currentMediaIndex + 1);
   });
 
   const renderSocialsWidget = (socialsArray, showSocials) => {
     const widget = document.getElementById("socials-card-widget");
     const container = document.getElementById("card-links-container");
 
-    if (!showSocials) {
+    const activeSocials = (Array.isArray(socialsArray) && socialsArray.length > 0) ? socialsArray : [];
+
+    if (!showSocials || activeSocials.length === 0) {
       widget?.classList.add("hidden");
       return;
     }
-
-    const defaultSocials = [
-      { platform: "GitHub", url: "https://github.com" },
-      { platform: "Instagram", url: "https://instagram.com" }
-    ];
-
-    const activeSocials = (Array.isArray(socialsArray) && socialsArray.length > 0) ? socialsArray : defaultSocials;
 
     if (!container) return;
 
@@ -816,7 +792,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   };
 
-  const renderRankingsWidget = async (targetUid, userData, spaceData, showRankings) => {
+  const renderRankingsWidget = async (userData, spaceData, showRankings) => {
     const widget = document.getElementById("rankings-card-widget");
     const rankEl = document.getElementById("user-rank-display");
     const viewsEl = document.getElementById("user-views-display");
@@ -826,15 +802,24 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
 
+    const currentViews = userData?.views ?? spaceData?.views ?? null;
+    const currentRank = userData?.rank ?? spaceData?.rank ?? null;
+
+    if (currentViews === null && currentRank === null) {
+      widget?.classList.add("hidden");
+      return;
+    }
+
     widget?.classList.remove("hidden");
 
-    const currentViews = userData?.views ?? spaceData?.views ?? 0;
     if (viewsEl) {
-      viewsEl.innerHTML = `<i class="fa-solid fa-eye" style="color: var(--primary-color, #3b82f6);"></i> ${Number(currentViews).toLocaleString()} Views`;
+      viewsEl.innerHTML = currentViews !== null 
+        ? `<i class="fa-solid fa-eye" style="color: var(--primary-color, #3b82f6);"></i> ${Number(currentViews).toLocaleString()} Views` 
+        : "";
     }
 
     if (rankEl) {
-      rankEl.textContent = userData?.rank ? `#${userData.rank}` : "#1";
+      rankEl.textContent = currentRank ? `#${currentRank}` : "";
     }
   };
 
@@ -863,11 +848,13 @@ document.addEventListener('DOMContentLoaded', () => {
   };
 
   // ==========================================================================
-  // MAIN RENDER FUNCTION
+  // MAIN PROFILE RENDER FUNCTION
   // ==========================================================================
   const renderProfileSpace = (userData, spaceData, authUser) => {
+    clearAllTimersAndState();
+
     if (!userData) {
-      renderNotFoundUI(handleParam);
+      renderNotFoundUI(rawHandleParam);
       return;
     }
 
@@ -904,12 +891,12 @@ document.addEventListener('DOMContentLoaded', () => {
       clockShowDate: spaceData?.clockShowDate !== false
     });
 
-    renderProfileWidget(userData, spaceData, authUser, spaceData?.showProfile !== false);
+    renderProfileWidget(userData, spaceData, spaceData?.showProfile !== false);
     renderDiscordWidget(spaceData?.discordId, spaceData?.showDiscord !== false);
     renderMediaWidget(spaceData?.mediaImages, spaceData?.showMedia !== false);
     renderSpotifyWidget(spaceData?.spotifyUrl, spaceData?.showSpotify !== false);
     renderSocialsWidget(spaceData?.socials, spaceData?.showSocials !== false);
-    renderRankingsWidget(targetUserId, userData, spaceData, spaceData?.showRankings !== false);
+    renderRankingsWidget(userData, spaceData, spaceData?.showRankings !== false);
 
     applyCustomSpaceStyles(spaceData);
     applySavedPositions(spaceData?.widgetPositions);
@@ -922,7 +909,7 @@ document.addEventListener('DOMContentLoaded', () => {
   };
 
   // ==========================================================================
-  // EDITOR MODAL CONTROLS & SAVE HANDLER
+  // EDITOR MODAL & SAVING
   // ==========================================================================
   openEditorBtn?.addEventListener("click", () => {
     if (!canEditCurrentProfile(auth.currentUser)) {
@@ -965,16 +952,10 @@ document.addEventListener('DOMContentLoaded', () => {
     if (socialsInput) {
       if (Array.isArray(activeSpaceConfig.socials) && activeSpaceConfig.socials.length > 0) {
         socialsInput.value = activeSpaceConfig.socials
-          .map(item => {
-            let plat = item.platform || "";
-            if (!plat || plat.toLowerCase() === "https" || plat.toLowerCase() === "http") {
-              plat = detectPlatformFromUrl(item.url || "");
-            }
-            return `${plat}: ${item.url || ''}`;
-          })
+          .map(item => `${item.platform || detectPlatformFromUrl(item.url)}: ${item.url || ''}`)
           .join("\n");
       } else {
-        socialsInput.value = "GitHub: https://github.com\nInstagram: https://instagram.com";
+        socialsInput.value = "";
       }
     }
 
@@ -1050,20 +1031,15 @@ document.addEventListener('DOMContentLoaded', () => {
         console.error("Error saving space:", err);
         alert("Failed to save settings.");
       }
-    } else {
-      activeSpaceConfig = updatedConfig;
-      renderProfileSpace(currentLoadedUserData, activeSpaceConfig, auth.currentUser);
-      if (editorModal) editorModal.classList.add("hidden");
     }
   });
 
   // ==========================================================================
-  // INITIALIZE AUTH OBSERVER & TARGET USER RESOLUTION
+  // AUTH OBSERVER & ROBUST USER RESOLUTION
   // ==========================================================================
   onAuthStateChanged(auth, async (authUser) => {
     isCurrentUserAdmin = false;
 
-    // Check admin privilege of authenticated user
     if (authUser) {
       try {
         const adminDoc = await getDoc(doc(db, "users", authUser.uid));
@@ -1078,10 +1054,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
     try {
       if (handleParam) {
-        // Find target user by handle parameter
         const usersRef = collection(db, "users");
-        const q = query(usersRef, where("handle", "==", handleParam), limit(1));
-        const querySnapshot = await getDocs(q);
+        
+        // Check exact match and lowercase handle match to prevent missing target profiles
+        let q = query(usersRef, where("handle", "==", rawHandleParam), limit(1));
+        let querySnapshot = await getDocs(q);
+
+        if (querySnapshot.empty && rawHandleParam !== handleParam) {
+          q = query(usersRef, where("handle", "==", handleParam), limit(1));
+          querySnapshot = await getDocs(q);
+        }
 
         if (!querySnapshot.empty) {
           const userDoc = querySnapshot.docs[0];
@@ -1094,25 +1076,28 @@ document.addEventListener('DOMContentLoaded', () => {
           renderProfileSpace(userData, spaceData, authUser);
         } else {
           targetUserId = null;
-          renderNotFoundUI(handleParam);
+          renderNotFoundUI(rawHandleParam);
         }
       } else if (authUser) {
-        // Default to logged-in user if no handle is provided
         targetUserId = authUser.uid;
         const userDoc = await getDoc(doc(db, "users", authUser.uid));
         const spaceDoc = await getDoc(doc(db, "users_spaces", authUser.uid));
 
-        const userData = userDoc.exists() ? userDoc.data() : { displayName: authUser.displayName, handle: "user" };
-        const spaceData = spaceDoc.exists() ? spaceDoc.data() : {};
-
-        renderProfileSpace(userData, spaceData, authUser);
+        if (userDoc.exists()) {
+          const userData = userDoc.data();
+          const spaceData = spaceDoc.exists() ? spaceDoc.data() : {};
+          renderProfileSpace(userData, spaceData, authUser);
+        } else {
+          targetUserId = null;
+          renderNotFoundUI(null);
+        }
       } else {
         targetUserId = null;
         renderNotFoundUI(null);
       }
     } catch (e) {
       console.error("Error initializing space:", e);
-      renderNotFoundUI(handleParam);
+      renderNotFoundUI(rawHandleParam);
     }
   });
 
