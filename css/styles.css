@@ -917,8 +917,10 @@ body {
   display: flex !important;
   flex-direction: column !important;
   gap: 10px !important;
+  width: 100% !important;
 }
 
+/* Main card wrapper forcing horizontal layout */
 .leaderboard-item {
   display: flex !important;
   flex-direction: row !important;
@@ -930,6 +932,8 @@ body {
   border: 1px solid var(--border-light) !important;
   border-radius: 14px !important;
   transition: all 0.2s ease !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
 }
 
 .leaderboard-item:hover {
@@ -937,12 +941,13 @@ body {
   border-color: var(--border-hover) !important;
 }
 
-/* Targets inner left/user wrapper containers across varying HTML structures */
+/* Force left/inner profile wrappers to horizontal row */
 .leaderboard-left,
 .leaderboard-main,
 .leaderboard-user,
 .leaderboard-content,
-.leaderboard-profile-wrapper {
+.leaderboard-profile-wrapper,
+.leaderboard-item > div:first-child {
   display: flex !important;
   flex-direction: row !important;
   align-items: center !important;
@@ -951,7 +956,10 @@ body {
   min-width: 0 !important;
 }
 
-.leaderboard-rank {
+/* Rank styling & positioning */
+.leaderboard-rank,
+.leaderboard-item .rank,
+.leaderboard-left > span:first-child {
   font-size: 0.95rem !important;
   font-weight: 800 !important;
   color: var(--text-dim) !important;
@@ -959,10 +967,13 @@ body {
   text-align: center !important;
   flex-shrink: 0 !important;
   margin: 0 !important;
+  order: 1 !important;
 }
 
+/* Avatar positioning */
 .leaderboard-avatar,
-.leaderboard-item img {
+.leaderboard-item img,
+.avatar-container {
   width: 42px !important;
   height: 42px !important;
   min-width: 42px !important;
@@ -972,17 +983,22 @@ body {
   border: 2px solid var(--primary-purple) !important;
   flex-shrink: 0 !important;
   margin: 0 !important;
+  order: 2 !important;
 }
 
+/* User Name and Handle stacked vertically inside the horizontal row */
 .leaderboard-info,
-.leaderboard-details {
+.leaderboard-details,
+.user-details {
   display: flex !important;
   flex-direction: column !important;
   justify-content: center !important;
+  align-items: flex-start !important;
   gap: 2px !important;
   flex: 1 !important;
   min-width: 0 !important;
   text-align: left !important;
+  order: 3 !important;
 }
 
 .leaderboard-name {
@@ -995,17 +1011,21 @@ body {
   white-space: nowrap !important;
   overflow: hidden !important;
   text-overflow: ellipsis !important;
+  margin: 0 !important;
 }
 
 .leaderboard-handle {
   font-size: 0.78rem !important;
   color: var(--text-muted) !important;
   font-weight: 600 !important;
+  margin: 0 !important;
 }
 
+/* Right-side view counts and action buttons */
 .leaderboard-stats,
 .leaderboard-actions,
-.leaderboard-right {
+.leaderboard-right,
+.leaderboard-item > div:last-child {
   display: flex !important;
   align-items: center !important;
   gap: 10px !important;
