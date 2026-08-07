@@ -1,4 +1,3 @@
-<style>
 /* ==========================================================================
    1. VARIABLES & THEMING
    ========================================================================== */
@@ -56,6 +55,14 @@ body {
   min-height: 100vh; 
   overflow-x: hidden; 
   transition: background-color 0.3s, color 0.3s; 
+}
+
+/* Background Blur Fallback when Modal is Open */
+body.modal-open .main-container,
+body.modal-open #custom-space-container {
+  filter: blur(8px);
+  pointer-events: none;
+  transition: filter 0.25s ease;
 }
 
 .main-container { 
@@ -614,21 +621,23 @@ body {
 }
 
 /* ==========================================================================
-   6. MODAL OVERLAYS & LEADERBOARD
+   6. MODAL OVERLAYS & LEADERBOARD (UPDATED BLUR & VISIT/YOU FIXES)
    ========================================================================== */
 .modal-overlay { 
   position: fixed !important; 
   inset: 0 !important; 
   width: 100vw;
   height: 100vh;
-  background: rgba(11, 15, 23, 0.75); 
-  -webkit-backdrop-filter: blur(8px);
-  backdrop-filter: blur(8px); 
+  background: rgba(15, 23, 42, 0.55) !important; 
+  -webkit-backdrop-filter: blur(12px) saturate(150%) !important;
+  backdrop-filter: blur(12px) saturate(150%) !important; 
   display: flex; 
   align-items: center; 
   justify-content: center; 
   z-index: 1000; 
   padding: 1rem; 
+  transform: translateZ(0);
+  will-change: backdrop-filter;
 }
 
 .modal-overlay.hidden {
@@ -770,12 +779,6 @@ body {
   box-shadow: 0 4px 12px rgba(0,0,0,0.06);
 }
 
-/* Hide visit option when rendering the currently logged-in user's item */
-.leaderboard-item.is-self .btn-visit-profile,
-.leaderboard-card.is-self .btn-visit-profile {
-  display: none !important;
-}
-
 .leaderboard-user-info,
 .rank-details-wrapper { 
   display: flex; 
@@ -846,27 +849,56 @@ body {
 .leaderboard-views { 
   display: flex; 
   align-items: center; 
-  gap: 6px; 
+  gap: 10px; 
   font-size: 0.85rem; 
   font-weight: 700; 
-  color: var(--primary-purple); 
+  color: var(--text-muted); 
   white-space: nowrap;
   flex-shrink: 0;
 }
 
+/* Visit Profile Button Style */
 .btn-visit-profile { 
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
   font-size: 0.78rem; 
   font-weight: 700; 
-  color: var(--primary-purple); 
+  color: #ffffff !important; 
+  background: var(--primary-purple); 
+  padding: 6px 14px; 
+  border-radius: 8px; 
   text-decoration: none; 
-  background: rgba(124,58,237,0.1); 
-  padding: 5px 10px; 
-  border-radius: 6px; 
-  transition: background 0.2s; 
+  transition: background 0.2s, transform 0.15s; 
 }
 
 .btn-visit-profile:hover { 
-  background: rgba(124,58,237,0.2); 
+  background: #6d28d9; 
+  transform: translateY(-1px);
+}
+
+/* "You" Self Indicator Tag */
+.self-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: rgba(124, 58, 237, 0.12);
+  color: var(--primary-purple);
+  padding: 5px 10px;
+  border-radius: 8px;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+/* Visibility Rules for Self vs Other profiles */
+.leaderboard-item.is-self .btn-visit-profile,
+.leaderboard-card.is-self .btn-visit-profile {
+  display: none !important;
+}
+
+.leaderboard-item:not(.is-self) .self-badge,
+.leaderboard-card:not(.is-self) .self-badge {
+  display: none !important;
 }
 
 .form-group { 
@@ -1114,4 +1146,3 @@ body {
     align-items: center;
   }
 }
-</style>
