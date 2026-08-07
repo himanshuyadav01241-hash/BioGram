@@ -256,7 +256,6 @@ document.addEventListener('DOMContentLoaded', () => {
     ensureWidgetCardIds();
     const cards = document.querySelectorAll('.glass-widget-card');
 
-    // MOBILE RESET: Clear absolute styling so mobile displays clean flex stack
     if (isMobile()) {
       cards.forEach(card => {
         card.style.position = '';
@@ -269,7 +268,6 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
 
-    // DESKTOP POSITIONING
     let positionsToApply = savedPositions;
     if (!positionsToApply || Object.keys(positionsToApply).length === 0) {
       try {
@@ -462,7 +460,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
   initDragAndDrop();
 
-  // Reset viewport orientation changes gracefully
   window.addEventListener('resize', () => {
     if (activeSpaceConfig) {
       applySavedPositions(activeSpaceConfig.widgetPositions);
@@ -775,7 +772,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  // CONNECT WITH ME WIDGET RENDERER (FULLY FIXED FOR LOGOS & URLS)
   const renderSocialsWidget = (socialsArray, showSocials) => {
     const widget = document.getElementById("socials-card-widget");
     const container = document.getElementById("card-links-container");
@@ -995,7 +991,6 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
 
-    // Smart Parser for Social Links
     const rawSocialsText = getInputValue("edit-socials-data");
     const parsedSocials = rawSocialsText
       .split("\n")
@@ -1062,25 +1057,62 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  // INITIALIZE AUTH OBSERVER
+  // ==========================================================================
+  // INITIALIZE AUTH OBSERVER & TARGET USER RESOLUTION
+  // ==========================================================================
   onAuthStateChanged(auth, async (authUser) => {
-    targetUserId = authUser ? authUser.uid : null;
+    isCurrentUserAdmin = false;
 
+    // Check admin privilege of authenticated user
     if (authUser) {
       try {
+        const adminDoc = await getDoc(doc(db, "users", authUser.uid));
+        if (adminDoc.exists()) {
+          const adminData = adminDoc.data();
+          isCurrentUserAdmin = adminData.isAdmin === true || adminData.role === "admin";
+        }
+      } catch (e) {
+        console.warn("Could not check admin status:", e);
+      }
+    }
+
+    try {
+      if (handleParam) {
+        // Find target user by handle parameter
+        const usersRef = collection(db, "users");
+        const q = query(usersRef, where("handle", "==", handleParam), limit(1));
+        const querySnapshot = await getDocs(q);
+
+        if (!querySnapshot.empty) {
+          const userDoc = querySnapshot.docs[0];
+          targetUserId = userDoc.id;
+          const userData = userDoc.data();
+
+          const spaceDoc = await getDoc(doc(db, "users_spaces", targetUserId));
+          const spaceData = spaceDoc.exists() ? spaceDoc.data() : {};
+
+          renderProfileSpace(userData, spaceData, authUser);
+        } else {
+          targetUserId = null;
+          renderNotFoundUI(handleParam);
+        }
+      } else if (authUser) {
+        // Default to logged-in user if no handle is provided
+        targetUserId = authUser.uid;
         const userDoc = await getDoc(doc(db, "users", authUser.uid));
         const spaceDoc = await getDoc(doc(db, "users_spaces", authUser.uid));
-        
+
         const userData = userDoc.exists() ? userDoc.data() : { displayName: authUser.displayName, handle: "user" };
         const spaceData = spaceDoc.exists() ? spaceDoc.data() : {};
 
         renderProfileSpace(userData, spaceData, authUser);
-      } catch (e) {
-        console.error("Firebase fetch error:", e);
-        renderProfileSpace({ displayName: "Demo User", handle: "demo" }, {}, authUser);
+      } else {
+        targetUserId = null;
+        renderNotFoundUI(null);
       }
-    } else {
-      renderProfileSpace({ displayName: "Guest User", handle: "guest" }, {}, null);
+    } catch (e) {
+      console.error("Error initializing space:", e);
+      renderNotFoundUI(handleParam);
     }
   });
 
