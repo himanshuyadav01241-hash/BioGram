@@ -36,7 +36,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const resetPositionsBtn = document.getElementById("reset-positions-btn");
   const toggleLockBtn = document.getElementById("toggle-lock-btn");
   const mobileOrderListContainer = document.getElementById("mobile-order-list");
-  const toggleMobileOrderBtn = document.getElementById("toggle-mobile-order-btn");
+  const toggleMobileOrderBtn = document.getElementById("toggle-mobile-order-header") || document.getElementById("toggle-mobile-order-btn");
   const mobileOrderChevron = document.getElementById("mobile-order-chevron");
 
   const mediaPrevBtn = document.getElementById("media-prev-btn");
@@ -334,7 +334,7 @@ document.addEventListener('DOMContentLoaded', () => {
   };
 
   const applyMobileLayoutOrder = (orderArray) => {
-    if (!isMobile() || !spaceContainer) return;
+    if (!spaceContainer) return;
 
     const currentOrder = (Array.isArray(orderArray) && orderArray.length > 0)
       ? orderArray
@@ -1190,10 +1190,12 @@ document.addEventListener('DOMContentLoaded', () => {
     try {
       await setDoc(doc(db, "users_spaces", currentUid), updatedConfig, { merge: true });
       if (editorModal) editorModal.classList.add("hidden");
-      alert("Your space was updated successfully!");
 
       activeSpaceConfig = updatedConfig;
       renderProfileSpace(currentLoadedUserData, activeSpaceConfig, auth.currentUser);
+      applyMobileLayoutOrder(updatedConfig.mobileWidgetOrder);
+
+      alert("Your space was updated successfully!");
     } catch (err) {
       console.error("Error saving space:", err);
       alert("Failed to save settings.");
