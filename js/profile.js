@@ -89,14 +89,29 @@ document.addEventListener('DOMContentLoaded', () => {
       .replace(/'/g, "&#039;");
   };
 
+  // Smart URL Platform Detector
+  const detectPlatformFromUrl = (urlStr = "") => {
+    const u = urlStr.toLowerCase();
+    if (u.includes("instagram.com") || u.includes("instagr.am")) return "Instagram";
+    if (u.includes("github.com")) return "GitHub";
+    if (u.includes("twitter.com") || u.includes("x.com")) return "X / Twitter";
+    if (u.includes("discord.gg") || u.includes("discord.com")) return "Discord";
+    if (u.includes("youtube.com") || u.includes("youtu.be")) return "YouTube";
+    if (u.includes("spotify.com")) return "Spotify";
+    if (u.includes("twitch.tv")) return "Twitch";
+    if (u.includes("linkedin.com")) return "LinkedIn";
+    if (u.includes("tiktok.com")) return "TikTok";
+    return "Link";
+  };
+
   // Dynamic Social Icon Resolver
   const getSocialIconClass = (platformStr = "") => {
     const p = platformStr.toLowerCase().trim();
     if (p.includes("instagram") || p.includes("insta")) return "fa-brands fa-instagram";
     if (p.includes("github")) return "fa-brands fa-github";
-    if (p.includes("twitter") || p.includes("x") || p.includes("x.com")) return "fa-brands fa-x-twitter";
+    if (p.includes("twitter") || p.includes("x.com") || p.includes("x/")) return "fa-brands fa-x-twitter";
     if (p.includes("discord")) return "fa-brands fa-discord";
-    if (p.includes("youtube")) return "fa-brands fa-youtube";
+    if (p.includes("youtube") || p.includes("youtu.be")) return "fa-brands fa-youtube";
     if (p.includes("spotify")) return "fa-brands fa-spotify";
     if (p.includes("twitch")) return "fa-brands fa-twitch";
     if (p.includes("linkedin")) return "fa-brands fa-linkedin";
@@ -742,7 +757,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  // FIXED: CONNECT WITH ME RENDERER WITH FALLBACKS
+  // SMART CONNECT WITH ME RENDERER (FIXED)
   const renderSocialsWidget = (socialsArray, showSocials) => {
     const widget = document.getElementById("socials-card-widget");
     const container = document.getElementById("card-links-container");
@@ -752,7 +767,6 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
 
-    // Default social fallback if none provided
     const defaultSocials = [
       { platform: "GitHub", url: "https://github.com" },
       { platform: "Instagram", url: "https://instagram.com" }
@@ -770,9 +784,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
       const rawUrl = item.url.trim();
       let fullUrl = rawUrl.startsWith("http") ? rawUrl : `https://${rawUrl}`;
-      let platformName = item.platform || item.label || "Link";
+      
+      let platformName = item.platform || item.label || "";
+      if (!platformName || platformName.toLowerCase() === "https" || platformName.toLowerCase() === "http" || platformName.toLowerCase() === "link") {
+        platformName = detectPlatformFromUrl(fullUrl);
+      }
 
-      const iconClass = getSocialIconClass(platformName.concat(" ", rawUrl));
+      const iconClass = getSocialIconClass(`${platformName} ${fullUrl}`);
 
       const a = document.createElement("a");
       a.href = fullUrl;
@@ -806,7 +824,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   };
 
-  // FIXED: THREE THEME SWITCHER (Normal, Transparent Glass, Dark Glass)
   const applyCustomSpaceStyles = (config = {}) => {
     if (config.accentColor) {
       document.documentElement.style.setProperty('--primary-color', config.accentColor);
@@ -816,7 +833,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const cards = document.querySelectorAll('.glass-widget-card');
 
     cards.forEach(card => {
-      // Remove all theme presets first
       card.classList.remove('preset-glass-standard', 'preset-glass-dark', 'preset-glass-transparent');
 
       if (glassStyleMode === "dark") {
@@ -824,7 +840,6 @@ document.addEventListener('DOMContentLoaded', () => {
       } else if (glassStyleMode === "standard") {
         card.classList.add('preset-glass-standard');
       } else {
-        // Default to Transparent Glass
         card.classList.add('preset-glass-transparent');
       }
 
@@ -936,10 +951,16 @@ document.addEventListener('DOMContentLoaded', () => {
     if (socialsInput) {
       if (Array.isArray(activeSpaceConfig.socials) && activeSpaceConfig.socials.length > 0) {
         socialsInput.value = activeSpaceConfig.socials
-          .map(item => `${item.platform || 'Link'}:${item.url || ''}`)
+          .map(item => {
+            let plat = item.platform || "";
+            if (!plat || plat.toLowerCase() === "https" || plat.toLowerCase() === "http") {
+              plat = detectPlatformFromUrl(item.url || "");
+            }
+            return `${plat}: ${item.url || ''}`;
+          })
           .join("\n");
       } else {
-        socialsInput.value = "GitHub:https://github.com\nInstagram:https://instagram.com";
+        socialsInput.value = "GitHub: https://github.com\nInstagram: https://instagram.com";
       }
     }
 
@@ -956,20 +977,29 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
 
-    // Parse Social Links (Platform:URL per line)
+    // Smart Parser for Social Links
     const rawSocialsText = getInputValue("edit-socials-data");
     const parsedSocials = rawSocialsText
       .split("\n")
       .map(line => line.trim())
       .filter(Boolean)
       .map(line => {
+        if (/^https?:\/\//i.test(line)) {
+          return { platform: detectPlatformFromUrl(line), url: line };
+        }
+        
         const colonIdx = line.indexOf(":");
         if (colonIdx !== -1) {
-          const platform = line.substring(0, colonIdx).trim();
-          const url = line.substring(colonIdx + 1).trim();
-          return { platform: platform || "Link", url };
+          const prefix = line.substring(0, colonIdx).trim();
+          const remainder = line.substring(colonIdx + 1).trim();
+          
+          if (prefix.toLowerCase() === "http" || prefix.toLowerCase() === "https") {
+            return { platform: detectPlatformFromUrl(line), url: line };
+          }
+          return { platform: prefix || detectPlatformFromUrl(remainder), url: remainder };
         }
-        return { platform: "Link", url: line };
+        
+        return { platform: detectPlatformFromUrl(line), url: line };
       });
 
     const updatedConfig = {
