@@ -460,10 +460,10 @@
 
     .hidden { display: none !important; }
 
-    /* MOBILE SCREEN OVERRIDE */
+    /* MOBILE SCREEN OVERRIDE - FORCED UNHIDE & COMPACT BUTTONS */
     @media (max-width: 600px) {
       .widgets-wrapper {
-        padding: 4.5rem 12px 3rem 12px !important;
+        padding: 4.5rem 12px 5rem 12px !important;
         flex-direction: column;
         align-items: center;
       }
@@ -476,8 +476,18 @@
         margin-bottom: 12px;
       }
       .floating-actions-bar {
-        bottom: 12px;
-        right: 12px;
+        position: fixed !important;
+        bottom: 16px !important;
+        right: 12px !important;
+        left: 12px !important;
+        justify-content: center !important;
+        z-index: 10000 !important;
+        display: flex !important;
+      }
+      .space-action-btn {
+        padding: 10px 14px !important;
+        font-size: 0.8rem !important;
+        display: inline-flex !important;
       }
     }
   </style>
@@ -604,7 +614,7 @@
     </div>
   </main>
 
-  <!-- FLOATING BOTTOM CONTROLS (Only visible to Owner / Admin) -->
+  <!-- FLOATING BOTTOM CONTROLS (Visible for mobile & desktop) -->
   <div class="floating-actions-bar hidden">
     <button type="button" id="toggle-lock-btn" class="space-action-btn">
       <i class="fa-solid fa-lock" aria-hidden="true"></i> <span>Locked</span>
