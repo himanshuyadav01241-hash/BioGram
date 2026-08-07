@@ -46,6 +46,7 @@ document.addEventListener("DOMContentLoaded", () => {
   // 3. GLOBAL STATE & SYSTEM CONFIG
   // ==========================================================================
   let currentAvatarSeed = "biogram";
+  let avatarCustomized = false;
   let currentHandle = "";
   let systemConfig = {
     globalBlur: false,
@@ -121,6 +122,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     randomizeBtn?.addEventListener('click', () => {
       currentAvatarSeed = Math.random().toString(36).substring(7);
+      avatarCustomized = true;
       if (avatarImg) {
         avatarImg.src = `https://api.dicebear.com/7.x/avataaars/svg?seed=${currentAvatarSeed}`;
       }
@@ -251,7 +253,7 @@ document.addEventListener("DOMContentLoaded", () => {
         if (data.displayName && data.displayName !== "BioGram User") {
           displayName = data.displayName;
         }
-        if (!finalPhotoURL && data.photoURL) {
+        if (data.photoURL) {
           finalPhotoURL = data.photoURL;
         }
       }
@@ -334,6 +336,7 @@ document.addEventListener("DOMContentLoaded", () => {
       if (userSnap.exists()) {
         const data = userSnap.data();
         currentHandle = data.handle || "";
+        currentAvatarSeed = data.avatarSeed || user.uid;
 
         if (handleInput) handleInput.value = currentHandle;
         if (nameInput) nameInput.value = (data.displayName && data.displayName !== "BioGram User") ? data.displayName : (user.displayName || "");
@@ -415,6 +418,11 @@ document.addEventListener("DOMContentLoaded", () => {
       saveAccountBtn.disabled = true;
       notifyStatus("Saving changes...", false);
 
+      let updatedPhotoURL = user.photoURL || "";
+      if (avatarCustomized) {
+        updatedPhotoURL = `https://api.dicebear.com/7.x/avataaars/svg?seed=${currentAvatarSeed}`;
+      }
+
       await runTransaction(db, async (transaction) => {
         if (newHandle && newHandle !== currentHandle) {
           if (newHandle.length < 3) {
@@ -443,7 +451,7 @@ document.addEventListener("DOMContentLoaded", () => {
           displayName: name || user.displayName || newHandle,
           handle: newHandle || currentHandle,
           bio: bio || "",
-          photoURL: user.photoURL || "",
+          photoURL: updatedPhotoURL,
           avatarSeed: currentAvatarSeed,
           views: increment(0),
           updatedAt: new Date().toISOString()
@@ -490,7 +498,11 @@ document.addEventListener("DOMContentLoaded", () => {
     if (currentHandle) {
       const fullUrl = getProfileUrl(currentHandle);
       try {
-        await navigator.clipboard.writeText(fullUrl);
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          await navigator.clipboard.writeText(fullUrl);
+        } else {
+          throw new Error("Clipboard API unavailable");
+        }
         const originalText = claimBtn.innerHTML;
         claimBtn.innerHTML = `<i class="fa-solid fa-check"></i> Copied!`;
         claimBtn.style.background = '#10b981';
@@ -500,7 +512,7 @@ document.addEventListener("DOMContentLoaded", () => {
           claimBtn.style.background = '';
         }, 2000);
       } catch (e) {
-        alert(`📋 Your Profile Link:\n${fullUrl}`);
+        prompt("📋 Copy your profile link:", fullUrl);
       }
       return;
     }
@@ -541,7 +553,7 @@ document.addEventListener("DOMContentLoaded", () => {
           handle: handle,
           displayName: user.displayName || handle,
           email: user.email,
-          photoURL: user.photoURL || "",
+          photoURL: user.photoURL || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.uid}`,
           views: 0,
           updatedAt: new Date().toISOString()
         }, { merge: true });
@@ -572,7 +584,7 @@ document.addEventListener("DOMContentLoaded", () => {
         await setDoc(userRef, {
           displayName: user.displayName || "",
           email: user.email,
-          photoURL: user.photoURL || "",
+          photoURL: user.photoURL || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.uid}`,
           views: 0,
           updatedAt: new Date().toISOString()
         }, { merge: true });
