@@ -100,6 +100,8 @@
     .glass-widget-card.can-drag {
       cursor: grab;
       border: 2px dashed var(--primary-color);
+      position: absolute;
+      z-index: 50;
     }
 
     .glass-widget-card.can-drag:active {
@@ -222,11 +224,27 @@
     }
 
     #rankings-card-widget {
-      width: 260px;
+      width: 320px;
       background: rgba(15, 23, 42, 0.85);
       color: #fff;
       border: 1px solid rgba(245, 158, 11, 0.35);
       text-align: center;
+    }
+
+    .leaderboard-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 6px 10px;
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 10px;
+      margin-top: 6px;
+      font-size: 0.8rem;
+    }
+
+    .leaderboard-item.active-user {
+      border: 1px solid #f59e0b;
+      background: rgba(245, 158, 11, 0.15);
     }
 
     /* FLOATING ACTION BAR CONTROLS */
@@ -392,7 +410,7 @@
         <div style="margin-bottom: 10px;">
           <img 
             id="space-avatar-img" 
-            src="https://api.dicebear.com/7.x/avataaars/svg?seed=biogram" 
+            src="https://api.dicebear.com/7.x/avataaars/svg?seed=kaumudi" 
             alt="User Avatar" 
             loading="lazy"
             style="width: 88px; height: 88px; border-radius: 50%; object-fit: cover; border: 3px solid var(--primary-color); box-shadow: 0 8px 16px rgba(0,0,0,0.15);"
@@ -400,11 +418,11 @@
           >
         </div>
         <h1 id="space-display-name" style="font-size: 1.4rem; font-weight: 800; margin: 0;">
-          BioGram User <i class="fa-solid fa-circle-check" style="color: var(--primary-color);" aria-hidden="true"></i>
+          Kaumudi Tiwari <i class="fa-solid fa-circle-check" style="color: var(--primary-color);" aria-hidden="true"></i>
         </h1>
-        <span id="space-handle-text" style="color: var(--primary-color); font-weight: 700; font-size: 0.85rem;">@user</span>
+        <span id="space-handle-text" style="color: var(--primary-color); font-weight: 700; font-size: 0.85rem;">@kaumudi</span>
         <p id="space-bio-text" style="color: #475569; margin-top: 10px; font-size: 0.9rem; line-height: 1.4;">
-          Welcome to my custom space!
+          Artist
         </p>
       </div>
 
@@ -432,7 +450,7 @@
           <span style="font-size: 0.7rem; font-weight: 700; background: rgba(99, 102, 241, 0.15); color: var(--primary-color); padding: 3px 8px; border-radius: 12px;">Gallery</span>
         </div>
         <div class="media-display-container">
-          <img id="media-display-img" class="media-display-img" src="" alt="Media Showcase" loading="lazy">
+          <img id="media-display-img" class="media-display-img" src="https://picsum.photos/400/300" alt="Media Showcase" loading="lazy">
           <button type="button" id="media-prev-btn" class="media-nav-btn media-nav-prev" aria-label="Previous image">
             <i class="fa-solid fa-chevron-left" style="font-size: 0.85rem;" aria-hidden="true"></i>
           </button>
@@ -460,22 +478,32 @@
         <div id="card-links-container" style="display: flex; flex-wrap: wrap; gap: 8px; justify-content: center;"></div>
       </div>
 
-      <!-- 7. RANKINGS -->
+      <!-- 7. RANKINGS & LEADERBOARD WIDGET -->
       <div id="rankings-card-widget" class="glass-widget-card">
         <div style="font-size: 0.75rem; text-transform: uppercase; font-weight: 800; letter-spacing: 0.5px; color: #f59e0b; display: flex; align-items: center; justify-content: center; gap: 6px;">
           <i class="fa-solid fa-trophy" aria-hidden="true"></i> Profile Rank
         </div>
         <div id="user-rank-display" style="font-size: 2.2rem; font-weight: 800; color: #ffffff; margin-top: 4px;">#--</div>
         <div id="user-views-display" style="font-size: 0.8rem; opacity: 0.8; margin-top: 2px; color: #cbd5e1;">
-          <i class="fa-solid fa-eye" style="color: var(--primary-color);" aria-hidden="true"></i> -- Views
+          <i class="fa-solid fa-eye" style="color: var(--primary-color);" aria-hidden="true"></i> <span id="views-count">0</span> Views
+        </div>
+
+        <hr style="margin: 12px 0; border: none; border-top: 1px solid rgba(255, 255, 255, 0.1);">
+
+        <!-- LEADERBOARD LIST CONTAINER -->
+        <div style="font-size: 0.75rem; font-weight: 700; text-transform: uppercase; color: #94a3b8; margin-bottom: 8px; text-align: left;">
+          Leaderboard
+        </div>
+        <div id="leaderboard-list" style="display: flex; flex-direction: column; gap: 4px; max-height: 160px; overflow-y: auto; text-align: left;">
+          <!-- Dynamically Injected -->
         </div>
       </div>
 
     </div>
   </main>
 
-  <!-- FLOATING BOTTOM CONTROLS -->
-  <div class="floating-actions-bar">
+  <!-- FLOATING BOTTOM CONTROLS (Only visible to Owner / Admin) -->
+  <div class="floating-actions-bar hidden">
     <button type="button" id="toggle-lock-btn" class="space-action-btn">
       <i class="fa-solid fa-lock" aria-hidden="true"></i> <span>Locked</span>
     </button>
@@ -536,19 +564,8 @@
         </select>
       </div>
       <div style="display: flex; gap: 16px; margin-bottom: 12px; font-size: 0.8rem; font-weight: 600;">
-        <label><input type="checkbox" id="edit-clock-show-seconds"> Show Seconds</label>
-        <label><input type="checkbox" id="edit-clock-show-date"> Show Date</label>
-      </div>
-
-      <hr class="modal-divider">
-
-      <!-- CUSTOM PHOTO CARDS -->
-      <h4 class="modal-section-title">
-        <i class="fa-solid fa-image" style="color: var(--primary-color);" aria-hidden="true"></i> Custom Photo Cards (Multiple)
-      </h4>
-      <p style="font-size: 0.75rem; color: #64748b; margin-top: 0; margin-bottom: 8px;">Enter one photo per line as: <code>Title | Image_URL</code></p>
-      <div class="form-group">
-        <textarea id="edit-custom-photos-urls" class="editor-textarea" rows="3" placeholder="My Setup | https://example.com/setup.png&#10;Favorite Art | https://example.com/art.jpg"></textarea>
+        <label><input type="checkbox" id="edit-clock-show-seconds" checked> Show Seconds</label>
+        <label><input type="checkbox" id="edit-clock-show-date" checked> Show Date</label>
       </div>
 
       <hr class="modal-divider">
@@ -584,13 +601,13 @@
       <h4 class="modal-section-title"><i class="fa-solid fa-eye" aria-hidden="true"></i> Toggle Individual Widgets</h4>
 
       <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 0.8rem; font-weight: 600;">
-        <label><input type="checkbox" id="edit-show-clock"> Time Widget</label>
-        <label><input type="checkbox" id="edit-show-profile"> Profile Widget</label>
-        <label><input type="checkbox" id="edit-show-discord"> Discord Widget</label>
-        <label><input type="checkbox" id="edit-show-spotify"> Spotify Widget</label>
-        <label><input type="checkbox" id="edit-show-media"> Gallery Widget</label>
-        <label><input type="checkbox" id="edit-show-socials"> Socials Widget</label>
-        <label><input type="checkbox" id="edit-show-rankings"> Rank Widget</label>
+        <label><input type="checkbox" id="edit-show-clock" checked> Time Widget</label>
+        <label><input type="checkbox" id="edit-show-profile" checked> Profile Widget</label>
+        <label><input type="checkbox" id="edit-show-discord" checked> Discord Widget</label>
+        <label><input type="checkbox" id="edit-show-spotify" checked> Spotify Widget</label>
+        <label><input type="checkbox" id="edit-show-media" checked> Gallery Widget</label>
+        <label><input type="checkbox" id="edit-show-socials" checked> Socials Widget</label>
+        <label><input type="checkbox" id="edit-show-rankings" checked> Rank Widget</label>
       </div>
 
       <!-- MODAL ACTIONS -->
