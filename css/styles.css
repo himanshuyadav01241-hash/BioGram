@@ -692,6 +692,11 @@ body {
   border: 1px solid rgba(239, 68, 68, 0.4);
 }
 
+/* Hide Mobile Rank Controls on Desktop by default */
+.mobile-widget-reorder-controls {
+  display: none;
+}
+
 /* ==========================================================================
    6. GUIDE SECTION
    ========================================================================== */
@@ -1249,7 +1254,7 @@ body {
     flex-direction: column !important;
     align-items: center !important;
     gap: 16px !important;
-    padding: 70px 16px 100px 16px !important;
+    padding: 70px 16px 120px 16px !important;
     width: 100% !important;
     min-height: auto !important;
     box-sizing: border-box !important;
@@ -1266,15 +1271,6 @@ body {
     box-sizing: border-box !important;
   }
 
-  /* Strict Mobile Stack Hierarchy */
-  #profile-card-widget  { order: 1 !important; }
-  #clock-card-widget    { order: 2 !important; }
-  #discord-card-widget  { order: 3 !important; }
-  #spotify-card-widget  { order: 4 !important; }
-  #socials-card-widget  { order: 5 !important; }
-  #rankings-card-widget { order: 6 !important; }
-  #media-card-widget    { order: 7 !important; }
-
   /* Audio player fixed top position */
   .bg-audio-controls, 
   #btn-toggle-audio,
@@ -1290,18 +1286,69 @@ body {
     border: 1px solid rgba(255, 255, 255, 0.15) !important;
   }
 
-  /* Bottom floating action bar mobile sizing */
+  /* Bottom floating customization bar on mobile */
   .floating-actions-bar {
     position: fixed !important;
-    bottom: 16px !important;
+    bottom: 20px !important;
     left: 50% !important;
     transform: translateX(-50%) !important;
     z-index: 9999 !important;
-    width: 90% !important;
-    max-width: 380px !important;
+    width: 92% !important;
+    max-width: 400px !important;
     display: flex !important;
-    justify-content: center !important;
-    gap: 10px !important;
+    justify-content: space-evenly !important;
+    gap: 6px !important;
+    padding: 8px 12px !important;
+  }
+
+  .floating-actions-bar button {
+    font-size: 0.78rem !important;
+    padding: 6px 10px !important;
+    white-space: nowrap !important;
+  }
+
+  /* Mobile Widget Rank / Reorder Control Overlay */
+  body.space-unlocked .mobile-widget-reorder-controls {
+    display: flex !important;
+    align-items: center;
+    justify-content: space-between;
+    background: rgba(99, 102, 241, 0.15);
+    border: 1px dashed rgba(99, 102, 241, 0.4);
+    padding: 6px 12px;
+    border-radius: 12px;
+    margin-bottom: 8px;
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  .order-badge {
+    font-size: 0.75rem;
+    font-weight: 800;
+    color: #6366f1;
+    text-transform: uppercase;
+  }
+
+  .order-controls-btns {
+    display: flex;
+    gap: 6px;
+  }
+
+  .order-control-btn {
+    background: #6366f1;
+    color: #ffffff;
+    border: none;
+    border-radius: 6px;
+    width: 28px;
+    height: 28px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 0.85rem;
+  }
+
+  .order-control-btn:active {
+    transform: scale(0.92);
   }
 
   /* Mobile social links touch padding */
