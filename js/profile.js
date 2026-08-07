@@ -1,5 +1,5 @@
 // ==========================================================================
-// 1. FIREBASE IMPORTS
+// FIREBASE IMPORTS
 // ==========================================================================
 import { auth, db } from "./firebase.js";
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
@@ -17,7 +17,7 @@ import {
 document.addEventListener('DOMContentLoaded', () => {
 
   // ==========================================================================
-  // 2. DOM REFERENCES & STATE
+  // DOM REFERENCES & STATE
   // ==========================================================================
   const overlay = document.getElementById('tap-to-open-overlay');
   const spaceContainer = document.getElementById('custom-space-container');
@@ -40,21 +40,16 @@ document.addEventListener('DOMContentLoaded', () => {
   let clockInterval = null;
   let activeSpaceConfig = {};
   let currentLoadedUserData = null;
-  let targetUserId = null; // Scoped ID of the profile currently being viewed
+  let targetUserId = null;     // ID of profile being viewed
+  let isCurrentUserAdmin = false; // Admin status flag
   let mediaImages = [];
   let currentMediaIndex = 0;
   let mediaInterval = null;
   let isLayoutAbsolute = false;
-  
-  // LOCK STATE: Layout is locked by default
   let isLayoutLocked = true; 
-
-  // DISCORD ELAPSED TIMER STATE
   let discordTimerInterval = null;
 
   const isMobile = () => window.innerWidth <= 600;
-
-  // Helper for user-scoped localStorage keys
   const getLocalStorageKey = () => targetUserId ? `biogram_space_layout_cache_${targetUserId}` : 'biogram_space_layout_cache_guest';
 
   // Helper functions for modal & state binding
@@ -83,8 +78,28 @@ document.addEventListener('DOMContentLoaded', () => {
     return String(str).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
   };
 
+  // Check if current user has edit rights for the profile currently rendered
+  const canEditCurrentProfile = (authUser) => {
+    if (!authUser || !targetUserId) return false;
+    return authUser.uid === targetUserId || isCurrentUserAdmin;
+  };
+
+  // Update UI permissions (Show/Hide editor buttons)
+  const updateEditorPermissionUI = (authUser) => {
+    const canEdit = canEditCurrentProfile(authUser);
+    if (openEditorBtn) {
+      openEditorBtn.style.display = canEdit ? "inline-flex" : "none";
+    }
+    if (toggleLockBtn) {
+      toggleLockBtn.style.display = canEdit ? "inline-flex" : "none";
+    }
+    if (resetPositionsBtn) {
+      resetPositionsBtn.style.display = canEdit ? "inline-flex" : "none";
+    }
+  };
+
   // ==========================================================================
-  // 3. AUDIO ENGINE & TAP OVERLAY
+  // AUDIO & TAP OVERLAY
   // ==========================================================================
   if (overlay) {
     overlay.addEventListener('click', () => {
@@ -127,9 +142,8 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // ==========================================================================
-  // 4. LAYOUT POSITIONING & PERSISTENCE ENGINE
+  // LAYOUT PERSISTENCE ENGINE
   // ==========================================================================
-  
   const getLayoutPositionsDict = () => {
     const cards = document.querySelectorAll('.glass-widget-card');
     const positions = {};
@@ -241,7 +255,7 @@ document.addEventListener('DOMContentLoaded', () => {
   };
 
   // ==========================================================================
-  // 5. LOCK & DRAG ENGINE
+  // LOCK & DRAG ENGINE
   // ==========================================================================
   const updateLockStateUI = () => {
     const cards = document.querySelectorAll('.glass-widget-card');
@@ -268,6 +282,11 @@ document.addEventListener('DOMContentLoaded', () => {
   };
 
   toggleLockBtn?.addEventListener('click', async () => {
+    if (!canEditCurrentProfile(auth.currentUser)) {
+      alert("You don't have permission to modify this space.");
+      return;
+    }
+
     isLayoutLocked = !isLayoutLocked;
 
     if (!isLayoutLocked) {
@@ -281,7 +300,7 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
           await setDoc(doc(db, "users_spaces", targetUserId), { widgetPositions: positions }, { merge: true });
         } catch (err) {
-          console.warn("Could not sync locked layout to database:", err);
+          console.warn("Could not sync layout to database:", err);
         }
       }
     }
@@ -303,7 +322,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     const startDrag = (e, clientX, clientY, target) => {
-      if (isLayoutLocked || isMobile()) return;
+      if (isLayoutLocked || isMobile() || !canEditCurrentProfile(auth.currentUser)) return;
       if (target.closest('button, input, textarea, a, i, iframe, select, .no-drag')) return;
 
       if (e && e.preventDefault) e.preventDefault();
@@ -372,6 +391,11 @@ document.addEventListener('DOMContentLoaded', () => {
   initDragAndDrop();
 
   resetPositionsBtn?.addEventListener('click', async () => {
+    if (!canEditCurrentProfile(auth.currentUser)) {
+      alert("Permission denied.");
+      return;
+    }
+
     const confirmed = confirm("Are you sure you want to reset all widget positions to default?");
     if (!confirmed) return;
 
@@ -390,9 +414,8 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   // ==========================================================================
-  // 6. WIDGET RENDERERS & CUSTOMIZATIONS
+  // WIDGET RENDERERS
   // ==========================================================================
-
   const renderClockWidget = (clockConfig = {}) => {
     const widget = document.getElementById("clock-card-widget");
     const clockEl = document.getElementById("clock-time");
@@ -411,7 +434,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     widget?.classList.remove("hidden");
-
     if (clockEl) clockEl.style.color = clockColor || '';
 
     if (dateEl) {
@@ -452,7 +474,7 @@ document.addEventListener('DOMContentLoaded', () => {
       card.id = cardId;
       card.style.padding = '12px';
       card.innerHTML = `
-        <div class="card-header" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+        <div class="card-header" style="display:flex; justify-space-between; align-items:center; margin-bottom:8px;">
           <span style="font-size:0.85rem; font-weight:600;"><i class="fa-solid fa-image"></i> ${escapeHtml(photoObj.title || 'Photo')}</span>
         </div>
         <div class="photo-widget-body" style="overflow:hidden; border-radius:12px;">
@@ -660,62 +682,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   };
 
-  const getSocialLinkDetails = (item) => {
-    const rawUrl = item.url ? item.url.trim() : "";
-    let fullUrl = rawUrl.startsWith("http") ? rawUrl : `https://${rawUrl}`;
-    let domain = "";
-    try {
-      domain = new URL(fullUrl).hostname.replace('www.', '').toLowerCase();
-    } catch (e) {
-      domain = rawUrl.toLowerCase();
-    }
-
-    let platformName = item.platform || item.label || "";
-    let iconClass = "fa-solid fa-link";
-
-    if (domain.includes("github.com")) {
-      if (!platformName) platformName = "GitHub";
-      iconClass = "fa-brands fa-github";
-    } else if (domain.includes("twitter.com") || domain.includes("x.com")) {
-      if (!platformName) platformName = "X / Twitter";
-      iconClass = "fa-brands fa-x-twitter";
-    } else if (domain.includes("instagram.com")) {
-      if (!platformName) platformName = "Instagram";
-      iconClass = "fa-brands fa-instagram";
-    } else if (domain.includes("youtube.com") || domain.includes("youtu.be")) {
-      if (!platformName) platformName = "YouTube";
-      iconClass = "fa-brands fa-youtube";
-    } else if (domain.includes("twitch.tv")) {
-      if (!platformName) platformName = "Twitch";
-      iconClass = "fa-brands fa-twitch";
-    } else if (domain.includes("discord")) {
-      if (!platformName) platformName = "Discord";
-      iconClass = "fa-brands fa-discord";
-    } else if (domain.includes("linkedin.com")) {
-      if (!platformName) platformName = "LinkedIn";
-      iconClass = "fa-brands fa-linkedin";
-    } else if (domain.includes("spotify.com")) {
-      if (!platformName) platformName = "Spotify";
-      iconClass = "fa-brands fa-spotify";
-    } else if (domain.includes("reddit.com")) {
-      if (!platformName) platformName = "Reddit";
-      iconClass = "fa-brands fa-reddit";
-    } else if (domain.includes("tiktok.com")) {
-      if (!platformName) platformName = "TikTok";
-      iconClass = "fa-brands fa-tiktok";
-    } else if (domain.includes("t.me") || domain.includes("telegram")) {
-      if (!platformName) platformName = "Telegram";
-      iconClass = "fa-brands fa-telegram";
-    } else if (domain.includes("soundcloud.com")) {
-      if (!platformName) platformName = "SoundCloud";
-      iconClass = "fa-brands fa-soundcloud";
-    } else {
-      if (!platformName) platformName = domain || "Link";
-    }
-
-    return { fullUrl, platformName, iconClass, domain };
-  };
-
   const renderSocialsWidget = (socialsArray, showSocials) => {
     const widget = document.getElementById("socials-card-widget");
     const container = document.getElementById("card-links-container");
@@ -731,14 +697,16 @@ document.addEventListener('DOMContentLoaded', () => {
     socialsArray.forEach(item => {
       if (!item.url || !item.url.trim()) return;
 
-      const { fullUrl, platformName, iconClass } = getSocialLinkDetails(item);
+      const rawUrl = item.url.trim();
+      let fullUrl = rawUrl.startsWith("http") ? rawUrl : `https://${rawUrl}`;
+      let platformName = item.platform || item.label || "Link";
 
       const a = document.createElement("a");
       a.href = fullUrl;
       a.target = "_blank";
       a.rel = "noopener noreferrer";
       a.className = "social-link-btn";
-      a.innerHTML = `<i class="${iconClass}"></i> <span>${escapeHtml(platformName)}</span>`;
+      a.innerHTML = `<i class="fa-solid fa-link"></i> <span>${escapeHtml(platformName)}</span>`;
       container.appendChild(a);
     });
   };
@@ -755,37 +723,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
     widget?.classList.remove("hidden");
 
-    const rawRank = userData?.rank ?? userData?.profileRank ?? userData?.ranking ?? spaceData?.rank;
     const rawViews = userData?.views ?? userData?.profileViews ?? spaceData?.views;
-
     if (viewsEl) {
       const viewsNum = (rawViews !== undefined && rawViews !== null && rawViews !== "") ? Number(rawViews) : 0;
-      const formattedViews = isNaN(viewsNum) ? "0" : viewsNum.toLocaleString();
-      viewsEl.innerHTML = `<i class="fa-solid fa-eye" style="color: var(--primary-color, #3b82f6);"></i> ${formattedViews} Views`;
+      viewsEl.innerHTML = `<i class="fa-solid fa-eye" style="color: var(--primary-color, #3b82f6);"></i> ${viewsNum.toLocaleString()} Views`;
     }
 
     if (rankEl) {
-      if (rawRank !== undefined && rawRank !== null && rawRank !== "") {
+      const rawRank = userData?.rank ?? userData?.profileRank ?? spaceData?.rank;
+      if (rawRank) {
         rankEl.textContent = String(rawRank).startsWith('#') ? rawRank : `#${rawRank}`;
-      } else if (targetUserId) {
-        try {
-          const q = query(collection(db, "users"), orderBy("views", "desc"));
-          const querySnap = await getDocs(q);
-          let foundRank = -1;
-          let index = 1;
-
-          querySnap.forEach((docSnap) => {
-            if (docSnap.id === targetUserId) {
-              foundRank = index;
-            }
-            index++;
-          });
-
-          rankEl.textContent = foundRank !== -1 ? `#${foundRank}` : "#N/A";
-        } catch (e) {
-          console.warn("Dynamic rank fetch failed:", e);
-          rankEl.textContent = "#-";
-        }
       } else {
         rankEl.textContent = "#-";
       }
@@ -799,25 +746,19 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const cards = document.querySelectorAll('.glass-widget-card');
     cards.forEach(card => {
-      if (config.cardBgColor) {
-        card.style.backgroundColor = config.cardBgColor;
-      } else {
-        card.style.backgroundColor = '';
-      }
-      if (config.cardTextColor) {
-        card.style.color = config.cardTextColor;
-      } else {
-        card.style.color = '';
-      }
+      card.style.backgroundColor = config.cardBgColor || '';
+      card.style.color = config.cardTextColor || '';
     });
   };
 
   // ==========================================================================
-  // 7. MAIN SPACE RENDER
+  // MAIN RENDER FUNCTION
   // ==========================================================================
   const renderProfileSpace = (userData, spaceData, authUser) => {
     activeSpaceConfig = spaceData || {};
     currentLoadedUserData = userData;
+
+    updateEditorPermissionUI(authUser);
 
     const audioUrl = spaceData?.audioUrl || spaceData?.bgAudioUrl || "";
     if (bgAudio) {
@@ -827,7 +768,6 @@ document.addEventListener('DOMContentLoaded', () => {
       } else {
         bgAudio.pause();
         bgAudio.src = "";
-        if (audioIcon) audioIcon.className = "fa-solid fa-play";
         if (btnToggleAudio) btnToggleAudio.style.display = "none";
       }
     }
@@ -855,7 +795,6 @@ document.addEventListener('DOMContentLoaded', () => {
     renderSpotifyWidget(spaceData?.spotifyUrl, spaceData?.showSpotify !== false);
     renderSocialsWidget(spaceData?.socials, spaceData?.showSocials !== false);
     renderRankingsWidget(userData, spaceData, spaceData?.showRankings !== false);
-
     renderCustomPhotoWidgets(spaceData?.customPhotos || []);
 
     applyCustomSpaceStyles(spaceData);
@@ -864,9 +803,14 @@ document.addEventListener('DOMContentLoaded', () => {
   };
 
   // ==========================================================================
-  // 8. EDITOR MODAL & PERSISTENCE LINKING
+  // EDITOR MODAL & PERSISTENCE
   // ==========================================================================
   openEditorBtn?.addEventListener("click", () => {
+    if (!canEditCurrentProfile(auth.currentUser)) {
+      alert("You do not have permission to edit this space.");
+      return;
+    }
+
     setInputValue("edit-display-name", "modal-display-name", activeSpaceConfig.displayName || currentLoadedUserData?.displayName || "");
     setInputValue("edit-bio", "modal-bio", activeSpaceConfig.bio || currentLoadedUserData?.bio || "");
     setInputValue("edit-avatar-url", "modal-avatar-url", activeSpaceConfig.customAvatarUrl || "");
@@ -923,9 +867,13 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
 
-    // STRICT CHECK: Ensure targetUserId is set and valid
+    if (!canEditCurrentProfile(user)) {
+      alert("Unauthorized: You cannot edit this user's profile.");
+      return;
+    }
+
     if (!targetUserId) {
-      alert("Error: No target user loaded. Cannot save space.");
+      alert("Error: No target user ID found.");
       return;
     }
 
@@ -984,7 +932,7 @@ document.addEventListener('DOMContentLoaded', () => {
       saveSpaceBtn.disabled = true;
       saveSpaceBtn.textContent = "Saving...";
 
-      // Write ONLY to targetUserId document in both collections
+      // Write strictly to targetUserId's documents
       await setDoc(doc(db, "users_spaces", targetUserId), updatedConfig, { merge: true });
 
       await setDoc(doc(db, "users", targetUserId), {
@@ -998,6 +946,7 @@ document.addEventListener('DOMContentLoaded', () => {
       renderProfileSpace(currentLoadedUserData, activeSpaceConfig, user);
 
       editorModal?.classList.add("hidden");
+      alert("Space saved successfully!");
     } catch (err) {
       alert(`Error saving space: ${err.message}`);
     } finally {
@@ -1007,15 +956,30 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   // ==========================================================================
-  // 9. DATA LOADING & RESOLUTION
+  // DATA INITIALIZATION & AUTH RESOLUTION
   // ==========================================================================
   const loadProfileData = async (authUser) => {
     try {
       let userData = null;
       let spaceData = null;
       targetUserId = null;
+      isCurrentUserAdmin = false;
 
-      // 1. Resolve Target User ID via URL handle parameter first
+      // 1. Check logged-in user admin privileges from Firestore
+      if (authUser) {
+        try {
+          const authUserSnap = await getDoc(doc(db, "users", authUser.uid));
+          if (authUserSnap.exists()) {
+            const authUserData = authUserSnap.data();
+            // Accepts role === 'admin' OR isAdmin === true
+            isCurrentUserAdmin = authUserData.role === 'admin' || authUserData.isAdmin === true;
+          }
+        } catch (e) {
+          console.warn("Admin check failed:", e);
+        }
+      }
+
+      // 2. Resolve Target User ID via URL handle query parameter first
       if (handleParam) {
         const q = query(collection(db, "users"), where("handle", "==", handleParam));
         const querySnap = await getDocs(q);
@@ -1026,12 +990,12 @@ document.addEventListener('DOMContentLoaded', () => {
         }
       }
 
-      // 2. If no valid handle query result, fall back to logged in user ID
+      // 3. Fallback to logged-in user ID if viewing home space
       if (!targetUserId && authUser) {
         targetUserId = authUser.uid;
       }
 
-      // 3. Fetch data for target profile
+      // 4. Fetch target user profile & space documents
       if (targetUserId) {
         if (!userData) {
           const userSnap = await getDoc(doc(db, "users", targetUserId));
