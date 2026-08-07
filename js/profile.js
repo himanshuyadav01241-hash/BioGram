@@ -37,6 +37,9 @@ document.addEventListener('DOMContentLoaded', () => {
   const resetPositionsBtn = document.getElementById("reset-positions-btn");
   const toggleLockBtn = document.getElementById("toggle-lock-btn");
 
+  const mediaPrevBtn = document.getElementById("media-prev-btn");
+  const mediaNextBtn = document.getElementById("media-next-btn");
+
   const urlParams = new URLSearchParams(window.location.search);
   const handleParam = urlParams.get("u")?.toLowerCase().trim() || urlParams.get("handle")?.toLowerCase().trim();
 
@@ -705,6 +708,23 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   };
 
+  const showMediaSlide = (index) => {
+    const imgEl = document.getElementById("media-display-img");
+    if (!mediaImages.length) return;
+
+    if (index >= mediaImages.length) currentMediaIndex = 0;
+    else if (index < 0) currentMediaIndex = mediaImages.length - 1;
+    else currentMediaIndex = index;
+
+    if (imgEl && mediaImages[currentMediaIndex]) {
+      imgEl.style.opacity = '0.3';
+      setTimeout(() => {
+        imgEl.src = mediaImages[currentMediaIndex];
+        imgEl.style.opacity = '1';
+      }, 150);
+    }
+  };
+
   const renderMediaWidget = (imagesArray, showMedia) => {
     const widget = document.getElementById("media-card-widget");
     const imgEl = document.getElementById("media-display-img");
@@ -725,26 +745,27 @@ document.addEventListener('DOMContentLoaded', () => {
     mediaImages = validImages;
     currentMediaIndex = 0;
 
-    const showSlide = (index) => {
-      if (index >= mediaImages.length) currentMediaIndex = 0;
-      else if (index < 0) currentMediaIndex = mediaImages.length - 1;
-      else currentMediaIndex = index;
+    showMediaSlide(0);
 
-      if (imgEl && mediaImages[currentMediaIndex]) {
-        imgEl.style.opacity = '0.3';
-        setTimeout(() => {
-          imgEl.src = mediaImages[currentMediaIndex];
-          imgEl.style.opacity = '1';
-        }, 150);
-      }
-    };
-
-    showSlide(0);
     if (mediaInterval) clearInterval(mediaInterval);
     if (mediaImages.length > 1) {
-      mediaInterval = setInterval(() => showSlide(currentMediaIndex + 1), 4000);
+      mediaInterval = setInterval(() => showMediaSlide(currentMediaIndex + 1), 4000);
     }
   };
+
+  mediaPrevBtn?.addEventListener("click", (e) => {
+    e.stopPropagation();
+    if (mediaImages.length > 0) {
+      showMediaSlide(currentMediaIndex - 1);
+    }
+  });
+
+  mediaNextBtn?.addEventListener("click", (e) => {
+    e.stopPropagation();
+    if (mediaImages.length > 0) {
+      showMediaSlide(currentMediaIndex + 1);
+    }
+  });
 
   const renderSocialsWidget = (socialsArray, showSocials) => {
     const widget = document.getElementById("socials-card-widget");
@@ -988,6 +1009,13 @@ document.addEventListener('DOMContentLoaded', () => {
         : "";
     }
 
+    const customPhotosInput = document.getElementById("edit-custom-photos-urls");
+    if (customPhotosInput) {
+      customPhotosInput.value = Array.isArray(activeSpaceConfig.customPhotos)
+        ? activeSpaceConfig.customPhotos.map(p => `${p.title || ''} | ${p.url || ''}`).join("\n")
+        : "";
+    }
+
     const socialsInput = document.getElementById("edit-socials-data");
     if (socialsInput) {
       if (Array.isArray(activeSpaceConfig.socials)) {
@@ -1018,6 +1046,18 @@ document.addEventListener('DOMContentLoaded', () => {
       .split("\n")
       .map(url => url.trim())
       .filter(url => url.length > 0);
+
+    const customPhotosRaw = getInputValue("edit-custom-photos-urls", "");
+    const customPhotosArray = customPhotosRaw
+      .split("\n")
+      .map(line => {
+        const parts = line.split("|");
+        if (parts.length < 2) return null;
+        const title = parts[0].trim();
+        const url = parts.slice(1).join("|").trim();
+        return url ? { title, url } : null;
+      })
+      .filter(Boolean);
 
     const socialsRaw = getInputValue("edit-socials-data", "");
     const socialsArray = socialsRaw
@@ -1055,6 +1095,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
       socials: socialsArray,
       mediaImages: mediaImagesArray,
+      customPhotos: customPhotosArray,
       widgetPositions: widgetPositions,
       updatedAt: new Date().toISOString()
     };
@@ -1102,7 +1143,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
       if (authUser) {
         try {
-          const authUserSnap = await getDoc(doc(doc(db, "users", authUser.uid)));
+          const authUserSnap = await getDoc(doc(db, "users", authUser.uid));
           if (authUserSnap.exists()) {
             const authUserData = authUserSnap.data();
             isCurrentUserAdmin = authUserData.role === 'admin' || authUserData.isAdmin === true;
