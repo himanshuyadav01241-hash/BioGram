@@ -331,6 +331,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const item = tempMobileOrder.splice(fromIndex, 1)[0];
     tempMobileOrder.splice(toIndex, 0, item);
     renderMobileOrderList();
+    applyMobileLayoutOrder(tempMobileOrder);
   };
 
   const applyMobileLayoutOrder = (orderArray) => {
@@ -340,11 +341,23 @@ document.addEventListener('DOMContentLoaded', () => {
       ? orderArray
       : DEFAULT_WIDGET_ORDER;
 
-    currentOrder.forEach(key => {
+    currentOrder.forEach((key, index) => {
       const elId = WIDGET_ELEMENT_IDS[key];
       const widgetEl = elId ? document.getElementById(elId) : null;
+
       if (widgetEl && widgetEl.parentElement === spaceContainer) {
+        // Apply flex order property
+        widgetEl.style.order = String(index + 1);
+        
+        // Re-append element so DOM tree order matches flex sequence
         spaceContainer.appendChild(widgetEl);
+
+        if (isMobile()) {
+          widgetEl.style.position = 'relative';
+          widgetEl.style.top = 'auto';
+          widgetEl.style.left = 'auto';
+          widgetEl.style.margin = '0 0 1rem 0';
+        }
       }
     });
   };
@@ -386,10 +399,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (isMobile()) {
       cards.forEach(card => {
-        card.style.position = '';
-        card.style.left = '';
-        card.style.top = '';
-        card.style.margin = '';
+        card.style.position = 'relative';
+        card.style.left = 'auto';
+        card.style.top = 'auto';
+        card.style.margin = '0 0 1rem 0';
       });
       if (spaceContainer) spaceContainer.style.minHeight = '';
       isLayoutAbsolute = false;
