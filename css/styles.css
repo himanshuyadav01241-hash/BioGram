@@ -147,9 +147,9 @@ body {
   font-weight: 700;
   font-size: 0.88rem;
   text-decoration: none;
-  color: #4b5563;
-  background: rgba(243, 244, 246, 0.8);
-  border: 1px solid rgba(0, 0, 0, 0.04);
+  color: var(--text-muted);
+  background: var(--bg-subtle);
+  border: 1px solid var(--border-light);
   transition: all 0.2s ease;
   white-space: nowrap;
   cursor: pointer;
@@ -203,9 +203,9 @@ body {
   border-radius: 10px;
   font-weight: 600;
   font-size: 0.82rem;
-  border: 1px solid rgba(0,0,0,0.08);
-  background: #f9fafb;
-  color: #374151;
+  border: 1px solid var(--border-light);
+  background: var(--bg-subtle);
+  color: var(--text-main);
   cursor: pointer;
   text-decoration: none;
   transition: all 0.15s ease;
@@ -213,7 +213,7 @@ body {
 }
 
 .nav-btn:hover { 
-  background: #f3f4f6; 
+  background: var(--border-hover); 
 }
 
 .nav-btn.outline { 
@@ -720,14 +720,14 @@ body {
 }
 
 /* ==========================================================================
-   6. HIGH-CONTRAST LEADERBOARD MODAL & TOP 100 LIST
+   6. MODAL OVERLAYS & TOP 100 LEADERBOARD WIDGET
    ========================================================================== */
 .modal-overlay { 
   position: fixed !important; 
   inset: 0 !important; 
   width: 100vw;
   height: 100vh;
-  background: rgba(3, 7, 18, 0.75) !important; 
+  background: rgba(0, 0, 0, 0.65) !important; 
   backdrop-filter: blur(8px);
   display: flex; 
   align-items: center; 
@@ -742,24 +742,24 @@ body {
 
 .modal-card,
 .leaderboard-modal-card { 
-  background: #111827 !important; /* Rich Dark Background for visibility */
-  border: 1px solid #374151 !important; 
+  background: var(--bg-card) !important; 
+  border: 1px solid var(--border-light) !important; 
   border-radius: 20px; 
   width: 100%; 
   max-width: 540px !important; /* Expanded for Top 100 layout */
   max-height: 85vh;
   display: flex;
   flex-direction: column;
-  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.6); 
+  box-shadow: var(--card-shadow-hover); 
   overflow: hidden; 
+  transition: background-color 0.3s ease, border-color 0.3s ease;
 }
 
-/* Modal Header */
 .leaderboard-modal-header,
 .modal-header { 
   padding: 16px 20px;
-  background: #1f2937;
-  border-bottom: 1px solid #374151;
+  background: var(--bg-subtle);
+  border-bottom: 1px solid var(--border-light);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -770,18 +770,18 @@ body {
 .modal-header h3 { 
   font-size: 1.05rem; 
   font-weight: 800; 
-  color: #f9fafb !important; 
+  color: var(--text-main) !important; 
   display: flex;
   align-items: center;
   gap: 8px;
 }
 
 .close-btn { 
-  background: #374151; 
+  background: var(--border-light); 
   border: none; 
-  color: #9ca3af; 
-  width: 30px;
-  height: 30px;
+  color: var(--text-muted); 
+  width: 32px;
+  height: 32px;
   border-radius: 50%;
   font-size: 1.1rem; 
   display: flex;
@@ -792,11 +792,10 @@ body {
 }
 
 .close-btn:hover { 
-  background: #4b5563;
-  color: #ffffff; 
+  background: var(--border-hover);
+  color: var(--text-main); 
 }
 
-/* Modal Scrollable Body */
 .leaderboard-modal-body,
 .modal-body { 
   padding: 16px;
@@ -812,17 +811,52 @@ body {
 
 .leaderboard-modal-body::-webkit-scrollbar-track,
 .modal-body::-webkit-scrollbar-track {
-  background: rgba(31, 41, 55, 0.5);
+  background: var(--bg-subtle);
 }
 
 .leaderboard-modal-body::-webkit-scrollbar-thumb,
 .modal-body::-webkit-scrollbar-thumb {
-  background: #4b5563;
+  background: var(--border-hover);
   border-radius: 10px;
 }
 
 .leaderboard-modal-body::-webkit-scrollbar-thumb:hover {
-  background: #6366f1;
+  background: var(--primary-purple);
+}
+
+.modal-tabs { 
+  display: flex; 
+  gap: 6px; 
+  margin-bottom: 0.75rem; 
+  border-bottom: 1px solid var(--border-light); 
+  padding-bottom: 6px; 
+}
+
+.tab-btn { 
+  background: none; 
+  border: none; 
+  color: var(--text-muted); 
+  font-size: 0.8rem; 
+  font-weight: 600; 
+  padding: 6px 12px; 
+  border-radius: 8px; 
+  cursor: pointer; 
+  display: flex; 
+  align-items: center; 
+  gap: 6px; 
+}
+
+.tab-btn.active { 
+  background: rgba(99, 102, 241, 0.12); 
+  color: var(--primary-purple); 
+}
+
+.tab-content { 
+  display: none; 
+}
+
+.tab-content.active { 
+  display: block; 
 }
 
 .leaderboard-list,
@@ -833,26 +867,25 @@ body {
 }
 
 /* Leaderboard Row Item */
-.leaderboard-modal-card .leaderboard-item,
-.leaderboard-modal-card .leaderboard-card { 
+.leaderboard-item,
+.leaderboard-card { 
   display: flex; 
   justify-content: space-between; 
   align-items: center; 
   padding: 10px 14px; 
-  background: #1f2937 !important; 
-  border: 1px solid #374151 !important;
+  background: var(--bg-subtle) !important; 
+  border: 1px solid var(--border-light) !important;
   border-radius: 14px; 
   gap: 12px; 
   transition: all 0.2s ease; 
 }
 
-.leaderboard-modal-card .leaderboard-item:hover { 
-  border-color: #6366f1 !important; 
-  background: #263346 !important;
+.leaderboard-item:hover,
+.leaderboard-card:hover { 
+  border-color: var(--primary-purple) !important; 
   transform: translateX(2px); 
 }
 
-/* User Profile Container */
 .leaderboard-user-info,
 .rank-details-wrapper { 
   display: flex; 
@@ -862,87 +895,91 @@ body {
   flex: 1;
 }
 
-/* Rank Badges (Top 3 Special Styling) */
+/* Avatar Styling */
+.leaderboard-avatar,
+.rank-avatar { 
+  display: block !important;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  object-fit: cover !important;
+  flex-shrink: 0;
+  border: 2px solid var(--border-light);
+}
+
+/* Rank Badge Circle */
 .rank-badge,
 .rank-number { 
   font-weight: 800;
   font-size: 0.82rem;
-  width: 30px;
-  height: 30px;
-  min-width: 30px;
+  width: 32px;
+  height: 32px;
+  min-width: 32px;
   display: flex;
   align-items: center;
   justify-content: center;
   border-radius: 50%;
-  background: #374151;
-  color: #9ca3af;
+  background: var(--border-light);
+  color: var(--text-muted);
   flex-shrink: 0;
-  border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 /* Top 3 Podium Highlights */
 .leaderboard-item:nth-child(1) .rank-badge,
-.leaderboard-item:nth-child(1) .rank-number {
+.leaderboard-item.top-1 .rank-badge {
   background: linear-gradient(135deg, #f59e0b, #d97706);
   color: #ffffff;
-  box-shadow: 0 0 12px rgba(245, 158, 11, 0.4);
+  box-shadow: 0 0 10px rgba(245, 158, 11, 0.4);
 }
 
 .leaderboard-item:nth-child(2) .rank-badge,
-.leaderboard-item:nth-child(2) .rank-number {
+.leaderboard-item.top-2 .rank-badge {
   background: linear-gradient(135deg, #9ca3af, #6b7280);
   color: #ffffff;
 }
 
 .leaderboard-item:nth-child(3) .rank-badge,
-.leaderboard-item:nth-child(3) .rank-number {
+.leaderboard-item.top-3 .rank-badge {
   background: linear-gradient(135deg, #b45309, #78350f);
   color: #ffffff;
 }
 
-/* User Avatars */
-.leaderboard-modal-card .leaderboard-avatar,
-.leaderboard-modal-card .rank-avatar {
-  display: block !important;
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  object-fit: cover;
-  flex-shrink: 0;
-  border: 2px solid #374151;
-}
-
-/* Profile Details & Text Contrast */
-.leaderboard-modal-card .leaderboard-details,
-.leaderboard-modal-card .rank-details {
+.leaderboard-details,
+.rank-details {
   display: flex !important;
   flex-direction: column;
   min-width: 0;
   overflow: hidden;
 }
 
-.leaderboard-modal-card .user-name,
-.leaderboard-modal-card .leaderboard-name {
+.user-name,
+.leaderboard-name {
   font-size: 0.92rem;
   font-weight: 700;
-  color: #f9fafb !important;
+  color: var(--text-main) !important;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
-.leaderboard-modal-card .user-handle,
-.leaderboard-modal-card .leaderboard-handle {
+.user-handle,
+.leaderboard-handle {
   font-size: 0.78rem;
   font-weight: 600;
-  color: #9ca3af !weight;
+  color: var(--text-muted) !important;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
 /* Views Counter Styling */
-.leaderboard-actions,
+.leaderboard-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
 .rank-views,
 .leaderboard-views { 
   display: flex; 
@@ -950,29 +987,30 @@ body {
   gap: 6px; 
   font-size: 0.82rem; 
   font-weight: 700; 
-  color: #cbd5e1 !important; 
+  color: var(--text-main) !important; 
   white-space: nowrap; 
   flex-shrink: 0;
-  background: rgba(0, 0, 0, 0.2);
-  padding: 4px 8px;
+  background: var(--bg-card);
+  padding: 5px 10px;
   border-radius: 8px;
+  border: 1px solid var(--border-light);
 }
 
 .rank-views i,
 .leaderboard-views i {
-  color: #818cf8;
+  color: var(--primary-purple);
 }
 
 /* Upgraded Visit Profile Button */
-.leaderboard-modal-card .btn-visit-profile {
+.btn-visit-profile { 
   display: inline-flex !important;
   align-items: center;
-  gap: 5px;
-  background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%) !important;
+  gap: 6px;
+  background: var(--primary-purple-gradient) !important;
   color: #ffffff !important;
-  font-size: 0.78rem !weight;
+  font-size: 0.78rem;
   font-weight: 700;
-  padding: 6px 12px;
+  padding: 6px 14px;
   border-radius: 8px;
   text-decoration: none;
   transition: all 0.2s ease;
@@ -980,22 +1018,97 @@ body {
   border: none;
 }
 
-.leaderboard-modal-card .btn-visit-profile:hover {
+.btn-visit-profile:hover {
   transform: translateY(-1px);
   box-shadow: 0 4px 12px rgba(99, 102, 241, 0.4);
-  background: linear-gradient(135deg, #4f46e5 0%, #4338ca) !important;
+  opacity: 0.92;
 }
 
-/* Current User Badge (If applicable) */
-.you-badge {
+/* "You" Indicator Badge */
+.you-badge,
+.self-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
   background: rgba(16, 185, 129, 0.15);
   color: #10b981;
   border: 1px solid rgba(16, 185, 129, 0.3);
-  font-size: 0.72rem;
+  font-size: 0.75rem;
   font-weight: 700;
-  padding: 2px 8px;
-  border-radius: 12px;
+  padding: 5px 12px;
+  border-radius: 8px;
 }
+
+.form-group { 
+  margin-bottom: 1rem; 
+}
+
+.form-group label { 
+  display: block; 
+  font-size: 0.78rem; 
+  font-weight: 600; 
+  color: var(--text-muted); 
+  margin-bottom: 6px; 
+}
+
+.modal-input { 
+  width: 100%; 
+  background: var(--bg-subtle); 
+  border: 1px solid var(--border-light); 
+  border-radius: 10px; 
+  padding: 9px 12px; 
+  color: var(--text-main); 
+  font-size: 0.88rem; 
+  outline: none; 
+  transition: border-color 0.2s, background 0.2s; 
+}
+
+.modal-input:focus { 
+  border-color: #6366f1; 
+  background: var(--bg-card); 
+}
+
+.input-with-prefix { 
+  display: flex; 
+  align-items: center; 
+  background: var(--bg-subtle); 
+  border: 1px solid var(--border-light); 
+  border-radius: 10px; 
+  padding-left: 10px; 
+}
+
+.input-with-prefix span { 
+  color: var(--text-dim); 
+  font-size: 0.82rem; 
+  font-weight: 600; 
+}
+
+.input-with-prefix input { 
+  border: none; 
+  background: transparent; 
+}
+
+.modal-footer { 
+  display: flex; 
+  justify-content: flex-end; 
+  gap: 10px; 
+  padding: 1rem 1.5rem; 
+  background: var(--bg-subtle); 
+  border-top: 1px solid var(--border-light); 
+  flex-shrink: 0;
+}
+
+.status-msg { 
+  font-size: 0.78rem; 
+  font-weight: 600; 
+  margin-top: 8px; 
+  text-align: center; 
+}
+
+.full-width { 
+  width: 100%; 
+}
+
 /* ==========================================================================
    7. MEDIA QUERIES
    ========================================================================== */
@@ -1067,7 +1180,7 @@ body {
 
   .leaderboard-item,
   .leaderboard-card {
-    padding: 6px 8px;
+    padding: 8px 10px;
   }
 }
 
