@@ -66,16 +66,39 @@ body {
   display: none !important; 
 }
 
-/* Utility Blur & Verified Icon Classes */
-.blurred-text {
-  filter: blur(5px);
-  user-select: none;
-  pointer-events: none;
-}
-
+/* Verified Badge Icon Class */
 .verified-icon {
   color: #3b82f6;
   font-size: 0.85em;
+}
+
+/* ==========================================================================
+   2.1 ADMIN BLUR & MODERATION STYLES
+   ========================================================================== */
+/* Blurs the entire container, including text, icons, and layout */
+.blurred-text,
+.blurred-profile,
+.leaderboard-item.blurred-text {
+  filter: blur(6px) !important;
+  user-select: none !important;
+  pointer-events: none !important;
+  opacity: 0.6 !important;
+}
+
+/* Forces profile images/avatars inside blurred cards to blur heavily */
+.blurred-text img,
+.blurred-profile img,
+.leaderboard-item.blurred-text img,
+.blurred-text .leaderboard-avatar {
+  filter: blur(8px) !important;
+  opacity: 0.4 !important;
+}
+
+/* Completely hides the Visit Profile button when a profile is blurred */
+.blurred-text .btn-visit-profile,
+.blurred-profile .btn-visit-profile,
+.leaderboard-item.blurred-text .btn-visit-profile {
+  display: none !important;
 }
 
 /* ==========================================================================
@@ -879,25 +902,30 @@ body {
   flex-shrink: 0;
 }
 
+/* Explicitly force Visit Profile button to be visible and styled for normal users */
 .btn-visit-profile { 
-  display: inline-flex;
+  display: inline-flex !important;
   align-items: center;
-  gap: 5px;
-  padding: 6px 12px;
+  justify-content: center;
+  gap: 6px;
+  padding: 6px 14px;
   border-radius: 8px;
   font-size: 0.8rem;
   font-weight: 700;
-  color: #6366f1;
-  background: rgba(99, 102, 241, 0.1);
-  border: 1px solid rgba(99, 102, 241, 0.2);
+  color: #6366f1 !important;
+  background: rgba(99, 102, 241, 0.1) !important;
+  border: 1px solid rgba(99, 102, 241, 0.2) !important;
   text-decoration: none;
   transition: all 0.2s ease;
   white-space: nowrap;
+  opacity: 1 !important;
+  visibility: visible !important;
+  pointer-events: auto !important;
 }
 
 .btn-visit-profile:hover { 
-  background: #6366f1;
-  color: #ffffff;
+  background: #6366f1 !important;
+  color: #ffffff !important;
 }
 
 .form-group { 
@@ -917,7 +945,7 @@ body {
   background: var(--bg-subtle); 
   border: 1px solid var(--border-light); 
   border-radius: 10px; 
-  padding: 99px 12px; 
+  padding: 9px 12px; 
   color: var(--text-main); 
   font-size: 0.88rem; 
   outline: none; 
@@ -1097,14 +1125,19 @@ body {
     gap: 8px;
   }
 
-  .leaderboard-actions,
-  .rank-views,
-  .leaderboard-views {
+  .leaderboard-actions {
     width: 100%;
+    display: flex !important;
     justify-content: space-between;
-    margin-top: 4px;
-    padding-top: 4px;
+    align-items: center;
+    margin-top: 6px;
+    padding-top: 6px;
     border-top: 1px dashed var(--border-light);
+  }
+
+  .btn-visit-profile {
+    width: auto;
+    padding: 6px 12px;
   }
 }
 
