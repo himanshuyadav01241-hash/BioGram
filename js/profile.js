@@ -83,26 +83,6 @@ document.addEventListener('DOMContentLoaded', () => {
   const getLocalStorageKey = () => targetUserId ? `biogram_space_layout_cache_${targetUserId}` : 'biogram_space_layout_cache_guest';
 
   // Helper functions
-  const getInputValue = (id1, id2) => {
-    const el = document.getElementById(id1) || document.getElementById(id2);
-    return el ? el.value.trim() : "";
-  };
-
-  const getCheckboxValue = (id1, id2, defaultVal = true) => {
-    const el = document.getElementById(id1) || document.getElementById(id2);
-    return el ? el.checked : defaultVal;
-  };
-
-  const setInputValue = (id1, id2, value) => {
-    const el = document.getElementById(id1) || document.getElementById(id2);
-    if (el) el.value = value || "";
-  };
-
-  const setCheckboxValue = (id1, id2, value) => {
-    const el = document.getElementById(id1) || document.getElementById(id2);
-    if (el) el.checked = !!value;
-  };
-
   const escapeHtml = (str) => {
     if (!str) return "";
     return String(str)
@@ -113,7 +93,6 @@ document.addEventListener('DOMContentLoaded', () => {
       .replace(/'/g, "&#039;");
   };
 
-  // Smart URL Platform Detector
   const detectPlatformFromUrl = (urlStr = "") => {
     const u = urlStr.toLowerCase().trim();
     if (u.includes("instagram.com") || u.includes("instagr.am")) return "Instagram";
@@ -128,7 +107,6 @@ document.addEventListener('DOMContentLoaded', () => {
     return "Link";
   };
 
-  // Dynamic Social Icon Resolver
   const getSocialIconClass = (platformStr = "") => {
     const p = platformStr.toLowerCase().trim();
     if (p.includes("instagram") || p.includes("insta")) return "fa-brands fa-instagram";
@@ -331,7 +309,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const item = tempMobileOrder.splice(fromIndex, 1)[0];
     tempMobileOrder.splice(toIndex, 0, item);
     renderMobileOrderList();
-    applyMobileLayoutOrder(tempMobileOrder);
   };
 
   const applyMobileLayoutOrder = (orderArray) => {
@@ -344,20 +321,8 @@ document.addEventListener('DOMContentLoaded', () => {
     currentOrder.forEach((key, index) => {
       const elId = WIDGET_ELEMENT_IDS[key];
       const widgetEl = elId ? document.getElementById(elId) : null;
-
-      if (widgetEl && widgetEl.parentElement === spaceContainer) {
-        // Apply flex order property
-        widgetEl.style.order = String(index + 1);
-        
-        // Re-append element so DOM tree order matches flex sequence
-        spaceContainer.appendChild(widgetEl);
-
-        if (isMobile()) {
-          widgetEl.style.position = 'relative';
-          widgetEl.style.top = 'auto';
-          widgetEl.style.left = 'auto';
-          widgetEl.style.margin = '0 0 1rem 0';
-        }
+      if (widgetEl) {
+        widgetEl.style.order = index + 1;
       }
     });
   };
@@ -399,10 +364,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (isMobile()) {
       cards.forEach(card => {
-        card.style.position = 'relative';
-        card.style.left = 'auto';
-        card.style.top = 'auto';
-        card.style.margin = '0 0 1rem 0';
+        card.style.position = '';
+        card.style.left = '';
+        card.style.top = '';
+        card.style.margin = '';
       });
       if (spaceContainer) spaceContainer.style.minHeight = '';
       isLayoutAbsolute = false;
@@ -1055,8 +1020,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     renderProfileWidget(userData, spaceData, authUser, spaceData?.showProfile !== false);
     renderDiscordWidget(spaceData?.discordId, spaceData?.showDiscord !== false);
-    renderMediaWidget(spaceData?.mediaImages, spaceData?.showMedia !== false);
     renderSpotifyWidget(spaceData?.spotifyUrl, spaceData?.showSpotify !== false);
+    renderMediaWidget(spaceData?.mediaImages || spaceData?.galleryImages, spaceData?.showMedia !== false);
     renderSocialsWidget(spaceData?.socials, spaceData?.showSocials !== false);
     renderRankingsWidget(targetUserId, userData, spaceData, spaceData?.showRankings !== false);
 
@@ -1065,208 +1030,51 @@ document.addEventListener('DOMContentLoaded', () => {
     applyMobileLayoutOrder(spaceData?.mobileWidgetOrder);
     updateLockStateUI();
 
-    if (spaceContainer) {
-      spaceContainer.classList.remove("hidden");
-      spaceContainer.style.opacity = "1";
-      spaceContainer.style.pointerEvents = "auto";
-    }
-
     trackProfileView(targetUserId, authUser);
   };
 
-  // ==========================================================================
-  // EDITOR MODAL CONTROLS & SAVE HANDLER
-  // ==========================================================================
-  openEditorBtn?.addEventListener("click", () => {
-    if (!canEditCurrentProfile(auth.currentUser)) {
-      alert("You do not have permission to edit this space.");
-      return;
-    }
-
-    setInputValue("edit-display-name", "modal-display-name", activeSpaceConfig.displayName || currentLoadedUserData?.displayName || "");
-    setInputValue("edit-bio", "modal-bio", activeSpaceConfig.bio || currentLoadedUserData?.bio || "");
-    setInputValue("edit-avatar-url", "modal-avatar-url", activeSpaceConfig.customAvatarUrl || "");
-    setInputValue("edit-bg-url", "modal-bg-url", activeSpaceConfig.bgUrl || activeSpaceConfig.bgAssetUrl || "");
-    setInputValue("edit-audio-url", "modal-audio-url", activeSpaceConfig.audioUrl || activeSpaceConfig.bgAudioUrl || "");
-    setInputValue("edit-spotify-url", "modal-spotify-url", activeSpaceConfig.spotifyUrl || "");
-    setInputValue("edit-discord-id", "modal-discord-id", activeSpaceConfig.discordId || "");
-
-    const stylePresetSelect = document.getElementById("edit-glass-preset");
-    if (stylePresetSelect) stylePresetSelect.value = activeSpaceConfig.glassDesignPreset || "transparent";
-
-    const formatSelect = document.getElementById("edit-clock-format") || document.getElementById("modal-clock-format");
-    if (formatSelect) formatSelect.value = activeSpaceConfig.clockFormat || "12h";
-
-    setCheckboxValue("edit-clock-show-seconds", "modal-clock-show-seconds", activeSpaceConfig.clockShowSeconds !== false);
-    setCheckboxValue("edit-clock-show-date", "modal-clock-show-date", activeSpaceConfig.clockShowDate !== false);
-    setCheckboxValue("edit-show-clock", "modal-show-clock", activeSpaceConfig.showClock !== false);
-    setCheckboxValue("edit-show-profile", "modal-show-profile", activeSpaceConfig.showProfile !== false);
-    setCheckboxValue("edit-show-discord", "modal-show-discord", activeSpaceConfig.showDiscord !== false);
-    setCheckboxValue("edit-show-spotify", "modal-show-spotify", activeSpaceConfig.showSpotify !== false);
-    setCheckboxValue("edit-show-media", "modal-show-media", activeSpaceConfig.showMedia !== false);
-    setCheckboxValue("edit-show-socials", "modal-show-socials", activeSpaceConfig.showSocials !== false);
-    setCheckboxValue("edit-show-rankings", "modal-show-rankings", activeSpaceConfig.showRankings !== false);
-
-    // Populate Mobile Order List
-    tempMobileOrder = Array.isArray(activeSpaceConfig.mobileWidgetOrder) && activeSpaceConfig.mobileWidgetOrder.length > 0
-      ? [...activeSpaceConfig.mobileWidgetOrder]
-      : [...DEFAULT_WIDGET_ORDER];
-    renderMobileOrderList();
-
-    const mediaUrlsInput = document.getElementById("edit-media-urls");
-    if (mediaUrlsInput) {
-      mediaUrlsInput.value = Array.isArray(activeSpaceConfig.mediaImages) 
-        ? activeSpaceConfig.mediaImages.join("\n") 
-        : "";
-    }
-
-    const socialsInput = document.getElementById("edit-socials-data");
-    if (socialsInput) {
-      if (Array.isArray(activeSpaceConfig.socials) && activeSpaceConfig.socials.length > 0) {
-        socialsInput.value = activeSpaceConfig.socials
-          .map(item => {
-            let plat = item.platform || "";
-            if (!plat || plat.toLowerCase() === "https" || plat.toLowerCase() === "http") {
-              plat = detectPlatformFromUrl(item.url || "");
-            }
-            return `${plat}: ${item.url || ''}`;
-          })
-          .join("\n");
-      } else {
-        socialsInput.value = "GitHub: https://github.com\nInstagram: https://instagram.com";
-      }
-    }
-
-    if (editorModal) editorModal.classList.remove("hidden");
-  });
-
-  closeEditorBtn?.addEventListener("click", () => {
-    if (editorModal) editorModal.classList.add("hidden");
-  });
-
-  saveSpaceBtn?.addEventListener("click", async () => {
-    const currentUid = auth.currentUser?.uid;
-    if (!currentUid || !canEditCurrentProfile(auth.currentUser)) {
-      alert("Permission denied.");
-      return;
-    }
-
-    const rawSocialsText = getInputValue("edit-socials-data");
-    const parsedSocials = rawSocialsText
-      .split("\n")
-      .map(line => line.trim())
-      .filter(Boolean)
-      .map(line => {
-        if (/^https?:\/\//i.test(line)) {
-          return { platform: detectPlatformFromUrl(line), url: line };
-        }
-        
-        const colonIdx = line.indexOf(":");
-        if (colonIdx !== -1) {
-          const prefix = line.substring(0, colonIdx).trim();
-          const remainder = line.substring(colonIdx + 1).trim();
-          
-          if (prefix.toLowerCase() === "http" || prefix.toLowerCase() === "https") {
-            return { platform: detectPlatformFromUrl(line), url: line };
-          }
-          return { platform: prefix || detectPlatformFromUrl(remainder), url: remainder };
-        }
-        
-        return { platform: detectPlatformFromUrl(line), url: line };
-      });
-
-    const updatedConfig = {
-      ...activeSpaceConfig,
-      displayName: getInputValue("edit-display-name"),
-      bio: getInputValue("edit-bio"),
-      customAvatarUrl: getInputValue("edit-avatar-url"),
-      bgUrl: getInputValue("edit-bg-url"),
-      audioUrl: getInputValue("edit-audio-url"),
-      spotifyUrl: getInputValue("edit-spotify-url"),
-      discordId: getInputValue("edit-discord-id"),
-      glassDesignPreset: document.getElementById("edit-glass-preset")?.value || "transparent",
-      clockFormat: document.getElementById("edit-clock-format")?.value || "12h",
-      clockShowSeconds: getCheckboxValue("edit-clock-show-seconds"),
-      clockShowDate: getCheckboxValue("edit-clock-show-date"),
-      showClock: getCheckboxValue("edit-show-clock"),
-      showProfile: getCheckboxValue("edit-show-profile"),
-      showDiscord: getCheckboxValue("edit-show-discord"),
-      showSpotify: getCheckboxValue("edit-show-spotify"),
-      showMedia: getCheckboxValue("edit-show-media"),
-      showSocials: getCheckboxValue("edit-show-socials"),
-      showRankings: getCheckboxValue("edit-show-rankings"),
-      mobileWidgetOrder: [...tempMobileOrder],
-      socials: parsedSocials,
-      mediaImages: getInputValue("edit-media-urls").split("\n").map(s => s.trim()).filter(Boolean)
-    };
-
+  // Auth State Watcher & Data Loader Initialization
+  onAuthStateChanged(auth, async (user) => {
     try {
-      await setDoc(doc(db, "users_spaces", currentUid), updatedConfig, { merge: true });
-      if (editorModal) editorModal.classList.add("hidden");
-
-      activeSpaceConfig = updatedConfig;
-      renderProfileSpace(currentLoadedUserData, activeSpaceConfig, auth.currentUser);
-      applyMobileLayoutOrder(updatedConfig.mobileWidgetOrder);
-
-      alert("Your space was updated successfully!");
-    } catch (err) {
-      console.error("Error saving space:", err);
-      alert("Failed to save settings.");
-    }
-  });
-
-  // ==========================================================================
-  // INITIALIZE AUTH OBSERVER & TARGET USER RESOLUTION
-  // ==========================================================================
-  onAuthStateChanged(auth, async (authUser) => {
-    isCurrentUserAdmin = false;
-
-    if (authUser) {
-      try {
-        const adminDoc = await getDoc(doc(db, "users", authUser.uid));
-        if (adminDoc.exists()) {
-          const adminData = adminDoc.data();
-          isCurrentUserAdmin = adminData.isAdmin === true || adminData.role === "admin";
+      if (user) {
+        const userDocRef = doc(db, "users", user.uid);
+        const userSnap = await getDoc(userDocRef);
+        if (userSnap.exists()) {
+          isCurrentUserAdmin = userSnap.data()?.isAdmin || false;
         }
-      } catch (e) {
-        console.warn("Could not check admin status:", e);
       }
-    }
 
-    try {
       if (handleParam) {
         const usersRef = collection(db, "users");
         const q = query(usersRef, where("handle", "==", handleParam), limit(1));
-        const querySnapshot = await getDocs(q);
+        const querySnap = await getDocs(q);
 
-        if (!querySnapshot.empty) {
-          const userDoc = querySnapshot.docs[0];
+        if (!querySnap.empty) {
+          const userDoc = querySnap.docs[0];
           targetUserId = userDoc.id;
           const userData = userDoc.data();
 
-          const spaceDoc = await getDoc(doc(db, "users_spaces", targetUserId));
-          const spaceData = spaceDoc.exists() ? spaceDoc.data() : {};
+          const spaceSnap = await getDoc(doc(db, "users_spaces", targetUserId));
+          const spaceData = spaceSnap.exists() ? spaceSnap.data() : {};
 
-          renderProfileSpace(userData, spaceData, authUser);
+          renderProfileSpace(userData, spaceData, user);
         } else {
-          targetUserId = null;
           renderNotFoundUI(handleParam);
         }
-      } else if (authUser) {
-        targetUserId = authUser.uid;
-        const userDoc = await getDoc(doc(db, "users", authUser.uid));
-        const spaceDoc = await getDoc(doc(db, "users_spaces", authUser.uid));
+      } else if (user) {
+        targetUserId = user.uid;
+        const userSnap = await getDoc(doc(db, "users", targetUserId));
+        const userData = userSnap.exists() ? userSnap.data() : { handle: "me", displayName: user.displayName };
 
-        const userData = userDoc.exists() ? userDoc.data() : { displayName: authUser.displayName, handle: "user" };
-        const spaceData = spaceDoc.exists() ? spaceDoc.data() : {};
+        const spaceSnap = await getDoc(doc(db, "users_spaces", targetUserId));
+        const spaceData = spaceSnap.exists() ? spaceSnap.data() : {};
 
-        renderProfileSpace(userData, spaceData, authUser);
+        renderProfileSpace(userData, spaceData, user);
       } else {
-        targetUserId = null;
         renderNotFoundUI(null);
       }
-    } catch (e) {
-      console.error("Error initializing space:", e);
+    } catch (err) {
+      console.error("Initialization error:", err);
       renderNotFoundUI(handleParam);
     }
   });
