@@ -59,30 +59,34 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Realtime System Config Listener
   const listenToSystemConfig = () => {
-    const configRef = doc(db, "system", "config");
-    onSnapshot(configRef, (docSnap) => {
-      if (docSnap.exists()) {
-        systemConfig = docSnap.data();
+    try {
+      const configRef = doc(db, "system", "config");
+      onSnapshot(configRef, (docSnap) => {
+        if (docSnap.exists()) {
+          systemConfig = docSnap.data();
 
-        // Banner Handler
-        const bannerEl = document.getElementById("global-announcement-banner") || document.getElementById("announcement-banner");
-        if (bannerEl) {
-          if (systemConfig.announcementBanner) {
-            bannerEl.textContent = systemConfig.announcementBanner;
-            bannerEl.classList.remove("hidden");
-            bannerEl.style.display = "block";
-          } else {
-            bannerEl.classList.add("hidden");
-            bannerEl.style.display = "none";
+          // Banner Handler
+          const bannerEl = document.getElementById("global-announcement-banner") || document.getElementById("announcement-banner");
+          if (bannerEl) {
+            if (systemConfig.announcementBanner) {
+              bannerEl.textContent = systemConfig.announcementBanner;
+              bannerEl.classList.remove("hidden");
+              bannerEl.style.display = "block";
+            } else {
+              bannerEl.classList.add("hidden");
+              bannerEl.style.display = "none";
+            }
+          }
+
+          // Re-render leaderboard if open
+          if (cachedUsers.length > 0) {
+            renderLeaderboard(cachedUsers);
           }
         }
-
-        // Re-render leaderboard if open
-        if (cachedUsers.length > 0) {
-          renderLeaderboard(cachedUsers);
-        }
-      }
-    }, (err) => console.error("System config listener error:", err));
+      }, (err) => console.warn("System config listener warning:", err));
+    } catch (e) {
+      console.warn("Could not bind system config listener:", e);
+    }
   };
 
   listenToSystemConfig();
@@ -668,14 +672,11 @@ document.addEventListener("DOMContentLoaded", () => {
       // Check if entry belongs to currently logged-in user
       const isSelf = currentUser && (user.id === currentUser.uid || user.uid === currentUser.uid);
       
-      // Admin/System Blur Flag Evaluation
       const isBlurred = systemConfig.globalBlur || user.isBlurred || user.isBlurredByAdmin || false;
       const isVerified = user.isVerified || false;
       const isOwner = user.role === "owner" || user.handle === "admin";
 
       const item = document.createElement("div");
-      
-      // Applied 'blurred-text' directly to the parent item element when isBlurred is true
       item.className = `leaderboard-item ${rank <= 3 ? `top-${rank}` : ''} ${isSelf ? 'is-self' : ''} ${isBlurred ? 'blurred-text' : ''}`;
 
       const avatar = user.photoURL || user.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.handle || user.id}`;
@@ -718,4 +719,3 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
 });
-```[cite: 9]
