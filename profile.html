@@ -513,8 +513,8 @@
       <!-- 1. CLOCK -->
       <div id="clock-card-widget" class="glass-widget-card preset-glass-transparent">
         <div style="font-size: 0.75rem; text-transform: uppercase; letter-spacing: 1px; opacity: 0.8; margin-bottom: 4px;" class="sub-text-dim">Local Time</div>
-        <div id="clock-time" style="font-size: 1.6rem; font-weight: 800; color: #38bdf8;">00:00:00 AM</div>
-        <div id="clock-date" style="font-size: 0.8rem; opacity: 0.9; font-family: sans-serif; margin-top: 4px;" class="sub-text-dim">Monday, Jan 1</div>
+        <div id="clock-time" style="font-size: 1.6rem; font-weight: 800; color: #38bdf8;">--:--:--</div>
+        <div id="clock-date" style="font-size: 0.8rem; opacity: 0.9; font-family: sans-serif; margin-top: 4px;" class="sub-text-dim">Loading date...</div>
       </div>
 
       <!-- 2. PROFILE -->
@@ -523,19 +523,17 @@
           <img 
             id="space-avatar-img" 
             class="profile-avatar-img"
-            src="https://api.dicebear.com/7.x/avataaars/svg?seed=kaumudi" 
+            src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" 
             alt="User Avatar" 
             loading="lazy"
             referrerpolicy="no-referrer"
           >
         </div>
         <h1 id="space-display-name" style="font-size: 1.4rem; font-weight: 800; margin: 0; color: #ffffff;">
-          Kaumudi Tiwari <i class="fa-solid fa-circle-check" style="color: #60a5fa;" aria-hidden="true"></i>
+          Loading...
         </h1>
-        <span id="space-handle-text" style="color: #818cf8; font-weight: 700; font-size: 0.85rem;">@kaumudi</span>
-        <p id="space-bio-text" style="color: #cbd5e1; margin-top: 10px; font-size: 0.9rem; line-height: 1.4;">
-          Artist
-        </p>
+        <span id="space-handle-text" style="color: #818cf8; font-weight: 700; font-size: 0.85rem;">@...</span>
+        <p id="space-bio-text" style="color: #cbd5e1; margin-top: 10px; font-size: 0.9rem; line-height: 1.4; display: none;"></p>
       </div>
 
       <!-- 3. DISCORD -->
@@ -562,7 +560,7 @@
           <span style="font-size: 0.7rem; font-weight: 700; background: rgba(99, 102, 241, 0.25); color: #ffffff; padding: 3px 8px; border-radius: 12px;">Gallery</span>
         </div>
         <div class="media-display-container">
-          <img id="media-display-img" class="media-display-img" src="https://picsum.photos/400/300" alt="Media Showcase" loading="lazy">
+          <img id="media-display-img" class="media-display-img" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" alt="Media Showcase" loading="lazy">
           <button type="button" id="media-prev-btn" class="media-nav-btn media-nav-prev" aria-label="Previous image">
             <i class="fa-solid fa-chevron-left" style="font-size: 0.85rem;" aria-hidden="true"></i>
           </button>
@@ -596,9 +594,9 @@
           <div class="rank-label-title" style="font-size: 0.75rem; text-transform: uppercase; font-weight: 800; letter-spacing: 0.5px; color: #ffb703; display: flex; align-items: center; justify-content: center; gap: 6px;">
             <i class="fa-solid fa-trophy" aria-hidden="true"></i> PROFILE RANK
           </div>
-          <div id="user-rank-display" style="font-size: 2.2rem; font-weight: 800; color: #ffffff; line-height: 1.1; margin-top: 2px;">#1</div>
+          <div id="user-rank-display" style="font-size: 2.2rem; font-weight: 800; color: #ffffff; line-height: 1.1; margin-top: 2px;">--</div>
           <div id="user-views-display" class="rank-pill-views">
-            <i class="fa-solid fa-eye" style="color: #60a5fa;" aria-hidden="true"></i> <span id="views-count">7</span> Views
+            <i class="fa-solid fa-eye" style="color: #60a5fa;" aria-hidden="true"></i> <span id="views-count">--</span> Views
           </div>
         </div>
       </div>
@@ -631,7 +629,7 @@
       <div class="form-group">
         <label for="edit-glass-preset" class="editor-label">Glass Theme Preset</label>
         <select id="edit-glass-preset" class="editor-select" style="font-weight: 600;">
-          <option value="transparent" selected>New Transparent Glass</option>
+          <option value="transparent" selected>Transparent Glass</option>
           <option value="standard">Standard Bright Glass</option>
           <option value="dark">Dark Glass</option>
         </select>
