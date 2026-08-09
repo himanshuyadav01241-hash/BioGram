@@ -50,8 +50,8 @@ worst offender: its cache isn't user-clearable at all, so "clear your cache" onl
 worked for Safari.
 
 **The fix:** every CSS/JS reference now carries a version query string,
-e.g. `css/styles.css?v=20260810a` and `js/profile.js?v=20260810a`, including the
-internal `import ... from "./firebase.js?v=20260810a"` statements between JS modules.
+e.g. `css/styles.css?v=20260809a` and `js/profile.js?v=20260809a`, including the
+internal `import ... from "./firebase.js?v=20260809a"` statements between JS modules.
 A version query string makes it a *new URL* to the browser, so it must fetch fresh
 files — no cache to clear, on any browser, including Instagram's.
 
@@ -75,3 +75,88 @@ If you have any control over your host's HTTP response headers (check wasmer.app
 dashboard/docs), the most robust setup is: `Cache-Control: no-cache` on the `.html`
 files, and `Cache-Control: public, max-age=31536000, immutable` on the versioned
 `.css`/`.js` files — but the query-string versioning above works even without that.
+
+## QR widget fix + made Pro-only
+
+**Bug:** the QR widget built its link from `window.location.href`, so if the page was
+ever served through a local/dev/preview layer, the QR baked in an address like
+`127.0.0.1` — unreachable from any other device, and easy to mistake for "it's showing
+the same/wrong profile."
+
+**Fix:** QR codes now resolve through a new admin-configurable **Public Site URL**
+(Admin Panel → Membership & Monetization → *Public Site URL*). Set it once to your real
+domain (e.g. `https://biogram.wasmer.app`) and every QR code will point there
+regardless of what environment the page happens to be loaded from. If that field is
+left blank and the page detects it's being viewed from a loopback address
+(`127.0.0.1`/`localhost`), the widget now shows a clear "set your Public Site URL"
+message instead of silently generating a broken code.
+
+**Also made QR a BioGram Pro perk** — gated the same way as accent colors and
+background particles: hidden and locked for free users (with an upgrade prompt on
+click), and enforced again at save time so it can't be toggled on by tampering with
+the checkbox.
+
+New `system/config` field: `siteBaseUrl`.
+
+## Profile rank badge showing the wrong number
+
+**Bug:** the "PROFILE RANK" widget read a `rank` field from the user's document —
+but nothing in the app ever computed or wrote that field. Every profile silently
+fell back to showing `#1` unless a `rank` value happened to exist in Firestore from
+earlier manual testing, in which case it showed that stale, never-updated number
+forever (regardless of actual standing). This is what caused a profile with the
+#1 view count to show `#2`.
+
+**Fix:** rank is now computed live on each page load — same eligibility rules as
+the leaderboard (excludes banned / leaderboard-hidden profiles), sorted by views
+descending, then finds the profile's position in that list. No stored field to go
+stale.
+
+## Modal close buttons not clickable on mobile
+
+**Bug:** on mobile, `.floating-actions-bar` (the bottom "Locked / Reorder /
+Customize Space" bar) had `z-index: 10000 !important` — higher than *every* modal
+in the app, including the Customize Space editor (was `9999`) and the Membership
+modal (was `5000`). Wherever the floating bar visually overlapped an open modal,
+it silently ate the clicks meant for the modal underneath — including close buttons.
+
+**Fix:** modals are now unambiguously on top: the editor modal is `50000` and the
+membership modal is `60000`, both well above the floating action bar. Modals will
+never again be visually or interactively "under" the bottom toolbar.
+
+## Membership upgrade button ignoring newly-saved Razorpay settings
+
+**Bug:** `system/config` (price, Razorpay key, payments-enabled toggle) was cached
+in memory the first time it was read on a page. If an admin saved new settings in
+the Admin Panel while a user already had the site open, that user's Upgrade button
+kept using the stale cached config — meaning it looked like the Razorpay key
+"wasn't taking," when really it just hadn't been re-fetched yet.
+
+**Fix:** the membership modal now force-refreshes config every time it opens, so a
+freshly-saved Razorpay key/price/toggle takes effect on the very next click —
+no page reload required.
+
+## Support email had no admin control
+
+There was no way to actually set the support/contact email shown on the manual
+upgrade fallback — it was hardcoded. Added **Support Contact Email** to Admin Panel
+→ Membership & Monetization. New `system/config` field: `contactEmail`.
+
+## QR: "Show QR" quick view
+
+Tapping the QR widget (BioGram Pro) now opens a large, high-contrast fullscreen
+view — meant for holding your phone up to someone to scan in person — with a clear
+close button. Desktop behavior is unchanged otherwise; it's the same widget, just
+bigger on tap there too.
+
+## Mobile: QR widget replaced with a share icon
+
+On mobile, the QR card no longer takes up space in the widget stack. Instead, a
+small round QR icon now sits fixed at the top-right of the screen (mirroring the
+audio control on the top-left) — tap it any time to bring up the same large,
+easy-to-scan fullscreen view for showing your profile to someone in person.
+Desktop is unchanged: QR still shows as a normal widget there, and tapping it opens
+the same fullscreen view.
+
+The icon respects the exact same rules as before — only appears when the space
+owner is Pro, has QR enabled, and a reliable Public Site URL is configured.

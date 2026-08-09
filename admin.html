@@ -690,6 +690,22 @@
         </div>
       </div>
 
+      <div class="form-group">
+        <label for="site-base-url-input">Public Site URL (used for QR codes & share links)</label>
+        <input type="url" id="site-base-url-input" class="modal-input" placeholder="https://biogram.wasmer.app">
+        <p class="card-subtitle" style="margin:0.4rem 0 0; font-size:0.76rem;">
+          Set this to your real public domain. Without it, QR codes fall back to whatever address the page loads from — which breaks (e.g. shows <code>127.0.0.1</code>) when viewed through a local/dev/preview environment.
+        </p>
+      </div>
+
+      <div class="form-group">
+        <label for="support-email-input">Support Contact Email</label>
+        <input type="email" id="support-email-input" class="modal-input" placeholder="you@example.com">
+        <p class="card-subtitle" style="margin:0.4rem 0 0; font-size:0.76rem;">
+          Shown to users upgrading manually (when Razorpay isn't configured) and in the "email to upgrade" fallback link.
+        </p>
+      </div>
+
       <div class="admin-settings-row">
         <label class="toggle-checkbox">
           <input type="checkbox" id="payments-enabled-toggle">
@@ -794,6 +810,6 @@
     </div>
   </div>
 
-  <script type="module" src="js/admin.js?v=20260810a"></script>
+  <script type="module" src="js/admin.js?v=20260813a"></script>
 </body>
 </html>

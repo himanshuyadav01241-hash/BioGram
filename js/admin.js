@@ -1,7 +1,7 @@
 // ==========================================================================
 // 1. FIREBASE IMPORTS
 // ==========================================================================
-import { db } from "./firebase.js?v=20260810a"; 
+import { db } from "./firebase.js?v=20260813a"; 
 import { 
   collection, 
   doc, 
@@ -12,7 +12,7 @@ import {
   Timestamp,
   onSnapshot 
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
-import { isUserPremium } from "./membership.js?v=20260810a";
+import { isUserPremium } from "./membership.js?v=20260813a";
 
 // ==========================================================================
 // 2. GLOBAL STATE & DOM ELEMENTS
@@ -53,6 +53,8 @@ const paymentsEnabledToggle = document.getElementById("payments-enabled-toggle")
 const saveMembershipSettingsBtn = document.getElementById("btn-save-membership-settings");
 const freeMediaLimitInput = document.getElementById("free-media-limit-input");
 const freeWidgetLimitInput = document.getElementById("free-widget-limit-input");
+const siteBaseUrlInput = document.getElementById("site-base-url-input");
+const supportEmailInput = document.getElementById("support-email-input");
 
 // Edit Views Modal
 const viewsModal = document.getElementById("edit-views-modal");
@@ -109,6 +111,12 @@ function listenToSystemConfig() {
       }
       if (freeWidgetLimitInput && document.activeElement !== freeWidgetLimitInput) {
         freeWidgetLimitInput.value = systemConfig.freeCustomWidgetLimit ?? 1;
+      }
+      if (siteBaseUrlInput && document.activeElement !== siteBaseUrlInput) {
+        siteBaseUrlInput.value = systemConfig.siteBaseUrl || "";
+      }
+      if (supportEmailInput && document.activeElement !== supportEmailInput) {
+        supportEmailInput.value = systemConfig.contactEmail || "";
       }
       if (totalRevenueEl) {
         const paise = Number(systemConfig.totalRevenuePaise) || 0;
@@ -503,7 +511,9 @@ if (saveMembershipSettingsBtn) {
         razorpayKeyId: razorpayKeyInput ? razorpayKeyInput.value.trim() : "",
         paymentsEnabled: paymentsEnabledToggle ? paymentsEnabledToggle.checked : false,
         freeMediaLimit: isNaN(mediaLimitVal) ? 3 : mediaLimitVal,
-        freeCustomWidgetLimit: isNaN(widgetLimitVal) ? 1 : widgetLimitVal
+        freeCustomWidgetLimit: isNaN(widgetLimitVal) ? 1 : widgetLimitVal,
+        siteBaseUrl: siteBaseUrlInput ? siteBaseUrlInput.value.trim().replace(/\/$/, "") : "",
+        contactEmail: supportEmailInput ? supportEmailInput.value.trim() : ""
       }, { merge: true });
       alert("Membership settings saved!");
     } catch (err) {

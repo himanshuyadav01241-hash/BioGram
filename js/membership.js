@@ -3,7 +3,7 @@
 // Shared lifetime-membership (₹ INR) modal + premium-status helpers.
 // Import { openMembershipModal, getSystemConfig, isUserPremium } wherever needed.
 // ==========================================================================
-import { auth, db } from "./firebase.js?v=20260810a";
+import { auth, db } from "./firebase.js?v=20260813a";
 import { doc, getDoc, setDoc, increment } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
 let cachedSystemConfig = null;
@@ -13,7 +13,8 @@ const DEFAULTS = {
   membershipPriceINR: 499,
   razorpayKeyId: "",
   paymentsEnabled: false,
-  contactEmail: "hello@biogram.me"
+  contactEmail: "hello@biogram.me",
+  siteBaseUrl: ""
 };
 
 export const getSystemConfig = async (force = false) => {
@@ -21,6 +22,9 @@ export const getSystemConfig = async (force = false) => {
   try {
     const snap = await getDoc(doc(db, "system", "config"));
     cachedSystemConfig = { ...DEFAULTS, ...(snap.exists() ? snap.data() : {}) };
+    // An admin saving the settings form with the email field left blank shouldn't
+    // wipe out a usable fallback address — treat a blank saved value as "unset".
+    if (!cachedSystemConfig.contactEmail) cachedSystemConfig.contactEmail = DEFAULTS.contactEmail;
   } catch (e) {
     console.warn("Could not load system config:", e);
     cachedSystemConfig = { ...DEFAULTS };
@@ -30,6 +34,32 @@ export const getSystemConfig = async (force = false) => {
 
 export const isUserPremium = (userData) => {
   return !!(userData && (userData.isPremium === true));
+};
+
+const LOOPBACK_HOSTS = ["127.0.0.1", "localhost", "0.0.0.0", "::1"];
+
+// Resolve the canonical public URL for a profile page. Prefers the admin-configured
+// siteBaseUrl (system/config.siteBaseUrl) over window.location, because the page's
+// own location can be a local/dev/preview address (e.g. 127.0.0.1) when viewed through
+// a proxy or preview tool — which would otherwise get baked into QR codes / share links
+// as an unreachable address. Returns { url, isUnreliable } — isUnreliable is true when
+// falling back to a loopback/local hostname with no configured override, so callers can
+// warn instead of silently generating a broken link.
+export const resolveCanonicalProfileUrl = (config, handle) => {
+  const pagePath = window.location.pathname.split('/').pop() || "profile.html";
+  const query = handle ? `?u=${encodeURIComponent(handle)}` : "";
+
+  const configuredBase = (config?.siteBaseUrl || "").trim().replace(/\/$/, "");
+  if (configuredBase) {
+    return { url: `${configuredBase}/${pagePath}${query}`, isUnreliable: false };
+  }
+
+  const currentOrigin = window.location.origin;
+  const isLoopback = LOOPBACK_HOSTS.some(h => window.location.hostname === h);
+  return {
+    url: `${currentOrigin}/${pagePath}${query}`,
+    isUnreliable: isLoopback
+  };
 };
 
 const loadRazorpayScript = () => {
@@ -50,7 +80,7 @@ const injectStylesOnce = () => {
   const style = document.createElement("style");
   style.id = "membership-modal-styles";
   style.textContent = `
-    .mem-overlay { position: fixed; inset: 0; background: rgba(10,10,20,0.72); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); z-index: 5000; display: flex; align-items: center; justify-content: center; padding: 1rem; }
+    .mem-overlay { position: fixed; inset: 0; background: rgba(10,10,20,0.72); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); z-index: 60000; display: flex; align-items: center; justify-content: center; padding: 1rem; }
     .mem-overlay.hidden { display: none !important; }
     .mem-card { background: var(--bg-card, #fff); color: var(--text-main, #111827); width: 100%; max-width: 460px; border-radius: 24px; overflow: hidden; box-shadow: 0 30px 80px rgba(0,0,0,0.4); border: 1px solid var(--border-light, #e2e8f0); max-height: 90vh; display: flex; flex-direction: column; }
     .mem-head { background: linear-gradient(135deg,#6366f1,#8b5cf6 60%,#ec4899); padding: 28px 24px; color: #fff; position: relative; overflow: hidden; }
@@ -112,6 +142,7 @@ const buildModal = () => {
 const FEATURES = [
   "All glass design themes, including exclusive Pro-only presets",
   "Custom accent color picker for your whole space",
+  "Scannable QR code widget linking to your space",
   "Unlimited media gallery images & custom link widgets",
   "Animated background particles & premium layout effects",
   "No 'Powered by BioGram' badge on your public space",
@@ -126,7 +157,11 @@ export const openMembershipModal = async () => {
 
   const body = overlay.querySelector("#mem-body-content");
   const user = auth.currentUser;
-  const config = await getSystemConfig();
+  // Force a fresh read every time the modal opens — a cached copy here means an
+  // admin's just-saved Razorpay key / price / payments-enabled toggle wouldn't be
+  // picked up until a full page reload, and the button would keep silently falling
+  // back to the mailto link even after payments were correctly configured.
+  const config = await getSystemConfig(true);
 
   let userIsPremium = false;
   if (user) {

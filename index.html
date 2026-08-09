@@ -17,7 +17,7 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
   <!-- Main Stylesheet -->
-  <link rel="stylesheet" href="css/styles.css?v=20260810a">
+  <link rel="stylesheet" href="css/styles.css?v=20260813a">
 </head>
 <body class="light-theme">
 
@@ -217,7 +217,7 @@
         </div>
         <div class="feature-tile">
           <div class="feature-icon"><i class="fa-solid fa-qrcode"></i></div>
-          <h4>QR Code Widget</h4>
+          <h4>QR Code Widget <span class="pro-lock-chip"><i class="fa-solid fa-crown"></i> Pro</span></h4>
           <p>Auto-generated QR code linking straight to your space — perfect for stickers, business cards, and stream overlays.</p>
         </div>
         <div class="feature-tile">
@@ -254,6 +254,7 @@
             <span><i class="fa-solid fa-circle-check"></i> Exclusive gradient & neon themes</span>
             <span><i class="fa-solid fa-circle-check"></i> Custom accent color picker</span>
             <span><i class="fa-solid fa-circle-check"></i> Unlimited gallery & link widgets</span>
+            <span><i class="fa-solid fa-circle-check"></i> Scannable QR code widget</span>
             <span><i class="fa-solid fa-circle-check"></i> Animated background particles</span>
             <span><i class="fa-solid fa-circle-check"></i> No BioGram branding badge</span>
             <span><i class="fa-solid fa-circle-check"></i> Gold Pro crown on your profile</span>
@@ -360,7 +361,7 @@
   </div>
 
   <!-- MODULE JAVASCRIPT -->
-  <script type="module" src="js/app.js?v=20260810a"></script>
+  <script type="module" src="js/app.js?v=20260813a"></script>
   <script type="module">
     import { bindMembershipTriggers, getSystemConfig } from "./js/membership.js";
     document.addEventListener("DOMContentLoaded", async () => {
@@ -373,7 +374,7 @@
       const priceTag = document.getElementById("landing-price-tag");
       if (priceTag) {
         const cfg = await getSystemConfig();
-        priceTag.textContent = `₹${(Number(cfg.membershipPriceINR) || 499).toLocaleString('en-IN')}`;
+        priceTag.textContent = `₹${(Number(cfg.membershipPriceINR) || 100).toLocaleString('en-IN')}`;
       }
     });
   </script>

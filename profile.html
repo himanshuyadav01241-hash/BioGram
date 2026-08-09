@@ -17,7 +17,7 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
   <!-- Custom Stylesheet -->
-  <link rel="stylesheet" href="css/styles.css?v=20260810a">
+  <link rel="stylesheet" href="css/styles.css?v=20260813a">
   
   <style>
     :root {
@@ -57,7 +57,7 @@
       background: rgba(15, 23, 42, 0.9);
       backdrop-filter: blur(16px);
       -webkit-backdrop-filter: blur(16px);
-      z-index: 9999;
+      z-index: 50000;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -97,6 +97,33 @@
       cursor: pointer;
       accent-color: var(--primary-color);
     }
+
+    /* SHARE / QR ICON — TOP RIGHT (mirrors audio control on the left).
+       Hidden by default; only shown on mobile via the media query below,
+       since desktop keeps the QR code as a normal widget in the stack. */
+    .qr-share-icon-btn {
+      position: fixed;
+      top: 16px;
+      right: 16px;
+      z-index: 999;
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: rgba(0, 0, 0, 0.5);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      color: #fff;
+      font-size: 1.05rem;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+    }
+    .qr-share-icon-btn:hover {
+      background: var(--primary-color);
+    }
+    .qr-share-icon-btn.hidden { display: none !important; }
 
     /* WIDGET GRID CONTAINER CANVAS */
     .widgets-wrapper {
@@ -497,6 +524,13 @@
 
     /* MOBILE SCREEN OVERRIDE - FORCED UNHIDE & COMPACT BUTTONS */
     @media (max-width: 600px) {
+      /* QR code becomes a tap-to-open icon instead of taking up stack space */
+      #qr-card-widget {
+        display: none !important;
+      }
+      .qr-share-icon-btn {
+        display: flex;
+      }
       .widgets-wrapper {
         padding: 4.5rem 12px 5rem 12px !important;
         flex-direction: column;
@@ -541,6 +575,11 @@
     <input type="range" id="bg-audio-volume" class="audio-volume-slider" min="0" max="100" value="50" aria-label="Audio Volume">
     <audio id="bg-audio-player" loop></audio>
   </div>
+
+  <!-- SHARE / QR ICON (mobile only — desktop keeps QR as a normal widget) -->
+  <button type="button" id="qr-share-icon-btn" class="qr-share-icon-btn hidden" aria-label="Show QR code to share this profile">
+    <i class="fa-solid fa-qrcode" aria-hidden="true"></i>
+  </button>
 
   <!-- TAP TO ENTER OVERLAY -->
   <div id="tap-to-open-overlay" class="tap-overlay" role="button" tabindex="0">
@@ -646,12 +685,14 @@
         </div>
       </div>
 
-      <!-- 8. QR CODE -->
-      <div id="qr-card-widget" class="glass-widget-card preset-glass-transparent">
+      <!-- 8. QR CODE (BioGram Pro) -->
+      <div id="qr-card-widget" class="glass-widget-card preset-glass-transparent hidden">
         <div style="font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 800;" class="sub-text-dim">
           <i class="fa-solid fa-qrcode" aria-hidden="true"></i> Scan Me
         </div>
         <img id="qr-code-img" src="" alt="QR code linking to this space" loading="lazy">
+        <p class="qr-tap-hint"><i class="fa-solid fa-up-right-and-down-left-from-center"></i> Tap to enlarge</p>
+        <p id="qr-widget-note" style="display:none; font-size:0.68rem; margin-top:8px; opacity:0.85;"></p>
       </div>
 
       <!-- 9. COUNTDOWN TIMER -->
@@ -872,7 +913,7 @@
               <label><input type="checkbox" id="edit-show-media" checked> Gallery Widget</label>
               <label><input type="checkbox" id="edit-show-socials" checked> Socials Widget</label>
               <label><input type="checkbox" id="edit-show-rankings" checked> Rank Widget</label>
-              <label><input type="checkbox" id="edit-show-qr"> QR Code Widget</label>
+              <label><input type="checkbox" id="edit-show-qr"> QR Code Widget <span class="pro-lock-chip" id="qr-pro-chip"><i class="fa-solid fa-lock"></i> Pro</span></label>
               <label><input type="checkbox" id="edit-show-countdown"> Countdown Widget</label>
               <label><input type="checkbox" id="edit-show-custom-widgets" checked> Custom Widgets</label>
             </div>
@@ -907,6 +948,6 @@
     </div>
   </div>
 
-  <script type="module" src="js/profile.js?v=20260810a"></script>
+  <script type="module" src="js/profile.js?v=20260813a"></script>
 </body>
 </html>

@@ -1,7 +1,7 @@
 // ==========================================================================
 // FIREBASE IMPORTS
 // ==========================================================================
-import { auth, db } from "./firebase.js?v=20260810a";
+import { auth, db } from "./firebase.js?v=20260813a";
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 import { 
   doc, 
@@ -16,7 +16,7 @@ import {
   getDocs,
   limit
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
-import { isUserPremium, getSystemConfig, openMembershipModal } from "./membership.js?v=20260810a";
+import { isUserPremium, getSystemConfig, openMembershipModal, resolveCanonicalProfileUrl } from "./membership.js?v=20260813a";
 
 document.addEventListener('DOMContentLoaded', () => {
 
@@ -620,6 +620,68 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   // ==========================================================================
+  // QR QUICK-SHOW: tap the QR widget for a large, easy-to-scan fullscreen view
+  // (handy for holding your phone up to someone in person). Desktop keeps the
+  // QR as a normal widget — this just makes it bigger on tap there too.
+  // ==========================================================================
+  const buildQrFullscreenModal = () => {
+    let modal = document.getElementById("qr-fullscreen-modal");
+    if (modal) return modal;
+
+    modal = document.createElement("div");
+    modal.id = "qr-fullscreen-modal";
+    modal.className = "qr-fullscreen-overlay hidden";
+    modal.innerHTML = `
+      <button type="button" id="qr-fullscreen-close" class="qr-fullscreen-close" aria-label="Close">&times;</button>
+      <div class="qr-fullscreen-card">
+        <img id="qr-fullscreen-img" src="" alt="Scan to open this profile">
+        <p id="qr-fullscreen-caption"></p>
+      </div>
+    `;
+    document.body.appendChild(modal);
+
+    modal.addEventListener('click', (e) => {
+      if (e.target === modal) modal.classList.add('hidden');
+    });
+    modal.querySelector('#qr-fullscreen-close').addEventListener('click', () => {
+      modal.classList.add('hidden');
+    });
+
+    return modal;
+  };
+
+  const openQrFullscreen = () => {
+    if (!isViewerPremium) return;
+
+    const handleForQr = handleParam || currentLoadedUserData?.handle || targetUserId || "";
+    const { url: profileUrl, isUnreliable } = resolveCanonicalProfileUrl(siteConfig, handleForQr);
+    if (isUnreliable) return;
+
+    const modal = buildQrFullscreenModal();
+    const img = modal.querySelector('#qr-fullscreen-img');
+    const caption = modal.querySelector('#qr-fullscreen-caption');
+
+    img.src = `https://api.qrserver.com/v1/create-qr-code/?size=340x340&margin=10&data=${encodeURIComponent(profileUrl)}`;
+    img.alt = `QR code for ${profileUrl}`;
+    caption.textContent = currentLoadedUserData?.displayName
+      ? `Scan to view ${currentLoadedUserData.displayName}'s space`
+      : "Scan to view this space";
+
+    modal.classList.remove('hidden');
+  };
+
+  document.getElementById("qr-card-widget")?.addEventListener('click', (e) => {
+    if (e.target.closest('button, a, .no-drag')) return;
+    if (!isLayoutLocked && !isMobile()) return; // owner is actively rearranging widgets, not viewing
+    if (isReorderModeActive) return;
+    openQrFullscreen();
+  });
+
+  document.getElementById("qr-share-icon-btn")?.addEventListener('click', () => {
+    openQrFullscreen();
+  });
+
+  // ==========================================================================
   // ACCORDION EDITOR — only the section in use expands (bound once)
   // ==========================================================================
   document.querySelectorAll('.accordion-section .accordion-trigger').forEach((trigger) => {
@@ -694,6 +756,13 @@ document.addEventListener('DOMContentLoaded', () => {
   editorUpgradeBtn?.addEventListener('click', () => openMembershipModal());
 
   document.getElementById("edit-bg-particles")?.addEventListener('change', (e) => {
+    if (!isViewerPremium && e.target.checked) {
+      e.target.checked = false;
+      openMembershipModal();
+    }
+  });
+
+  document.getElementById("edit-show-qr")?.addEventListener('change', (e) => {
     if (!isViewerPremium && e.target.checked) {
       e.target.checked = false;
       openMembershipModal();
@@ -1061,6 +1130,30 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   };
 
+  // Rank is computed live from the same eligibility rules as the leaderboard
+  // (excludes banned / leaderboard-hidden users), sorted by views descending.
+  // There is no stored "rank" field on the user doc — a stored value would
+  // silently go stale the moment view counts change, showing the wrong rank
+  // (this was the cause of profiles showing an incorrect rank previously).
+  const computeUserRank = async (targetUid) => {
+    try {
+      const snapshot = await getDocs(collection(db, "users"));
+      const eligible = [];
+      snapshot.forEach((docSnap) => {
+        const data = docSnap.data();
+        if (!data.isBanned && !data.excludeFromLeaderboard) {
+          eligible.push({ id: docSnap.id, views: Number(data.views) || 0 });
+        }
+      });
+      eligible.sort((a, b) => b.views - a.views);
+      const idx = eligible.findIndex(u => u.id === targetUid);
+      return idx === -1 ? null : idx + 1;
+    } catch (err) {
+      console.warn("Could not compute profile rank:", err);
+      return null;
+    }
+  };
+
   const renderRankingsWidget = async (targetUid, userData, spaceData, showRankings) => {
     const widget = document.getElementById("rankings-card-widget");
     const rankEl = document.getElementById("user-rank-display");
@@ -1078,9 +1171,9 @@ document.addEventListener('DOMContentLoaded', () => {
       viewsEl.textContent = Number(currentViews).toLocaleString();
     }
 
-    if (rankEl) {
-      rankEl.textContent = userData?.rank ? `#${userData.rank}` : "#1";
-    }
+    if (rankEl) rankEl.textContent = "…";
+    const computedRank = await computeUserRank(targetUid);
+    if (rankEl) rankEl.textContent = computedRank ? `#${computedRank}` : "Unranked";
   };
 
   const applyCustomSpaceStyles = (config = {}, viewerIsPremium = false) => {
@@ -1166,20 +1259,47 @@ document.addEventListener('DOMContentLoaded', () => {
   // ==========================================================================
   // NEW WIDGET: QR CODE
   // ==========================================================================
-  const renderQrWidget = (showQr) => {
+  // QR Code widget is a BioGram Pro perk.
+  const renderQrWidget = (showQr, viewerIsPremium) => {
     const widget = document.getElementById("qr-card-widget");
     const img = document.getElementById("qr-code-img");
-    if (!showQr) {
+    const noteEl = document.getElementById("qr-widget-note");
+    const hintEl = widget?.querySelector(".qr-tap-hint");
+    const shareIconBtn = document.getElementById("qr-share-icon-btn");
+
+    if (!showQr || !viewerIsPremium) {
       widget?.classList.add("hidden");
+      shareIconBtn?.classList.add("hidden");
       return;
     }
     widget?.classList.remove("hidden");
-    if (img) {
-      const handleForQr = handleParam || currentLoadedUserData?.handle || targetUserId || "";
-      const profileUrl = window.location.href.split('?')[0] + `?u=${encodeURIComponent(handleForQr)}`;
-      img.src = `https://api.qrserver.com/v1/create-qr-code/?size=180x180&margin=6&data=${encodeURIComponent(profileUrl)}`;
-      img.alt = `QR code for ${profileUrl}`;
+    if (!img) return;
+
+    const handleForQr = handleParam || currentLoadedUserData?.handle || targetUserId || "";
+    const { url: profileUrl, isUnreliable } = resolveCanonicalProfileUrl(siteConfig, handleForQr);
+
+    if (isUnreliable) {
+      // Refuse to generate a QR that would encode an unreachable local address
+      // (e.g. 127.0.0.1 from a dev/preview environment). Show a clear reason instead
+      // of a silently broken/unusable code.
+      img.removeAttribute("src");
+      img.alt = "QR code unavailable";
+      if (hintEl) hintEl.style.display = "none";
+      if (noteEl) {
+        noteEl.textContent = "Set a Public Site URL in the Admin Panel to enable QR codes.";
+        noteEl.style.display = "block";
+      }
+      shareIconBtn?.classList.add("hidden");
+      return;
     }
+
+    if (hintEl) hintEl.style.display = "block";
+    if (noteEl) noteEl.style.display = "none";
+    img.src = `https://api.qrserver.com/v1/create-qr-code/?size=180x180&margin=6&data=${encodeURIComponent(profileUrl)}`;
+    img.alt = `QR code for ${profileUrl}`;
+    // The icon's actual on-screen visibility is mobile-only (see the max-width:600px
+    // media query) — this only controls eligibility, same rules as the widget itself.
+    shareIconBtn?.classList.remove("hidden");
   };
 
   // ==========================================================================
@@ -1332,7 +1452,7 @@ document.addEventListener('DOMContentLoaded', () => {
     renderSpotifyWidget(spaceData?.spotifyUrl, spaceData?.showSpotify !== false);
     renderSocialsWidget(spaceData?.socials, spaceData?.showSocials !== false);
     renderRankingsWidget(targetUserId, userData, spaceData, spaceData?.showRankings !== false);
-    renderQrWidget(spaceData?.showQr === true);
+    renderQrWidget(spaceData?.showQr === true, isViewerPremium);
     renderCountdownWidget(spaceData?.showCountdown === true, spaceData?.countdownTitle, spaceData?.countdownTarget);
     renderCustomWidgets(spaceData?.customWidgets, spaceData?.showCustomWidgets !== false);
 
@@ -1416,6 +1536,10 @@ document.addEventListener('DOMContentLoaded', () => {
     if (editorProBanner) editorProBanner.style.display = isViewerPremium ? "none" : "flex";
     setCheckboxValue("edit-bg-particles", null, !!activeSpaceConfig.bgParticles && isViewerPremium);
 
+    const qrProChip = document.getElementById("qr-pro-chip");
+    if (qrProChip) qrProChip.style.display = isViewerPremium ? "none" : "inline-flex";
+    setCheckboxValue("edit-show-qr", null, activeSpaceConfig.showQr === true && isViewerPremium);
+
     const formatSelect = document.getElementById("edit-clock-format") || document.getElementById("modal-clock-format");
     if (formatSelect) formatSelect.value = activeSpaceConfig.clockFormat || "12h";
 
@@ -1428,7 +1552,6 @@ document.addEventListener('DOMContentLoaded', () => {
     setCheckboxValue("edit-show-media", "modal-show-media", activeSpaceConfig.showMedia !== false);
     setCheckboxValue("edit-show-socials", "modal-show-socials", activeSpaceConfig.showSocials !== false);
     setCheckboxValue("edit-show-rankings", "modal-show-rankings", activeSpaceConfig.showRankings !== false);
-    setCheckboxValue("edit-show-qr", null, activeSpaceConfig.showQr === true);
     setCheckboxValue("edit-show-countdown", null, activeSpaceConfig.showCountdown === true);
     setCheckboxValue("edit-show-custom-widgets", null, activeSpaceConfig.showCustomWidgets !== false);
 
@@ -1571,7 +1694,7 @@ document.addEventListener('DOMContentLoaded', () => {
       showMedia: getCheckboxValue("edit-show-media"),
       showSocials: getCheckboxValue("edit-show-socials"),
       showRankings: getCheckboxValue("edit-show-rankings"),
-      showQr: getCheckboxValue("edit-show-qr"),
+      showQr: isViewerPremium ? getCheckboxValue("edit-show-qr") : false,
       showCountdown: getCheckboxValue("edit-show-countdown"),
       showCustomWidgets: getCheckboxValue("edit-show-custom-widgets"),
       countdownTitle: getInputValue("edit-countdown-title"),
