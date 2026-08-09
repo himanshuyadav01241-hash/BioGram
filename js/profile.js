@@ -62,7 +62,14 @@ document.addEventListener('DOMContentLoaded', () => {
   let isViewerPremium = false;
   let siteConfig = { freeMediaLimit: 3, freeCustomWidgetLimit: 1 };
 
-  const isMobile = () => window.innerWidth <= 600;
+  // A phone in landscape is often WIDER than 600px (typically 700-900px), so a
+  // width-only check misclassifies it as "desktop" — which then renders widgets at
+  // their absolute desktop drag positions (causing overlap on a small screen) while
+  // ALSO disabling drag, since drag only listens for mouse events, not touch. Using
+  // the smaller of the two dimensions, gated to touch devices, correctly treats a
+  // landscape phone as mobile without affecting a short desktop browser window.
+  const isTouchDevice = () => ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+  const isMobile = () => window.innerWidth <= 600 || (isTouchDevice() && window.innerHeight <= 600);
   const getLocalStorageKey = () => targetUserId ? `biogram_space_layout_cache_${targetUserId}` : 'biogram_space_layout_cache_guest';
   const getOrderStorageKey = () => targetUserId ? `biogram_widget_order_cache_${targetUserId}` : 'biogram_widget_order_cache_guest';
 
@@ -774,6 +781,18 @@ document.addEventListener('DOMContentLoaded', () => {
       applySavedPositions(activeSpaceConfig.widgetPositions);
       updateLockStateUI();
     }
+  });
+
+  // iOS Safari can fire 'resize' late/inconsistently on rotation — orientationchange
+  // is the more reliable signal there. A short delay lets window.innerWidth/Height
+  // settle to their new values before we re-check the layout.
+  window.addEventListener('orientationchange', () => {
+    setTimeout(() => {
+      if (activeSpaceConfig) {
+        applySavedPositions(activeSpaceConfig.widgetPositions);
+        updateLockStateUI();
+      }
+    }, 150);
   });
 
   resetPositionsBtn?.addEventListener('click', async () => {

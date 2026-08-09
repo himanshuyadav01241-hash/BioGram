@@ -522,8 +522,12 @@
 
     .hidden { display: none !important; }
 
-    /* MOBILE SCREEN OVERRIDE - FORCED UNHIDE & COMPACT BUTTONS */
-    @media (max-width: 600px) {
+    /* MOBILE SCREEN OVERRIDE - FORCED UNHIDE & COMPACT BUTTONS
+       Matches the JS isMobile() logic: width-based for portrait, plus a
+       touch+short-height check so a landscape phone (often >600px wide) also
+       gets the stacked layout instead of broken absolute desktop positions.
+       (pointer: coarse) keeps a short DESKTOP browser window from tripping this. */
+    @media (max-width: 600px), (max-height: 600px) and (pointer: coarse) {
       /* QR code becomes a tap-to-open icon instead of taking up stack space */
       #qr-card-widget {
         display: none !important;

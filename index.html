@@ -374,7 +374,7 @@
       const priceTag = document.getElementById("landing-price-tag");
       if (priceTag) {
         const cfg = await getSystemConfig();
-        priceTag.textContent = `₹${(Number(cfg.membershipPriceINR) || 100).toLocaleString('en-IN')}`;
+        priceTag.textContent = `₹${(Number(cfg.membershipPriceINR) || 499).toLocaleString('en-IN')}`;
       }
     });
   </script>

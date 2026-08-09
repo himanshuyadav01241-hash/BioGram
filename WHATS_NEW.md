@@ -160,3 +160,24 @@ the same fullscreen view.
 
 The icon respects the exact same rules as before — only appears when the space
 owner is Pro, has QR enabled, and a reliable Public Site URL is configured.
+
+## Landscape mobile: broken layout + drag not working
+
+**Bug:** "mobile mode" was detected with `window.innerWidth <= 600` only. A phone
+in landscape is usually 700-900px wide, so it failed that check and got treated as
+desktop — which rendered widgets at their absolute desktop drag coordinates
+(overlapping/cut off on a small landscape screen) while simultaneously disabling
+drag, since drag only ever listened for mouse events, never touch. Landscape phones
+were stuck in the worst combination of both modes.
+
+**Fix:**
+- `isMobile()` now also treats a touch device with a short viewport height
+  (≤600px) as mobile, regardless of width — correctly catching landscape phones
+  without affecting a short desktop browser window (which lacks touch).
+- The matching CSS media query was updated the same way, using
+  `(pointer: coarse)` to distinguish a touch device from a resized desktop window.
+- Added an `orientationchange` listener alongside the existing `resize` listener,
+  since iOS Safari can fire `resize` late or inconsistently right after a rotation.
+
+Net effect: landscape phones now get the same stacked layout + Reorder button
+flow as portrait, instead of a broken absolute layout with no working drag.
