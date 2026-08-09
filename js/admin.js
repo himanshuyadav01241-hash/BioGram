@@ -1,7 +1,7 @@
 // ==========================================================================
 // 1. FIREBASE IMPORTS
 // ==========================================================================
-import { db } from "./firebase.js"; 
+import { db } from "./firebase.js?v=20260810a"; 
 import { 
   collection, 
   doc, 
@@ -12,7 +12,7 @@ import {
   Timestamp,
   onSnapshot 
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
-import { isUserPremium } from "./membership.js";
+import { isUserPremium } from "./membership.js?v=20260810a";
 
 // ==========================================================================
 // 2. GLOBAL STATE & DOM ELEMENTS

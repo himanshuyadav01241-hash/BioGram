@@ -41,3 +41,37 @@ A one-time-payment membership unlocks:
 - `system/config`: `membershipPriceINR`, `razorpayKeyId`, `paymentsEnabled`, `freeMediaLimit`, `freeCustomWidgetLimit`, `totalRevenuePaise`, `totalPremiumPurchases`
 
 All fields default gracefully if missing, so this is safe to deploy over existing data.
+
+## Cache-busting fix (Safari + Instagram in-app browser showing stale/broken layout)
+
+If a deploy ever shows unstyled/overlapping content — usually old HTML paired with an
+old cached CSS/JS file — that's a cache mismatch. Instagram's in-app browser is the
+worst offender: its cache isn't user-clearable at all, so "clear your cache" only ever
+worked for Safari.
+
+**The fix:** every CSS/JS reference now carries a version query string,
+e.g. `css/styles.css?v=20260810a` and `js/profile.js?v=20260810a`, including the
+internal `import ... from "./firebase.js?v=20260810a"` statements between JS modules.
+A version query string makes it a *new URL* to the browser, so it must fetch fresh
+files — no cache to clear, on any browser, including Instagram's.
+
+**On every future deploy: bump the version string everywhere it appears.** It must be
+identical across all files in one deploy. Quick way to do it from the project root:
+
+```bash
+OLD="20260809a"
+NEW="20260815a"   # pick something new each deploy — a date works well
+grep -rl "v=${OLD}" --include="*.html" --include="*.js" . | \
+  xargs sed -i "s/v=${OLD}/v=${NEW}/g"
+```
+
+The HTML documents themselves also got
+`Cache-Control: no-cache, no-store, must-revalidate` meta tags as a second layer —
+this helps normal browsers re-check the HTML on every load, but note in-app browsers
+don't always honor `<meta>` cache directives, which is exactly why the query-string
+approach on the assets is the part that actually guarantees a fix everywhere.
+
+If you have any control over your host's HTTP response headers (check wasmer.app's
+dashboard/docs), the most robust setup is: `Cache-Control: no-cache` on the `.html`
+files, and `Cache-Control: public, max-age=31536000, immutable` on the versioned
+`.css`/`.js` files — but the query-string versioning above works even without that.

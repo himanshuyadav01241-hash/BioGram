@@ -1,7 +1,7 @@
 // ==========================================================================
 // FIREBASE IMPORTS
 // ==========================================================================
-import { auth, db } from "./firebase.js";
+import { auth, db } from "./firebase.js?v=20260810a";
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 import { 
   doc, 
@@ -16,7 +16,7 @@ import {
   getDocs,
   limit
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
-import { isUserPremium, getSystemConfig, openMembershipModal } from "./membership.js";
+import { isUserPremium, getSystemConfig, openMembershipModal } from "./membership.js?v=20260810a";
 
 document.addEventListener('DOMContentLoaded', () => {
 
