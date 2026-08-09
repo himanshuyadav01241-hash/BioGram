@@ -1,0 +1,796 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BioGram — Admin & Moderation Panel</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  
+  <style>
+    /* ==========================================================================
+       Base & Root Variables
+       ========================================================================== */
+    :root {
+      --bg-primary: #0f172a;
+      --bg-secondary: #1e293b;
+      --bg-card: #1e293b;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --border-color: #334155;
+      --primary-color: #3b82f6;
+      --primary-hover: #2563eb;
+      --danger-color: #ef4444;
+      --danger-hover: #dc2626;
+      --secondary-color: #475569;
+      --secondary-hover: #334155;
+      --warning-color: #f59e0b;
+      --radius: 8px;
+      --transition: all 0.2s ease-in-out;
+    }
+
+    body.admin-body {
+      margin: 0;
+      padding: 0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      background-color: var(--bg-primary);
+      color: var(--text-main);
+      line-height: 1.5;
+    }
+
+    /* ==========================================================================
+       Layout Containers
+       ========================================================================== */
+    .admin-container {
+      max-width: 1280px;
+      margin: 0 auto;
+      padding: 2rem 1.5rem;
+    }
+
+    .admin-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 2rem;
+      padding-bottom: 1rem;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .admin-title {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .admin-title h2 {
+      margin: 0;
+      font-size: 1.5rem;
+      font-weight: 700;
+    }
+
+    .badge.owner-badge {
+      background-color: rgba(245, 158, 11, 0.15);
+      color: var(--warning-color);
+      border: 1px solid rgba(245, 158, 11, 0.3);
+      padding: 0.25rem 0.5rem;
+      border-radius: 4px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+    }
+
+    .nav-btn.outline {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.5rem 1rem;
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius);
+      color: var(--text-main);
+      text-decoration: none;
+      transition: var(--transition);
+    }
+
+    .nav-btn.outline:hover {
+      background-color: var(--bg-secondary);
+      border-color: var(--text-muted);
+    }
+
+    /* ==========================================================================
+       Stats Grid Section
+       ========================================================================== */
+    .admin-stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 1.25rem;
+      margin-bottom: 2rem;
+    }
+
+    .stat-card {
+      background-color: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius);
+      padding: 1.25rem;
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .stat-icon {
+      font-size: 1.75rem;
+      color: var(--primary-color);
+    }
+
+    .stat-icon.text-amber {
+      color: var(--warning-color);
+    }
+
+    .stat-icon.text-danger {
+      color: var(--danger-color);
+    }
+
+    .stat-label {
+      display: block;
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      margin-bottom: 0.25rem;
+    }
+
+    .stat-card h3 {
+      margin: 0;
+      font-size: 1.5rem;
+      font-weight: 700;
+    }
+
+    /* ==========================================================================
+       Admin Cards & Controls
+       ========================================================================== */
+    .admin-card {
+      background-color: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius);
+      padding: 1.5rem;
+      margin-bottom: 2rem;
+    }
+
+    .card-header h3 {
+      margin: 0 0 0.25rem 0;
+      font-size: 1.25rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .card-subtitle {
+      color: var(--text-muted);
+      font-size: 0.9rem;
+      margin: 0 0 1.25rem 0;
+    }
+
+    .admin-settings-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1.5rem;
+      margin-bottom: 1.25rem;
+    }
+
+    /* Custom Checkboxes */
+    .toggle-checkbox {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      cursor: pointer;
+      user-select: none;
+      font-size: 0.9rem;
+    }
+
+    .toggle-checkbox input {
+      display: none;
+    }
+
+    .checkbox-custom {
+      width: 18px;
+      height: 18px;
+      border: 2px solid var(--border-color);
+      border-radius: 4px;
+      background-color: var(--bg-primary);
+      display: inline-block;
+      position: relative;
+      transition: var(--transition);
+    }
+
+    .toggle-checkbox input:checked + .checkbox-custom {
+      background-color: var(--primary-color);
+      border-color: var(--primary-color);
+    }
+
+    .toggle-checkbox input:checked + .checkbox-custom::after {
+      content: '';
+      position: absolute;
+      left: 5px;
+      top: 2px;
+      width: 4px;
+      height: 8px;
+      border: solid white;
+      border-width: 0 2px 2px 0;
+      transform: rotate(45deg);
+    }
+
+    /* ==========================================================================
+       Form Controls & Buttons
+       ========================================================================== */
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    .form-group label {
+      font-size: 0.875rem;
+      font-weight: 500;
+      color: var(--text-muted);
+    }
+
+    .input-with-btn {
+      display: flex;
+      gap: 0.5rem;
+    }
+
+    .modal-input {
+      flex: 1;
+      background-color: var(--bg-primary);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius);
+      padding: 0.625rem 0.875rem;
+      color: var(--text-main);
+      font-size: 0.9rem;
+      outline: none;
+      transition: var(--transition);
+    }
+
+    .modal-input:focus {
+      border-color: var(--primary-color);
+    }
+
+    .input-with-prefix {
+      display: flex;
+      align-items: center;
+      background-color: var(--bg-primary);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+
+    .input-with-prefix span {
+      padding: 0.625rem 0.75rem;
+      background-color: rgba(255, 255, 255, 0.05);
+      color: var(--text-muted);
+      font-size: 0.875rem;
+      border-right: 1px solid var(--border-color);
+    }
+
+    .input-with-prefix .modal-input {
+      border: none;
+      border-radius: 0;
+    }
+
+    .btn-action {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.5rem 0.75rem;
+      border: 1px solid transparent;
+      border-radius: var(--radius);
+      font-weight: 600;
+      font-size: 0.85rem;
+      cursor: pointer;
+      transition: var(--transition);
+    }
+
+    .btn-primary {
+      background-color: var(--primary-color);
+      color: white;
+    }
+
+    .btn-primary:hover {
+      background-color: var(--primary-hover);
+    }
+
+    .btn-danger {
+      background-color: var(--danger-color);
+      color: white;
+    }
+
+    .btn-danger:hover {
+      background-color: var(--danger-hover);
+    }
+
+    .btn-secondary {
+      background-color: var(--secondary-color);
+      color: white;
+    }
+
+    .btn-secondary:hover {
+      background-color: var(--secondary-hover);
+    }
+
+    .btn-warn {
+      background-color: var(--warning-color);
+      color: #0f172a;
+    }
+
+    .btn-warn:hover {
+      background-color: #d97706;
+    }
+
+    .btn-success {
+      background-color: #22c55e;
+      color: white;
+    }
+
+    .btn-success:hover {
+      background-color: #16a34a;
+    }
+
+    /* ==========================================================================
+       Table & Badge Styling (Blur, Verified & Badges)
+       ========================================================================== */
+    .table-toolbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1.25rem;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+
+    .table-toolbar h3 {
+      margin: 0;
+      font-size: 1.25rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .search-box {
+      position: relative;
+      min-width: 280px;
+    }
+
+    .search-box i {
+      position: absolute;
+      left: 0.875rem;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--text-muted);
+    }
+
+    .search-box input {
+      width: 100%;
+      background-color: var(--bg-primary);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius);
+      padding: 0.5rem 0.875rem 0.5rem 2.5rem;
+      color: var(--text-main);
+      outline: none;
+      box-sizing: border-box;
+    }
+
+    .table-wrapper {
+      overflow-x: auto;
+    }
+
+    .admin-table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: left;
+    }
+
+    .admin-table th,
+    .admin-table td {
+      padding: 0.875rem 1rem;
+      border-bottom: 1px solid var(--border-color);
+      vertical-align: middle;
+    }
+
+    .admin-table th {
+      background-color: rgba(0, 0, 0, 0.2);
+      color: var(--text-muted);
+      font-weight: 600;
+      font-size: 0.85rem;
+      text-transform: uppercase;
+    }
+
+    .user-cell {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .table-avatar {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      object-fit: cover;
+    }
+
+    .action-buttons {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.35rem;
+    }
+
+    /* Blurred Text Effect */
+    .blurred-text {
+      filter: blur(5px);
+      user-select: none;
+      transition: var(--transition);
+    }
+
+    /* Status Badges */
+    .status-badge {
+      display: inline-block;
+      padding: 0.25rem 0.5rem;
+      border-radius: 4px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+    }
+
+    .status-active {
+      background-color: rgba(34, 197, 94, 0.15);
+      color: #22c55e;
+      border: 1px solid rgba(34, 197, 94, 0.3);
+    }
+
+    .status-banned {
+      background-color: rgba(239, 68, 68, 0.15);
+      color: var(--danger-color);
+      border: 1px solid rgba(239, 68, 68, 0.3);
+    }
+
+    .status-blurred {
+      background-color: rgba(148, 163, 184, 0.15);
+      color: var(--text-muted);
+      border: 1px solid rgba(148, 163, 184, 0.3);
+    }
+
+    .row-banned {
+      opacity: 0.6;
+    }
+
+    /* Verified Toggle Button Styles */
+    .badge-verified-toggle {
+      background-color: var(--secondary-color);
+      color: var(--text-muted);
+      border: 1px solid var(--border-color);
+    }
+
+    .badge-verified-toggle.active {
+      background-color: rgba(59, 130, 246, 0.2);
+      color: #60a5fa;
+      border: 1px solid var(--primary-color);
+    }
+
+    .views-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.25rem;
+      font-weight: 600;
+    }
+
+    .text-center { text-align: center; }
+    .py-4 { padding-top: 1rem; padding-bottom: 1rem; }
+
+    /* ==========================================================================
+       Modal Component
+       ========================================================================== */
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background-color: rgba(0, 0, 0, 0.7);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      backdrop-filter: blur(4px);
+    }
+
+    .modal-overlay.hidden {
+      display: none;
+    }
+
+    .modal-card {
+      background-color: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius);
+      width: 100%;
+      max-width: 480px;
+      padding: 1.5rem;
+      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5);
+    }
+
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1rem;
+    }
+
+    .modal-header h3 {
+      margin: 0;
+      font-size: 1.25rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .close-btn {
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      font-size: 1.5rem;
+      cursor: pointer;
+      line-height: 1;
+    }
+
+    .close-btn:hover {
+      color: var(--text-main);
+    }
+
+    .modal-body {
+      margin-bottom: 1.5rem;
+    }
+
+    .modal-subtitle {
+      color: var(--text-muted);
+      margin-top: 0;
+      margin-bottom: 1rem;
+    }
+
+    .modal-footer {
+      display: flex;
+      justify-content: flex-end;
+      gap: 0.75rem;
+    }
+  </style>
+</head>
+<body class="admin-body">
+
+  <div class="admin-container">
+    <!-- Header Navigation -->
+    <header class="admin-header">
+      <div class="admin-title">
+        <h2><i class="fa-solid fa-user-shield"></i> BioGram Admin Panel</h2>
+        <span class="badge owner-badge">OWNER ONLY</span>
+      </div>
+      <a href="index.html" class="nav-btn outline"><i class="fa-solid fa-arrow-left"></i> Back to Space</a>
+    </header>
+
+    <!-- Platform Health & Growth Stat Cards -->
+    <section class="admin-stats-grid">
+      <div class="stat-card">
+        <i class="fa-solid fa-users stat-icon"></i>
+        <div>
+          <span class="stat-label">Total Users</span>
+          <h3 id="stat-total-users">0</h3>
+        </div>
+      </div>
+      <div class="stat-card">
+        <i class="fa-solid fa-eye stat-icon"></i>
+        <div>
+          <span class="stat-label">Total Views</span>
+          <h3 id="stat-total-views">0</h3>
+        </div>
+      </div>
+      <div class="stat-card">
+        <i class="fa-solid fa-user-plus stat-icon"></i>
+        <div>
+          <span class="stat-label">Sign-ups (Today / Week)</span>
+          <h3><span id="stat-signups-today">0</span> / <span id="stat-signups-week">0</span></h3>
+        </div>
+      </div>
+      <div class="stat-card">
+        <i class="fa-solid fa-bolt stat-icon text-amber"></i>
+        <div>
+          <span class="stat-label">Active Spaces (30 Days)</span>
+          <h3 id="stat-active-spaces">0</h3>
+        </div>
+      </div>
+      <div class="stat-card">
+        <i class="fa-solid fa-ban stat-icon text-danger"></i>
+        <div>
+          <span class="stat-label">Banned Profiles</span>
+          <h3 id="stat-banned-users">0</h3>
+        </div>
+      </div>
+      <div class="stat-card">
+        <i class="fa-solid fa-crown stat-icon" style="color:#f59e0b;"></i>
+        <div>
+          <span class="stat-label">Pro Members</span>
+          <h3 id="stat-premium-users">0</h3>
+        </div>
+      </div>
+      <div class="stat-card">
+        <i class="fa-solid fa-sack-dollar stat-icon" style="color:#22c55e;"></i>
+        <div>
+          <span class="stat-label">Lifetime Revenue (est.)</span>
+          <h3 id="stat-total-revenue">₹0</h3>
+        </div>
+      </div>
+    </section>
+
+    <!-- Platform Controls & Announcements -->
+    <section class="admin-card">
+      <div class="card-header">
+        <h3><i class="fa-solid fa-sliders"></i> Platform Controls & Announcements</h3>
+      </div>
+      <p class="card-subtitle">Manage global switches and push live announcement banners to public pages.</p>
+      
+      <div class="admin-settings-row">
+        <label class="toggle-checkbox">
+          <input type="checkbox" id="toggle-maintenance-mode">
+          <span class="checkbox-custom"></span>
+          <span>Maintenance Mode (Lock Profile Edits)</span>
+        </label>
+
+        <label class="toggle-checkbox">
+          <input type="checkbox" id="global-blur-toggle">
+          <span class="checkbox-custom"></span>
+          <span>Blur handles on public leaderboard</span>
+        </label>
+
+        <label class="toggle-checkbox">
+          <input type="checkbox" id="force-owner-top-toggle" checked>
+          <span class="checkbox-custom"></span>
+          <span>Force Owner (@admin) to #1 Rank</span>
+        </label>
+      </div>
+
+      <!-- Banner Input Group -->
+      <div class="form-group">
+        <label for="global-announcement-input">Publish Top Announcement Banner</label>
+        <div class="input-with-btn">
+          <input type="text" id="global-announcement-input" class="modal-input" placeholder="e.g., Scheduled maintenance tonight at 12:00 AM UTC...">
+          <button id="btn-save-announcement" class="btn-action btn-primary"><i class="fa-solid fa-paper-plane"></i> Publish Banner</button>
+          <button id="btn-clear-announcement" class="btn-action btn-danger"><i class="fa-solid fa-trash"></i> Clear</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Membership & Monetization -->
+    <section class="admin-card">
+      <div class="card-header">
+        <h3><i class="fa-solid fa-crown" style="color:#f59e0b;"></i> Membership & Monetization</h3>
+      </div>
+      <p class="card-subtitle">Configure the BioGram Pro lifetime membership price and Razorpay checkout. Grant or revoke Pro access per-user from the table below.</p>
+
+      <div class="admin-settings-row" style="align-items:flex-end;">
+        <div class="form-group" style="min-width:180px;">
+          <label for="membership-price-input">Lifetime Price (₹ INR)</label>
+          <input type="number" id="membership-price-input" class="modal-input" min="0" placeholder="499">
+        </div>
+        <div class="form-group" style="min-width:260px; flex:1;">
+          <label for="razorpay-key-input">Razorpay Key ID</label>
+          <input type="text" id="razorpay-key-input" class="modal-input" placeholder="rzp_live_xxxxxxxxxxxx">
+        </div>
+        <div class="form-group" style="min-width:140px;">
+          <label for="free-media-limit-input">Free Gallery Limit</label>
+          <input type="number" id="free-media-limit-input" class="modal-input" min="0" placeholder="3">
+        </div>
+        <div class="form-group" style="min-width:140px;">
+          <label for="free-widget-limit-input">Free Custom Widgets</label>
+          <input type="number" id="free-widget-limit-input" class="modal-input" min="0" placeholder="1">
+        </div>
+      </div>
+
+      <div class="admin-settings-row">
+        <label class="toggle-checkbox">
+          <input type="checkbox" id="payments-enabled-toggle">
+          <span class="checkbox-custom"></span>
+          <span>Enable Razorpay Checkout (otherwise users see a manual "email to upgrade" link)</span>
+        </label>
+      </div>
+
+      <button id="btn-save-membership-settings" class="btn-action btn-primary">
+        <i class="fa-solid fa-floppy-disk"></i> Save Membership Settings
+      </button>
+      <p class="card-subtitle" style="margin:0.75rem 0 0; font-size:0.78rem;">
+        <i class="fa-solid fa-triangle-exclamation" style="color:var(--warning-color);"></i>
+        This app has no payment backend, so successful checkouts optimistically grant Pro access client-side. For production use, verify payments server-side (e.g. a Cloud Function webhook) before trusting <code>isPremium</code>.
+      </p>
+    </section>
+
+    <!-- User Management Table -->
+    <section class="admin-card">
+      <div class="table-toolbar">
+        <h3><i class="fa-solid fa-users-gear"></i> All Registered Profiles</h3>
+        <div style="display:flex; gap:0.75rem; flex-wrap:wrap; align-items:center;">
+          <div class="search-box">
+            <i class="fa-solid fa-magnifying-glass"></i>
+            <input type="text" id="admin-search-input" placeholder="Search profiles by handle, name, or UID...">
+          </div>
+          <button id="btn-export-users" class="btn-action btn-secondary" type="button">
+            <i class="fa-solid fa-file-csv"></i> Export CSV
+          </button>
+        </div>
+      </div>
+
+      <div class="table-wrapper">
+        <table class="admin-table">
+          <thead>
+            <tr>
+              <th>Rank</th>
+              <th>User</th>
+              <th>Handle</th>
+              <th>Views</th>
+              <th>Status</th>
+              <th>Verified</th>
+              <th>Leaderboard</th>
+              <th>Membership</th>
+              <th class="text-center">Actions</th>
+            </tr>
+          </thead>
+          <tbody id="admin-users-tbody">
+            <tr>
+              <td colspan="9" class="text-center py-4">Loading profiles...</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </div>
+
+  <!-- Modify User Views Modal -->
+  <div id="edit-views-modal" class="modal-overlay hidden">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3><i class="fa-solid fa-pen-to-square"></i> Modify User Views</h3>
+        <button id="cancel-edit-views-btn" class="close-btn">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p id="edit-views-user-label" class="modal-subtitle">User: @handle</p>
+        
+        <div class="form-group">
+          <label for="edit-views-input">New View Count</label>
+          <input type="number" id="edit-views-input" class="modal-input" min="0" placeholder="e.g. 5000">
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button id="modal-cancel-btn" class="btn-action btn-secondary">Cancel</button>
+        <button id="save-views-btn" class="btn-action btn-primary">Save Changes</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Reassign Handle Modal -->
+  <div id="reassign-handle-modal" class="modal-overlay hidden">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3><i class="fa-solid fa-at"></i> Reassign User Handle</h3>
+        <button id="cancel-reassign-handle-btn" class="close-btn">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p id="reassign-handle-user-label" class="modal-subtitle">Reassigning handle for: @user</p>
+        
+        <div class="form-group">
+          <label for="reassign-handle-input">New Username Handle</label>
+          <div class="input-with-prefix">
+            <span>profile.html?u=</span>
+            <input type="text" id="reassign-handle-input" class="modal-input" placeholder="newusername">
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button id="modal-cancel-handle-btn" class="btn-action btn-secondary">Cancel</button>
+        <button id="save-handle-btn" class="btn-action btn-primary">Reassign Handle</button>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="js/admin.js"></script>
+</body>
+</html>
