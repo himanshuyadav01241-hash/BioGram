@@ -1,7 +1,7 @@
 // ==========================================================================
 // 1. FIREBASE IMPORTS
 // ==========================================================================
-import { auth, db, googleProvider } from "./firebase.js?v=20260813a";
+import { auth, db, googleProvider } from "./firebase.js?v=20260815a";
 import { 
   signInWithPopup, 
   onAuthStateChanged, 
@@ -16,7 +16,7 @@ import {
   runTransaction,
   onSnapshot
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
-import { renderPremiumCrown } from "./membership.js?v=20260813a";
+import { renderPremiumCrown } from "./membership.js?v=20260815a";
 
 // ==========================================================================
 // 2. HELPER UTILITIES

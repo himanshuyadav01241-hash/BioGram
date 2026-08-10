@@ -181,3 +181,65 @@ were stuck in the worst combination of both modes.
 
 Net effect: landscape phones now get the same stacked layout + Reorder button
 flow as portrait, instead of a broken absolute layout with no working drag.
+
+## Mobile layout: from a flat stack to a bento grid
+
+Mobile went from "boring single column" to a proper bento-style grid:
+
+- **Mixed card sizes.** Profile, Media Gallery, Spotify, Discord, Countdown, and
+  Custom Widgets stay full-width; Clock, Socials, and Rank now sit two-up as
+  half-width tiles — same idea as the "bento box" layouts you see in modern app
+  dashboards, instead of one long column of identical blocks.
+- **Staggered entrance animation.** Cards fade + slide in one after another on
+  load instead of all popping in at once (respects `prefers-reduced-motion`).
+- **Accent-color stripe.** Every card now shows a thin accent-colored line along
+  its top edge, tied to the same accent color BioGram Pro members pick in the
+  editor — a bit of personality instead of a wall of identical dark cards.
+- **Tap feedback.** Cards scale down slightly on touch for a more tactile feel.
+
+The Reorder feature (▲▼ buttons) works exactly as before — CSS `order` reorders
+grid items the same way it reordered the old flex column, so nothing about that
+flow changed.
+
+Desktop is untouched — still the free-drag "widget space" it always was.
+
+## New Pro features (PC + mobile)
+
+- **Insights panel.** Real analytics for space owners, not just cosmetics: Total
+  Views, Views Today, current Rank, and a click-through count for every Custom
+  Widget link — all sorted by most-clicked. Opens from a new "Insights" button in
+  the bottom action bar (owner + Pro only). Backed by real tracking: daily views
+  reset automatically at midnight (`viewsToday`/`viewsTodayDate` on the user doc),
+  and every Custom Widget link click increments `customWidgetClicks` on the space
+  doc.
+- **Avatar glow ring** — an animated pulsing gold ring around the avatar for Pro
+  spaces. Purely a visible "flex" perk, respects `prefers-reduced-motion`.
+- **Custom badge/tag** next to the display name (e.g. "🎮 Pro Gamer"), up to 24
+  characters, Pro-gated in the editor.
+- **Custom browser tab title + favicon** — Pro spaces set the browser tab to
+  "`<Name> | BioGram`" with a favicon pulled from the owner's own avatar.
+
+## Bug fix: Verified checkmark showing on every profile
+
+Found while wiring up the new badge: the ✔️ verified checkmark next to the display
+name was rendering **unconditionally on every single profile**, regardless of the
+actual `isVerified` field on the user's account. It's now correctly gated —
+only shows when an admin has actually verified that account.
+
+## Mobile polish (free, everyone)
+
+- **Sticky mini-header** — avatar + name slide in from the top once you scroll
+  past the profile card, so identity stays visible while browsing a long space.
+  Positioned and z-indexed so it never covers the audio control or QR share icon
+  in the corners — those stay clickable on top of it.
+- **Haptic tap feedback** on Reorder toggle, reorder up/down moves, and a
+  successful Save. Uses `navigator.vibrate()` (Android Chrome); iOS Safari has no
+  such API, so it's a silent no-op there — not a bug, just an iOS platform
+  limitation.
+
+## New system/config-adjacent Firestore fields
+- `users/{uid}`: `viewsToday`, `viewsTodayDate`
+- `users_spaces/{uid}`: `customWidgetClicks` (map, keyed by widget index),
+  `customBadgeText`
+
+All default gracefully when absent — safe to deploy over existing data as always.

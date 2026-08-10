@@ -1746,6 +1746,147 @@ body {
 }
 
 /* ==========================================================================
+   15. BIOGRAM PRO: INSIGHTS PANEL
+   ========================================================================== */
+.insights-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 62000;
+  background: rgba(10,10,20,0.75);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+.insights-overlay.hidden { display: none !important; }
+
+.insights-card {
+  background: var(--bg-card, #fff);
+  color: var(--text-main, #111827);
+  width: 100%;
+  max-width: 420px;
+  border-radius: 22px;
+  padding: 24px;
+  position: relative;
+  max-height: 85vh;
+  overflow-y: auto;
+  box-shadow: 0 30px 80px rgba(0,0,0,0.4);
+}
+
+.insights-card h3 {
+  margin: 0 0 16px;
+  font-size: 1.1rem;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.insights-card h4 {
+  margin: 18px 0 10px;
+  font-size: 0.82rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  color: var(--text-muted, #6b7280);
+}
+
+.insights-close {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  background: none;
+  border: none;
+  font-size: 1.4rem;
+  cursor: pointer;
+  color: var(--text-muted, #6b7280);
+}
+
+.insights-stat-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+
+.insights-stat {
+  background: rgba(99,102,241,0.08);
+  border-radius: 14px;
+  padding: 14px 8px;
+  text-align: center;
+}
+
+.insights-stat span {
+  display: block;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 1.4rem;
+  font-weight: 800;
+  color: #6366f1;
+}
+
+.insights-stat label {
+  font-size: 0.66rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--text-muted, #6b7280);
+}
+
+.insights-click-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.insights-click-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 10px;
+  background: rgba(0,0,0,0.03);
+  border-radius: 10px;
+  font-size: 0.82rem;
+}
+
+.insights-empty-note {
+  font-size: 0.8rem;
+  color: var(--text-muted, #6b7280);
+  text-align: center;
+  padding: 8px 0;
+}
+
+/* ==========================================================================
+   16. BIOGRAM PRO: AVATAR GLOW + CUSTOM NAME BADGE
+   ========================================================================== */
+@keyframes avatarProPulse {
+  0%, 100% { box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.9), 0 0 18px 4px rgba(245, 158, 11, 0.35); }
+  50%      { box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.9), 0 0 28px 9px rgba(245, 158, 11, 0.55); }
+}
+
+.avatar-pro-glow {
+  border-radius: 50%;
+  animation: avatarProPulse 2.6s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .avatar-pro-glow { animation: none; box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.9); }
+}
+
+.custom-name-badge {
+  display: inline-flex;
+  align-items: center;
+  vertical-align: middle;
+  margin-left: 6px;
+  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  color: #fff;
+  font-size: 0.65rem;
+  font-weight: 800;
+  padding: 3px 9px;
+  border-radius: 20px;
+  white-space: nowrap;
+}
+
+/* ==========================================================================
    14. MOBILE FINE-TUNING FOR NEW UI
    ========================================================================== */
 @media (max-width: 900px) {

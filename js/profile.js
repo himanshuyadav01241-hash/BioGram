@@ -1,7 +1,7 @@
 // ==========================================================================
 // FIREBASE IMPORTS
 // ==========================================================================
-import { auth, db } from "./firebase.js?v=20260813a";
+import { auth, db } from "./firebase.js?v=20260815a";
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 import { 
   doc, 
@@ -16,7 +16,7 @@ import {
   getDocs,
   limit
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
-import { isUserPremium, getSystemConfig, openMembershipModal, resolveCanonicalProfileUrl } from "./membership.js?v=20260813a";
+import { isUserPremium, getSystemConfig, openMembershipModal, resolveCanonicalProfileUrl } from "./membership.js?v=20260815a";
 
 document.addEventListener('DOMContentLoaded', () => {
 
@@ -38,6 +38,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const resetPositionsBtn = document.getElementById("reset-positions-btn");
   const toggleLockBtn = document.getElementById("toggle-lock-btn");
   const toggleReorderBtn = document.getElementById("toggle-reorder-btn");
+  const insightsBtn = document.getElementById("open-insights-btn");
 
   const mediaPrevBtn = document.getElementById("media-prev-btn");
   const mediaNextBtn = document.getElementById("media-next-btn");
@@ -160,6 +161,10 @@ document.addEventListener('DOMContentLoaded', () => {
     if (toggleLockBtn) toggleLockBtn.style.display = canEdit ? "inline-flex" : "none";
     if (resetPositionsBtn) resetPositionsBtn.style.display = canEdit ? "inline-flex" : "none";
     if (toggleReorderBtn) toggleReorderBtn.style.display = (canEdit && isMobile()) ? "inline-flex" : "none";
+    // Insights is a BioGram Pro perk for the space owner only — isViewerPremium
+    // reflects the space OWNER's Pro status (see renderProfileSpace), which is
+    // exactly what should gate this.
+    if (insightsBtn) insightsBtn.classList.toggle("hidden", !(canEdit && isViewerPremium));
   };
 
   // ==========================================================================
@@ -178,8 +183,23 @@ document.addEventListener('DOMContentLoaded', () => {
     try {
       sessionStorage.setItem(sessionKey, 'true');
       const userRef = doc(db, "users", targetUid);
+
+      // Daily view count (BioGram Pro Insights panel) — reset when the stored
+      // date no longer matches today. Best-effort, not transactional: a rare
+      // concurrent-reset race just under-counts by one view, which is fine for
+      // an at-a-glance stat, not a billing-critical number.
+      const todayStr = new Date().toISOString().slice(0, 10);
+      let dailyUpdate = { viewsToday: increment(1), viewsTodayDate: todayStr };
+      try {
+        const snap = await getDoc(userRef);
+        if (snap.exists() && snap.data().viewsTodayDate !== todayStr) {
+          dailyUpdate = { viewsToday: 1, viewsTodayDate: todayStr };
+        }
+      } catch (e) { /* fall back to increment */ }
+
       await updateDoc(userRef, {
-        views: increment(1)
+        views: increment(1),
+        ...dailyUpdate
       });
       
       // Update local state views visually
@@ -193,6 +213,16 @@ document.addEventListener('DOMContentLoaded', () => {
     } catch (e) {
       console.warn("Could not track profile view:", e);
     }
+  };
+
+  // Fire-and-forget click counter for custom widget links (BioGram Pro Insights).
+  const trackCustomWidgetClick = (targetUid, widgetIndex) => {
+    if (!targetUid) return;
+    try {
+      updateDoc(doc(db, "users_spaces", targetUid), {
+        [`customWidgetClicks.${widgetIndex}`]: increment(1)
+      }).catch(() => { /* best-effort, ignore failures (e.g. doc doesn't exist yet) */ });
+    } catch (e) { /* ignore */ }
   };
 
   // ==========================================================================
@@ -574,6 +604,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const swapIdx = idx + direction;
     if (idx === -1 || swapIdx < 0 || swapIdx >= visibleCards.length) return;
 
+    hapticTap(8);
+
     // Swap order values between the two cards
     const currentOrder = parseInt(card.style.order, 10) || idx;
     const otherCard = visibleCards[swapIdx];
@@ -623,6 +655,7 @@ document.addEventListener('DOMContentLoaded', () => {
       alert("You don't have permission to modify this space.");
       return;
     }
+    hapticTap(12);
     setReorderMode(!isReorderModeActive);
   });
 
@@ -686,6 +719,85 @@ document.addEventListener('DOMContentLoaded', () => {
 
   document.getElementById("qr-share-icon-btn")?.addEventListener('click', () => {
     openQrFullscreen();
+  });
+
+  // ==========================================================================
+  // BIOGRAM PRO: INSIGHTS PANEL — real analytics for the space owner
+  // (total views, views today, current rank, custom widget click-throughs)
+  // ==========================================================================
+  const buildInsightsModal = () => {
+    let modal = document.getElementById("insights-modal");
+    if (modal) return modal;
+
+    modal = document.createElement("div");
+    modal.id = "insights-modal";
+    modal.className = "insights-overlay hidden";
+    modal.innerHTML = `
+      <div class="insights-card">
+        <button type="button" id="insights-close-btn" class="insights-close" aria-label="Close">&times;</button>
+        <h3><i class="fa-solid fa-chart-line"></i> Insights <span class="pro-lock-chip"><i class="fa-solid fa-crown"></i> Pro</span></h3>
+        <div class="insights-stat-grid">
+          <div class="insights-stat"><span id="insights-total-views">--</span><label>Total Views</label></div>
+          <div class="insights-stat"><span id="insights-today-views">--</span><label>Views Today</label></div>
+          <div class="insights-stat"><span id="insights-rank">--</span><label>Rank</label></div>
+        </div>
+        <h4>Custom Widget Clicks</h4>
+        <div id="insights-widget-clicks" class="insights-click-list">
+          <p class="insights-empty-note">No custom widgets with clicks yet.</p>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(modal);
+
+    modal.addEventListener('click', (e) => { if (e.target === modal) modal.classList.add('hidden'); });
+    modal.querySelector('#insights-close-btn').addEventListener('click', () => modal.classList.add('hidden'));
+
+    return modal;
+  };
+
+  const openInsightsPanel = async () => {
+    const modal = buildInsightsModal();
+    modal.classList.remove('hidden');
+
+    const totalEl = modal.querySelector('#insights-total-views');
+    const todayEl = modal.querySelector('#insights-today-views');
+    const rankEl = modal.querySelector('#insights-rank');
+    const clicksEl = modal.querySelector('#insights-widget-clicks');
+
+    totalEl.textContent = Number(currentLoadedUserData?.views || 0).toLocaleString();
+
+    const todayStr = new Date().toISOString().slice(0, 10);
+    const viewsToday = currentLoadedUserData?.viewsTodayDate === todayStr
+      ? Number(currentLoadedUserData?.viewsToday || 0)
+      : 0;
+    todayEl.textContent = viewsToday.toLocaleString();
+
+    rankEl.textContent = "…";
+    const computedRank = await computeUserRank(targetUserId);
+    rankEl.textContent = computedRank ? `#${computedRank}` : "—";
+
+    const clicksMap = activeSpaceConfig.customWidgetClicks || {};
+    const widgets = Array.isArray(activeSpaceConfig.customWidgets) ? activeSpaceConfig.customWidgets : [];
+    const rows = widgets
+      .map((w, idx) => ({ title: w.title || `Widget ${idx + 1}`, clicks: Number(clicksMap[idx]) || 0 }))
+      .filter(r => r.clicks > 0)
+      .sort((a, b) => b.clicks - a.clicks);
+
+    if (rows.length === 0) {
+      clicksEl.innerHTML = `<p class="insights-empty-note">No custom widgets with clicks yet.</p>`;
+    } else {
+      clicksEl.innerHTML = rows.map(r => `
+        <div class="insights-click-row">
+          <span>${escapeHtml(r.title)}</span>
+          <strong>${r.clicks.toLocaleString()} click${r.clicks === 1 ? '' : 's'}</strong>
+        </div>
+      `).join("");
+    }
+  };
+
+  insightsBtn?.addEventListener('click', () => {
+    if (!canEditCurrentProfile(auth.currentUser) || !isViewerPremium) return;
+    openInsightsPanel();
   });
 
   // ==========================================================================
@@ -776,6 +888,13 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
+  document.getElementById("edit-custom-badge")?.addEventListener('focus', (e) => {
+    if (!isViewerPremium) {
+      e.target.blur();
+      openMembershipModal();
+    }
+  });
+
   window.addEventListener('resize', () => {
     if (activeSpaceConfig) {
       applySavedPositions(activeSpaceConfig.widgetPositions);
@@ -794,6 +913,25 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     }, 150);
   });
+
+  // Haptic tap feedback — Android Chrome supports navigator.vibrate(); iOS Safari
+  // doesn't expose it at all, so this silently no-ops there rather than erroring.
+  const hapticTap = (ms = 10) => {
+    try { navigator.vibrate?.(ms); } catch (e) { /* ignore */ }
+  };
+
+  // Mobile sticky mini-header: reveal once scrolled past the profile card,
+  // hide again near the top. Throttled to one check per animation frame.
+  const stickyHeaderEl = document.getElementById("mobile-sticky-header");
+  let stickyHeaderScrollTicking = false;
+  window.addEventListener('scroll', () => {
+    if (!stickyHeaderEl || stickyHeaderScrollTicking) return;
+    stickyHeaderScrollTicking = true;
+    requestAnimationFrame(() => {
+      stickyHeaderEl.classList.toggle('visible', window.scrollY > 260);
+      stickyHeaderScrollTicking = false;
+    });
+  }, { passive: true });
 
   resetPositionsBtn?.addEventListener('click', async () => {
     if (!canEditCurrentProfile(auth.currentUser)) {
@@ -885,11 +1023,28 @@ document.addEventListener('DOMContentLoaded', () => {
         photoUrl = `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(seed)}`;
       }
       avatarImg.src = photoUrl;
+      // BioGram Pro: animated glow ring around the avatar — a visible "flex"
+      // perk, tied to the space owner's Pro status.
+      avatarImg.classList.toggle('avatar-pro-glow', isViewerPremium);
     }
 
     if (displayNameEl) {
       const name = spaceData?.displayName || userData?.displayName || "User";
-      displayNameEl.innerHTML = `${escapeHtml(name)} <i class="fa-solid fa-circle-check verified-icon" style="color: var(--primary-color, #3b82f6);"></i>`;
+      // FIX: the verified checkmark used to render unconditionally on every
+      // profile regardless of actual isVerified status. Now gated correctly.
+      const isVerified = userData?.isVerified === true;
+      const badgeText = (spaceData?.customBadgeText || "").trim();
+      displayNameEl.innerHTML = `
+        ${escapeHtml(name)}
+        ${isVerified ? '<i class="fa-solid fa-circle-check verified-icon" style="color: var(--primary-color, #3b82f6);" title="Verified"></i>' : ''}
+        ${isViewerPremium && badgeText ? `<span class="custom-name-badge">${escapeHtml(badgeText)}</span>` : ''}
+      `;
+
+      // Keep the mobile sticky header in sync with the same name/avatar
+      const stickyName = document.getElementById("sticky-header-name");
+      const stickyAvatar = document.getElementById("sticky-header-avatar");
+      if (stickyName) stickyName.textContent = name;
+      if (stickyAvatar && avatarImg) stickyAvatar.src = avatarImg.src;
     }
 
     if (handleEl) {
@@ -1390,7 +1545,7 @@ document.addEventListener('DOMContentLoaded', () => {
     validItems.forEach((item, index) => {
       const card = document.createElement('div');
       card.id = `custom_widget_${index + 1}`;
-      card.className = 'glass-widget-card custom-widget-card preset-glass-transparent custom-widget-dynamic';
+      card.className = 'glass-widget-card widget-wide custom-widget-card preset-glass-transparent custom-widget-dynamic';
 
       const imgHtml = item.imageUrl
         ? `<img src="${escapeHtml(item.imageUrl)}" alt="${escapeHtml(item.title)}" loading="lazy">`
@@ -1408,6 +1563,11 @@ document.addEventListener('DOMContentLoaded', () => {
         </div>
       `;
       anchor.appendChild(card);
+
+      const linkEl = card.querySelector('.cw-link');
+      if (linkEl) {
+        linkEl.addEventListener('click', () => trackCustomWidgetClick(targetUserId, index));
+      }
     });
   };
 
@@ -1435,6 +1595,22 @@ document.addEventListener('DOMContentLoaded', () => {
     // Branding footer only shows for non-Pro members
     if (spaceBrandingFooter) {
       spaceBrandingFooter.classList.toggle("hidden", isViewerPremium);
+    }
+
+    // BioGram Pro: custom browser tab title + favicon using the owner's own avatar
+    const spaceDisplayName = spaceData?.displayName || userData?.displayName || "";
+    if (isViewerPremium && spaceDisplayName) {
+      document.title = `${spaceDisplayName} | BioGram`;
+      let faviconLink = document.querySelector('link[rel="icon"]');
+      if (!faviconLink) {
+        faviconLink = document.createElement('link');
+        faviconLink.rel = "icon";
+        document.head.appendChild(faviconLink);
+      }
+      const faviconUrl = spaceData?.customAvatarUrl || userData?.photoURL;
+      if (faviconUrl && faviconUrl.trim()) faviconLink.href = faviconUrl.trim();
+    } else {
+      document.title = "BioGram — Custom Space";
     }
 
     const audioUrl = spaceData?.audioUrl || spaceData?.bgAudioUrl || "";
@@ -1558,6 +1734,14 @@ document.addEventListener('DOMContentLoaded', () => {
     const qrProChip = document.getElementById("qr-pro-chip");
     if (qrProChip) qrProChip.style.display = isViewerPremium ? "none" : "inline-flex";
     setCheckboxValue("edit-show-qr", null, activeSpaceConfig.showQr === true && isViewerPremium);
+
+    const badgeProChip = document.getElementById("badge-pro-chip");
+    if (badgeProChip) badgeProChip.style.display = isViewerPremium ? "none" : "inline-flex";
+    const customBadgeInput = document.getElementById("edit-custom-badge");
+    if (customBadgeInput) {
+      customBadgeInput.value = activeSpaceConfig.customBadgeText || "";
+      customBadgeInput.readOnly = !isViewerPremium;
+    }
 
     const formatSelect = document.getElementById("edit-clock-format") || document.getElementById("modal-clock-format");
     if (formatSelect) formatSelect.value = activeSpaceConfig.clockFormat || "12h";
@@ -1720,7 +1904,8 @@ document.addEventListener('DOMContentLoaded', () => {
       countdownTarget: countdownTargetIso,
       socials: parsedSocials,
       customWidgets: customWidgetsList,
-      mediaImages: mediaImagesList
+      mediaImages: mediaImagesList,
+      customBadgeText: isViewerPremium ? getInputValue("edit-custom-badge").slice(0, 24) : (activeSpaceConfig.customBadgeText || "")
     };
 
     if (targetUserId) {
@@ -1729,6 +1914,7 @@ document.addEventListener('DOMContentLoaded', () => {
         activeSpaceConfig = updatedConfig;
         await renderProfileSpace(currentLoadedUserData, activeSpaceConfig, auth.currentUser);
         if (editorModal) editorModal.classList.add("hidden");
+        hapticTap(15);
         alert(limitNotices.length
           ? `Space updated! Note: BioGram Pro limits were applied to ${limitNotices.join(" and ")}. Upgrade for unlimited.`
           : "Space updated successfully!");

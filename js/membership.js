@@ -3,7 +3,7 @@
 // Shared lifetime-membership (₹ INR) modal + premium-status helpers.
 // Import { openMembershipModal, getSystemConfig, isUserPremium } wherever needed.
 // ==========================================================================
-import { auth, db } from "./firebase.js?v=20260813a";
+import { auth, db } from "./firebase.js?v=20260815a";
 import { doc, getDoc, setDoc, increment } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
 let cachedSystemConfig = null;
@@ -140,10 +140,13 @@ const buildModal = () => {
 };
 
 const FEATURES = [
+  "Real Insights panel — total views, views today, rank, and widget click stats",
   "All glass design themes, including exclusive Pro-only presets",
   "Custom accent color picker for your whole space",
+  "Animated glow ring around your avatar + a custom name badge/tag",
   "Scannable QR code widget linking to your space",
   "Unlimited media gallery images & custom link widgets",
+  "Custom browser tab title & favicon using your own avatar",
   "Animated background particles & premium layout effects",
   "No 'Powered by BioGram' badge on your public space",
   "Gold Pro crown badge on your profile & the leaderboard",
