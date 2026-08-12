@@ -3,7 +3,7 @@
 // Shared lifetime-membership (₹ INR) modal + premium-status helpers.
 // Import { openMembershipModal, getSystemConfig, isUserPremium } wherever needed.
 // ==========================================================================
-import { auth, db } from "./firebase.js?v=20260815a";
+import { auth, db } from "./firebase.js?v=20260816a";
 import { doc, getDoc, setDoc, increment } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
 let cachedSystemConfig = null;

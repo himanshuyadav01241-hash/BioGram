@@ -1,7 +1,7 @@
 // ==========================================================================
 // FIREBASE IMPORTS
 // ==========================================================================
-import { auth, db } from "./firebase.js?v=20260815a";
+import { auth, db } from "./firebase.js?v=20260816a";
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 import { 
   doc, 
@@ -16,7 +16,7 @@ import {
   getDocs,
   limit
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
-import { isUserPremium, getSystemConfig, openMembershipModal, resolveCanonicalProfileUrl } from "./membership.js?v=20260815a";
+import { isUserPremium, getSystemConfig, openMembershipModal, resolveCanonicalProfileUrl } from "./membership.js?v=20260816a";
 
 document.addEventListener('DOMContentLoaded', () => {
 
@@ -59,9 +59,26 @@ document.addEventListener('DOMContentLoaded', () => {
   let isLayoutLocked = true; 
   let discordTimerInterval = null;
   let countdownInterval = null;
-  let isReorderModeActive = false;
   let isViewerPremium = false;
   let siteConfig = { freeMediaLimit: 3, freeCustomWidgetLimit: 1 };
+
+  // Mobile freeform canvas state (pan/zoom/drag) — declared up here, not down
+  // near the functions that use them, because updateLockStateUI() reads
+  // isArrangeModeActive and runs synchronously during initial setup, before
+  // the canvas section further down the file would otherwise declare it.
+  const CANVAS_MIN_SCALE = 0.3;
+  const CANVAS_MAX_SCALE = 1.75;
+  let canvasScale = 1;
+  let canvasPanX = 0;
+  let canvasPanY = 0;
+  let isArrangeModeActive = false;
+  let draggingCardEl = null;
+  const activeCanvasPointers = new Map(); // pointerId -> {x, y}
+  let pinchStartDistance = 0;
+  let pinchStartScale = 1;
+  let isPanningCanvas = false;
+  let panStartX = 0, panStartY = 0;
+  let panPointerStartX = 0, panPointerStartY = 0;
 
   // A phone in landscape is often WIDER than 600px (typically 700-900px), so a
   // width-only check misclassifies it as "desktop" — which then renders widgets at
@@ -72,7 +89,6 @@ document.addEventListener('DOMContentLoaded', () => {
   const isTouchDevice = () => ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
   const isMobile = () => window.innerWidth <= 600 || (isTouchDevice() && window.innerHeight <= 600);
   const getLocalStorageKey = () => targetUserId ? `biogram_space_layout_cache_${targetUserId}` : 'biogram_space_layout_cache_guest';
-  const getOrderStorageKey = () => targetUserId ? `biogram_widget_order_cache_${targetUserId}` : 'biogram_widget_order_cache_guest';
 
   // Helper functions
   const getInputValue = (id1, id2) => {
@@ -321,7 +337,6 @@ document.addEventListener('DOMContentLoaded', () => {
   };
 
   const saveLayoutToLocalStorage = () => {
-    if (isMobile()) return;
     const positions = getLayoutPositionsDict();
     const cacheKey = getLocalStorageKey();
     if (Object.keys(positions).length > 0) {
@@ -331,21 +346,12 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   };
 
+  // Applies saved widgetPositions to every card — used by BOTH desktop and
+  // mobile now, since they share the same coordinate space (mobile just views
+  // it through a pannable/zoomable canvas — see initMobileCanvasLayout below).
   const applySavedPositions = (savedPositions) => {
     ensureWidgetCardIds();
     const cards = document.querySelectorAll('.glass-widget-card');
-
-    if (isMobile()) {
-      cards.forEach(card => {
-        card.style.position = '';
-        card.style.left = '';
-        card.style.top = '';
-        card.style.margin = '';
-      });
-      if (spaceContainer) spaceContainer.style.minHeight = '';
-      isLayoutAbsolute = false;
-      return;
-    }
 
     let positionsToApply = savedPositions;
     if (!positionsToApply || Object.keys(positionsToApply).length === 0) {
@@ -425,26 +431,31 @@ document.addEventListener('DOMContentLoaded', () => {
 
   const updateLockStateUI = () => {
     const cards = document.querySelectorAll('.glass-widget-card');
-    
+
     cards.forEach(card => {
-      if (isLayoutLocked || isMobile()) {
-        card.style.cursor = 'default';
-        card.classList.remove('can-drag');
-      } else {
+      const draggableNow = isMobile() ? isArrangeModeActive : !isLayoutLocked;
+      if (draggableNow) {
         card.style.cursor = 'grab';
         card.classList.add('can-drag');
+      } else {
+        card.style.cursor = 'default';
+        card.classList.remove('can-drag');
       }
     });
 
     if (toggleReorderBtn) {
       toggleReorderBtn.style.display = (isMobile() && canEditCurrentProfile(auth.currentUser)) ? "inline-flex" : "none";
-      if (!isMobile() && isReorderModeActive) {
-        isReorderModeActive = false;
-        document.body.classList.remove('reorder-mode-active');
-        toggleReorderBtn.innerHTML = `<i class="fa-solid fa-arrow-up-down"></i> <span>Reorder</span>`;
+      if (!isMobile() && isArrangeModeActive) {
+        isArrangeModeActive = false;
+        document.body.classList.remove('arrange-mode-active');
+        document.getElementById('canvas-hint-pill')?.remove();
+        toggleReorderBtn.innerHTML = `<i class="fa-solid fa-arrows-up-down-left-right"></i> <span>Arrange</span>`;
         toggleReorderBtn.classList.remove('active-unlock');
       }
     }
+
+    // Pinch-zoom controls only make sense on the mobile canvas.
+    document.getElementById('mobile-canvas-zoom-controls')?.classList.toggle('hidden', !isMobile());
 
     if (toggleLockBtn) {
       if (isMobile()) {
@@ -459,6 +470,13 @@ document.addEventListener('DOMContentLoaded', () => {
           toggleLockBtn.classList.add('active-unlock');
         }
       }
+    }
+
+    // With "Locked" gone, mobile only ever shows Reorder + Insights + Customize —
+    // shorten the longest label so it doesn't get clipped in the remaining space.
+    const editorLabelSpan = openEditorBtn?.querySelector('span');
+    if (editorLabelSpan) {
+      editorLabelSpan.textContent = isMobile() ? "Customize" : "Customize Space";
     }
   };
 
@@ -496,49 +514,72 @@ document.addEventListener('DOMContentLoaded', () => {
     let isDragging = false;
     let offsetX = 0;
     let offsetY = 0;
+    let activePointerId = null;
 
     card.querySelectorAll('img').forEach(img => img.ondragstart = (e) => e.preventDefault());
 
-    const startDrag = (e, clientX, clientY, target) => {
-      if (isLayoutLocked || isMobile() || !canEditCurrentProfile(auth.currentUser)) return;
-      if (target.closest('button, input, textarea, a, i, iframe, select, .no-drag')) return;
+    // Desktop: draggable once unlocked. Mobile: draggable while Arrange mode is
+    // on (pan/pinch-zoom stay available outside Arrange mode; dragging a widget
+    // does not).
+    const canDragNow = () => {
+      if (!canEditCurrentProfile(auth.currentUser)) return false;
+      return isMobile() ? isArrangeModeActive : !isLayoutLocked;
+    };
 
-      if (e && e.preventDefault) e.preventDefault();
-      if (!isLayoutAbsolute) convertAllToAbsolute();
+    const startDrag = (e) => {
+      if (!canDragNow()) return;
+      if (e.target.closest('button, input, textarea, a, i, iframe, select, .no-drag')) return;
+      // Don't hijack a two-finger pinch gesture as a single-card drag.
+      if (e.pointerType === 'touch' && activeCanvasPointers.size > 1) return;
+
+      e.preventDefault();
+      if (!isMobile() && !isLayoutAbsolute) convertAllToAbsolute();
 
       isDragging = true;
+      activePointerId = e.pointerId;
+      draggingCardEl = card;
+      card.classList.add('dragging-live');
+      try { card.setPointerCapture(e.pointerId); } catch (err) { /* ignore */ }
+
       card.style.zIndex = '1000';
       card.style.cursor = 'grabbing';
 
       const cardRect = card.getBoundingClientRect();
-      offsetX = clientX - cardRect.left;
-      offsetY = clientY - cardRect.top;
+      offsetX = e.clientX - cardRect.left;
+      offsetY = e.clientY - cardRect.top;
     };
 
-    const moveDrag = (clientX, clientY) => {
-      if (!isDragging || isMobile() || !spaceContainer) return;
+    const moveDrag = (e) => {
+      if (!isDragging || e.pointerId !== activePointerId || !spaceContainer) return;
+      e.preventDefault();
+      // spaceContainer.getBoundingClientRect() already reflects the mobile
+      // canvas's pan+zoom transform, so converting a screen-space offset back
+      // into the card's `left`/`top` (interpreted in the wrapper's own
+      // pre-transform coordinate space) just means dividing by the current
+      // canvas scale — 1 on desktop, where there's no canvas transform at all.
       const wrapperRect = spaceContainer.getBoundingClientRect();
-      card.style.left = `${clientX - wrapperRect.left - offsetX}px`;
-      card.style.top = `${clientY - wrapperRect.top - offsetY}px`;
+      const scale = isMobile() ? canvasScale : 1;
+      const screenLeft = e.clientX - wrapperRect.left - offsetX;
+      const screenTop = e.clientY - wrapperRect.top - offsetY;
+      card.style.left = `${screenLeft / scale}px`;
+      card.style.top = `${screenTop / scale}px`;
     };
 
-    const endDrag = () => {
-      if (isDragging) {
-        isDragging = false;
-        card.style.zIndex = '10';
-        card.style.cursor = (isLayoutLocked || isMobile()) ? 'default' : 'grab';
-        saveLayoutToLocalStorage();
-      }
+    const endDrag = (e) => {
+      if (!isDragging || (e && e.pointerId !== activePointerId)) return;
+      isDragging = false;
+      activePointerId = null;
+      draggingCardEl = null;
+      card.classList.remove('dragging-live');
+      card.style.zIndex = '10';
+      card.style.cursor = canDragNow() ? 'grab' : 'default';
+      saveLayoutToLocalStorage();
     };
 
-    card.addEventListener('mousedown', (e) => startDrag(e, e.clientX, e.clientY, e.target));
-    document.addEventListener('mousemove', (e) => {
-      if (isDragging) {
-        e.preventDefault();
-        moveDrag(e.clientX, e.clientY);
-      }
-    });
-    document.addEventListener('mouseup', endDrag);
+    card.addEventListener('pointerdown', startDrag);
+    card.addEventListener('pointermove', moveDrag);
+    card.addEventListener('pointerup', endDrag);
+    card.addEventListener('pointercancel', endDrag);
   };
 
   const initDragAndDrop = () => {
@@ -550,103 +591,226 @@ document.addEventListener('DOMContentLoaded', () => {
   initDragAndDrop();
 
   // ==========================================================================
-  // MOBILE WIDGET REORDER (up/down controls instead of free-drag on mobile)
+  // MOBILE FREEFORM CANVAS — widgets can be dragged anywhere (like desktop's
+  // free-drag) and the whole canvas can be pinch-zoomed/panned to explore it,
+  // instead of a fixed stack. Positions are stored in the SAME widgetPositions
+  // field desktop already uses, so mobile and desktop share one spatial layout.
+  // (State variables for this live at the top of the file with the rest of
+  // the shared state — updateLockStateUI(), defined above, runs before this
+  // point and already needs isArrangeModeActive.)
   // ==========================================================================
-  const getOrderedVisibleCards = () => {
-    return Array.from(document.querySelectorAll('.glass-widget-card:not(.hidden)'));
+  const canvasViewportEl = document.getElementById('mobile-canvas-viewport');
+
+  const clampCanvasScale = (s) => Math.min(CANVAS_MAX_SCALE, Math.max(CANVAS_MIN_SCALE, s));
+
+  const applyCanvasTransform = () => {
+    if (!spaceContainer) return;
+    spaceContainer.style.transform = `translate(${canvasPanX}px, ${canvasPanY}px) scale(${canvasScale})`;
   };
 
-  const getWidgetOrderArray = () => {
-    ensureWidgetCardIds();
-    return getOrderedVisibleCards()
-      .sort((a, b) => (parseInt(a.style.order, 10) || 0) - (parseInt(b.style.order, 10) || 0))
-      .map(c => c.id);
-  };
+  // Places any widget that doesn't already have a saved position into a simple
+  // 3-column masonry so the canvas looks intentional (not overlapping) even
+  // before the owner has manually arranged anything.
+  const seedDefaultCanvasPositions = () => {
+    const cards = Array.from(document.querySelectorAll('.glass-widget-card:not(.hidden)'));
+    const colWidth = 340;
+    const gap = 24;
+    const colsCount = 3;
+    const colHeights = new Array(colsCount).fill(0);
 
-  const applyWidgetOrder = (orderArray) => {
-    ensureWidgetCardIds();
-    if (!Array.isArray(orderArray) || orderArray.length === 0) return;
-    orderArray.forEach((id, index) => {
-      const card = document.getElementById(id);
-      if (card) card.style.order = index;
-    });
-  };
-
-  const saveWidgetOrderToLocalStorage = () => {
-    const order = getWidgetOrderArray();
-    localStorage.setItem(getOrderStorageKey(), JSON.stringify(order));
-  };
-
-  const buildReorderControls = (card) => {
-    if (card.querySelector('.widget-reorder-controls')) return;
-    const controls = document.createElement('div');
-    controls.className = 'widget-reorder-controls no-drag';
-    controls.innerHTML = `
-      <button type="button" class="reorder-move-btn reorder-up-btn" aria-label="Move up"><i class="fa-solid fa-chevron-up"></i></button>
-      <button type="button" class="reorder-move-btn reorder-down-btn" aria-label="Move down"><i class="fa-solid fa-chevron-down"></i></button>
-    `;
-    card.style.position = card.style.position || 'relative';
-    card.appendChild(controls);
-
-    controls.querySelector('.reorder-up-btn').addEventListener('click', (e) => {
-      e.stopPropagation();
-      moveWidgetInOrder(card, -1);
-    });
-    controls.querySelector('.reorder-down-btn').addEventListener('click', (e) => {
-      e.stopPropagation();
-      moveWidgetInOrder(card, 1);
-    });
-  };
-
-  const moveWidgetInOrder = (card, direction) => {
-    const visibleCards = getOrderedVisibleCards().sort((a, b) => (parseInt(a.style.order, 10) || 0) - (parseInt(b.style.order, 10) || 0));
-    const idx = visibleCards.indexOf(card);
-    const swapIdx = idx + direction;
-    if (idx === -1 || swapIdx < 0 || swapIdx >= visibleCards.length) return;
-
-    hapticTap(8);
-
-    // Swap order values between the two cards
-    const currentOrder = parseInt(card.style.order, 10) || idx;
-    const otherCard = visibleCards[swapIdx];
-    const otherOrder = parseInt(otherCard.style.order, 10) || swapIdx;
-    card.style.order = otherOrder;
-    otherCard.style.order = currentOrder;
-
-    saveWidgetOrderToLocalStorage();
-    activeSpaceConfig.widgetOrder = getWidgetOrderArray();
-    persistWidgetOrderToDb();
-  };
-
-  let persistOrderTimeout = null;
-  const persistWidgetOrderToDb = () => {
-    if (!targetUserId || !canEditCurrentProfile(auth.currentUser)) return;
-    clearTimeout(persistOrderTimeout);
-    persistOrderTimeout = setTimeout(async () => {
-      try {
-        await setDoc(doc(db, "users_spaces", targetUserId), { widgetOrder: activeSpaceConfig.widgetOrder }, { merge: true });
-      } catch (err) {
-        console.warn("Could not sync widget order to database:", err);
+    cards.forEach((card) => {
+      if (card.style.left && card.style.top) {
+        // Already positioned (saved or previously seeded) — just track its
+        // footprint roughly so later auto-placed cards don't stack under it.
+        const col = Math.round((parseFloat(card.style.left) || 0) / (colWidth + gap));
+        const clampedCol = Math.min(Math.max(col, 0), colsCount - 1);
+        const bottom = (parseFloat(card.style.top) || 0) + (card.offsetHeight || 200) + gap;
+        colHeights[clampedCol] = Math.max(colHeights[clampedCol], bottom);
+        return;
       }
-    }, 600);
+      let shortestCol = 0;
+      for (let i = 1; i < colsCount; i++) {
+        if (colHeights[i] < colHeights[shortestCol]) shortestCol = i;
+      }
+      card.style.left = `${shortestCol * (colWidth + gap)}px`;
+      card.style.top = `${colHeights[shortestCol]}px`;
+      colHeights[shortestCol] += (card.offsetHeight || 200) + gap;
+    });
   };
 
-  const setReorderMode = (active) => {
-    isReorderModeActive = active && isMobile();
-    document.body.classList.toggle('reorder-mode-active', isReorderModeActive);
+  // Scales + centers the canvas so every visible widget fits on screen on
+  // first load, accounting for the fixed header/footer chrome around it.
+  const fitCanvasToView = () => {
+    if (!canvasViewportEl || !spaceContainer || !isMobile()) return;
+    const cards = Array.from(document.querySelectorAll('.glass-widget-card:not(.hidden)'));
+    if (cards.length === 0) return;
 
-    if (isReorderModeActive) {
-      document.querySelectorAll('.glass-widget-card:not(.hidden)').forEach(buildReorderControls);
+    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+    cards.forEach((card) => {
+      const left = parseFloat(card.style.left) || 0;
+      const top = parseFloat(card.style.top) || 0;
+      const w = card.offsetWidth || 300;
+      const h = card.offsetHeight || 150;
+      minX = Math.min(minX, left);
+      minY = Math.min(minY, top);
+      maxX = Math.max(maxX, left + w);
+      maxY = Math.max(maxY, top + h);
+    });
+
+    const contentWidth = maxX - minX;
+    const contentHeight = maxY - minY;
+    if (contentWidth <= 0 || contentHeight <= 0) return;
+
+    const viewportW = canvasViewportEl.clientWidth || window.innerWidth;
+    const viewportH = canvasViewportEl.clientHeight || window.innerHeight;
+    const topInset = 74;   // sticky header clearance
+    const bottomInset = 96; // floating action bar clearance
+    const sidePadding = 20;
+
+    const availW = Math.max(viewportW - sidePadding * 2, 100);
+    const availH = Math.max(viewportH - topInset - bottomInset, 100);
+
+    const scale = clampCanvasScale(Math.min(availW / contentWidth, availH / contentHeight, 1));
+    const scaledW = contentWidth * scale;
+    const scaledH = contentHeight * scale;
+
+    canvasScale = scale;
+    canvasPanX = sidePadding + (availW - scaledW) / 2 - minX * scale;
+    canvasPanY = topInset + (availH - scaledH) / 2 - minY * scale;
+    applyCanvasTransform();
+  };
+
+  // Called once per render pass (see renderProfileSpace) — seeds default
+  // positions for any unplaced widgets, then fits the whole canvas on screen.
+  const initMobileCanvasLayout = () => {
+    if (!isMobile()) return;
+    ensureWidgetCardIds();
+    seedDefaultCanvasPositions();
+    fitCanvasToView();
+  };
+
+  const getPointerDistance = () => {
+    const pts = Array.from(activeCanvasPointers.values());
+    if (pts.length < 2) return 0;
+    return Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y);
+  };
+
+  if (canvasViewportEl) {
+    canvasViewportEl.addEventListener('pointerdown', (e) => {
+      if (!isMobile()) return;
+      activeCanvasPointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+
+      if (activeCanvasPointers.size === 2) {
+        isPanningCanvas = false;
+        pinchStartDistance = getPointerDistance();
+        pinchStartScale = canvasScale;
+      } else if (activeCanvasPointers.size === 1 && !draggingCardEl) {
+        const onCard = e.target.closest('.glass-widget-card');
+        if (!onCard || !isArrangeModeActive) {
+          isPanningCanvas = true;
+          panPointerStartX = e.clientX;
+          panPointerStartY = e.clientY;
+          panStartX = canvasPanX;
+          panStartY = canvasPanY;
+        }
+      }
+    });
+
+    canvasViewportEl.addEventListener('pointermove', (e) => {
+      if (!activeCanvasPointers.has(e.pointerId)) return;
+      activeCanvasPointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+
+      if (activeCanvasPointers.size === 2) {
+        e.preventDefault();
+        const newDistance = getPointerDistance();
+        if (pinchStartDistance > 0) {
+          canvasScale = clampCanvasScale(pinchStartScale * (newDistance / pinchStartDistance));
+          applyCanvasTransform();
+        }
+      } else if (isPanningCanvas) {
+        e.preventDefault();
+        canvasPanX = panStartX + (e.clientX - panPointerStartX);
+        canvasPanY = panStartY + (e.clientY - panPointerStartY);
+        applyCanvasTransform();
+      }
+    });
+
+    const releaseCanvasPointer = (e) => {
+      activeCanvasPointers.delete(e.pointerId);
+      if (activeCanvasPointers.size < 2) pinchStartDistance = 0;
+      if (activeCanvasPointers.size === 0) isPanningCanvas = false;
+    };
+    canvasViewportEl.addEventListener('pointerup', releaseCanvasPointer);
+    canvasViewportEl.addEventListener('pointercancel', releaseCanvasPointer);
+    canvasViewportEl.addEventListener('pointerleave', releaseCanvasPointer);
+  }
+
+  const zoomCanvasBy = (factor) => {
+    if (!isMobile()) return;
+    hapticTap(6);
+    canvasScale = clampCanvasScale(canvasScale * factor);
+    applyCanvasTransform();
+  };
+
+  document.getElementById('canvas-zoom-in-btn')?.addEventListener('click', () => zoomCanvasBy(1.25));
+  document.getElementById('canvas-zoom-out-btn')?.addEventListener('click', () => zoomCanvasBy(0.8));
+  document.getElementById('canvas-zoom-reset-btn')?.addEventListener('click', () => {
+    hapticTap(10);
+    fitCanvasToView();
+  });
+
+  // Persists every visible card's current position — same pattern desktop
+  // already uses when re-locking after a drag.
+  const persistWidgetPositions = async () => {
+    saveLayoutToLocalStorage();
+    const positions = getLayoutPositionsDict();
+    activeSpaceConfig.widgetPositions = positions;
+
+    if (targetUserId && canEditCurrentProfile(auth.currentUser) && Object.keys(positions).length > 0) {
+      try {
+        await setDoc(doc(db, "users_spaces", targetUserId), { widgetPositions: positions }, { merge: true });
+      } catch (err) {
+        console.warn("Could not sync layout to database:", err);
+      }
+    }
+  };
+
+  const setArrangeMode = async (active) => {
+    if (active && !canEditCurrentProfile(auth.currentUser)) return;
+    const wasActive = isArrangeModeActive;
+    isArrangeModeActive = active && isMobile();
+    document.body.classList.toggle('arrange-mode-active', isArrangeModeActive);
+
+    document.querySelectorAll('.glass-widget-card').forEach((card) => {
+      card.style.cursor = isArrangeModeActive ? 'grab' : 'default';
+    });
+
+    let hintPill = document.getElementById('canvas-hint-pill');
+    if (isArrangeModeActive) {
+      if (!hintPill) {
+        hintPill = document.createElement('div');
+        hintPill.id = 'canvas-hint-pill';
+        hintPill.className = 'canvas-hint-pill';
+        hintPill.textContent = 'Drag widgets to move them · pinch to zoom';
+        document.body.appendChild(hintPill);
+      }
+    } else if (hintPill) {
+      hintPill.remove();
     }
 
     if (toggleReorderBtn) {
-      if (isReorderModeActive) {
+      if (isArrangeModeActive) {
         toggleReorderBtn.innerHTML = `<i class="fa-solid fa-check"></i> <span>Done</span>`;
         toggleReorderBtn.classList.add('active-unlock');
       } else {
-        toggleReorderBtn.innerHTML = `<i class="fa-solid fa-arrow-up-down"></i> <span>Reorder</span>`;
+        toggleReorderBtn.innerHTML = `<i class="fa-solid fa-arrows-up-down-left-right"></i> <span>Arrange</span>`;
         toggleReorderBtn.classList.remove('active-unlock');
       }
+    }
+
+    // Just turned OFF after being on — save whatever the owner arranged.
+    if (wasActive && !isArrangeModeActive) {
+      await persistWidgetPositions();
     }
   };
 
@@ -656,7 +820,7 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
     hapticTap(12);
-    setReorderMode(!isReorderModeActive);
+    setArrangeMode(!isArrangeModeActive);
   });
 
   // ==========================================================================
@@ -713,7 +877,7 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById("qr-card-widget")?.addEventListener('click', (e) => {
     if (e.target.closest('button, a, .no-drag')) return;
     if (!isLayoutLocked && !isMobile()) return; // owner is actively rearranging widgets, not viewing
-    if (isReorderModeActive) return;
+    if (isArrangeModeActive) return;
     openQrFullscreen();
   });
 
@@ -898,6 +1062,7 @@ document.addEventListener('DOMContentLoaded', () => {
   window.addEventListener('resize', () => {
     if (activeSpaceConfig) {
       applySavedPositions(activeSpaceConfig.widgetPositions);
+      if (isMobile()) initMobileCanvasLayout();
       updateLockStateUI();
     }
   });
@@ -909,6 +1074,7 @@ document.addEventListener('DOMContentLoaded', () => {
     setTimeout(() => {
       if (activeSpaceConfig) {
         applySavedPositions(activeSpaceConfig.widgetPositions);
+        if (isMobile()) initMobileCanvasLayout();
         updateLockStateUI();
       }
     }, 150);
@@ -939,19 +1105,18 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
 
-    if (!confirm("Are you sure you want to reset all widget positions and order to default?")) return;
+    if (!confirm("Are you sure you want to reset the widget layout to default?")) return;
 
     resetToFlexLayout();
     activeSpaceConfig.widgetPositions = {};
-    activeSpaceConfig.widgetOrder = [];
 
-    // Clear order styling on all cards + local caches
-    document.querySelectorAll('.glass-widget-card').forEach(card => { card.style.order = ''; });
-    localStorage.removeItem(getOrderStorageKey());
+    if (isMobile()) {
+      initMobileCanvasLayout();
+    }
 
     if (targetUserId) {
       try {
-        await setDoc(doc(db, "users_spaces", targetUserId), { widgetPositions: {}, widgetOrder: [] }, { merge: true });
+        await setDoc(doc(db, "users_spaces", targetUserId), { widgetPositions: {} }, { merge: true });
       } catch (err) {
         console.warn("Error resetting layout on database:", err);
       }
@@ -1659,19 +1824,10 @@ document.addEventListener('DOMContentLoaded', () => {
     ensureWidgetCardIds();
     document.querySelectorAll('.custom-widget-dynamic').forEach((card, i) => makeCardDraggable(card, i));
 
-    // Layout order: prefer saved config, fall back to local cache
-    let orderToApply = spaceData?.widgetOrder;
-    if (!orderToApply || orderToApply.length === 0) {
-      try {
-        const cachedOrder = localStorage.getItem(getOrderStorageKey());
-        if (cachedOrder) orderToApply = JSON.parse(cachedOrder);
-      } catch (e) { /* ignore */ }
-    }
-    applyWidgetOrder(orderToApply);
-
     applySavedPositions(spaceData?.widgetPositions);
+    if (isMobile()) initMobileCanvasLayout();
     updateLockStateUI();
-    setReorderMode(false);
+    setArrangeMode(false);
 
     if (spaceContainer) {
       spaceContainer.classList.remove("hidden");

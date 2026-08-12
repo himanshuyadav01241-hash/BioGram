@@ -1556,52 +1556,10 @@ body {
 }
 
 /* ==========================================================================
-   12. MOBILE WIDGET REORDER CONTROLS
+   12. MOBILE FREEFORM CANVAS: drag-to-arrange + pinch-zoom
+   (structural rules for the canvas viewport live in profile.html's own
+   media query, alongside the rest of the mobile-only layout logic)
    ========================================================================== */
-.widget-reorder-controls {
-  display: none;
-  position: absolute;
-  top: 10px;
-  right: 10px;
-  z-index: 60;
-  flex-direction: column;
-  gap: 4px;
-  background: rgba(15,23,42,0.55);
-  border-radius: 10px;
-  padding: 4px;
-  backdrop-filter: blur(6px);
-}
-
-.reorder-mode-active .widget-reorder-controls {
-  display: flex;
-}
-
-.reorder-move-btn {
-  width: 26px;
-  height: 26px;
-  border-radius: 6px;
-  border: none;
-  background: rgba(255,255,255,0.15);
-  color: #fff;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 0.75rem;
-}
-
-.reorder-move-btn:hover {
-  background: var(--primary-color, #6366f1);
-}
-
-.reorder-move-btn:disabled {
-  opacity: 0.3;
-  cursor: not-allowed;
-}
-
-.reorder-mode-active .glass-widget-card {
-  border: 2px dashed #f59e0b !important;
-}
 
 /* ==========================================================================
    13. NEW WIDGETS: QR / COUNTDOWN / CUSTOM LINK CARDS

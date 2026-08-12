@@ -243,3 +243,54 @@ only shows when an admin has actually verified that account.
   `customBadgeText`
 
 All default gracefully when absent — safe to deploy over existing data as always.
+
+## Major rework: Freeform canvas on mobile (replaces the up/down Reorder system)
+
+The previous mobile layout (bento grid + up/down Reorder buttons) has been fully
+replaced with a true freeform canvas — the same free-drag experience desktop
+always had, now on mobile too, plus pinch-to-zoom/pan to explore it:
+
+- **Drag widgets anywhere**, not just up/down in a stack. Tap **Arrange** in the
+  bottom bar to enter drag mode; tap **Done** to save.
+- **Pinch to zoom, drag to pan** — available at all times, not just in Arrange
+  mode, so anyone viewing a space (not just the owner) can explore it. A
+  +/−/fit-to-view control cluster sits above the bottom bar as an alternative to
+  pinching.
+- **Desktop and mobile now share one spatial layout.** Widget positions are
+  stored in the same `widgetPositions` field desktop's free-drag has always used
+  — no separate mobile-only ordering data. Position a widget on desktop, and
+  mobile's canvas shows it in the same relative spot (auto-fit to whatever
+  screen it's viewed on).
+- **New spaces get a sensible starting layout automatically.** Any widget
+  without a saved position is placed into a simple 3-column masonry the first
+  time the canvas renders, so it never looks like an overlapping mess before
+  you've customized anything.
+- On load, the canvas automatically scales and centers so every visible widget
+  fits on screen — pinch/pan from there.
+
+### Removed
+- The up/down Reorder buttons on each widget card
+- The `widgetOrder` Firestore field (unused going forward; existing data is
+  harmless and simply ignored — no migration needed)
+- The bento 2-column grid CSS (superseded by the freeform canvas)
+
+### Also fixed while rebuilding this
+- **"Locked" button was showing on mobile despite the JS trying to hide it** —
+  a `!important` CSS rule in the mobile media query (`.space-action-btn { display:
+  inline-flex !important; }`) was silently overriding the inline style JS set to
+  hide it. A plain inline style can never beat a stylesheet `!important` rule,
+  regardless of when it runs. Added a more specific `#toggle-lock-btn { display:
+  none !important; }` override. "Locked" only ever made sense with desktop's
+  drag model anyway — mobile doesn't need it.
+- **"Customize Space" label was getting clipped** in the now-shorter bottom bar
+  — shortened to "Customize" on mobile.
+- Mobile no longer has page-level scroll — the canvas viewport owns all
+  panning now (`html, body { overflow: hidden }` on mobile). The sticky
+  identity header (avatar + name) is now always shown on mobile instead of
+  appearing on scroll, since there's no more page scroll to trigger it from.
+
+### Note on drag input
+Card dragging now uses the Pointer Events API (`pointerdown`/`pointermove`/
+`pointerup`) instead of mouse-only events, which is what makes touch-drag work
+at all — the previous implementation only ever listened for mouse events, so
+touch dragging silently did nothing regardless of platform.
