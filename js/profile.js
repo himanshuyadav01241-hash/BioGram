@@ -1,7 +1,7 @@
 // ==========================================================================
 // FIREBASE IMPORTS
 // ==========================================================================
-import { auth, db } from "./firebase.js?v=20260816a";
+import { auth, db } from "./firebase.js?v=20260817a";
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 import { 
   doc, 
@@ -16,7 +16,7 @@ import {
   getDocs,
   limit
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
-import { isUserPremium, getSystemConfig, openMembershipModal, resolveCanonicalProfileUrl } from "./membership.js?v=20260816a";
+import { isUserPremium, getSystemConfig, openMembershipModal, resolveCanonicalProfileUrl } from "./membership.js?v=20260817a";
 
 document.addEventListener('DOMContentLoaded', () => {
 
@@ -79,6 +79,7 @@ document.addEventListener('DOMContentLoaded', () => {
   let isPanningCanvas = false;
   let panStartX = 0, panStartY = 0;
   let panPointerStartX = 0, panPointerStartY = 0;
+  let currentMobileLayoutMode = 'canvas'; // 'canvas' | 'stack'
 
   // A phone in landscape is often WIDER than 600px (typically 700-900px), so a
   // width-only check misclassifies it as "desktop" — which then renders widgets at
@@ -689,6 +690,56 @@ document.addEventListener('DOMContentLoaded', () => {
     fitCanvasToView();
   };
 
+  // ==========================================================================
+  // MOBILE LAYOUT SWITCHER — Canvas (freeform drag + pinch-zoom) vs. Stack
+  // (simple single-column scroll, no gestures). Anyone viewing a space can
+  // switch for their own session (remembered per-space via localStorage); the
+  // owner can also set which one visitors see by default in the editor.
+  // ==========================================================================
+  const getLayoutModeStorageKey = () => targetUserId ? `biogram_layout_mode_${targetUserId}` : 'biogram_layout_mode_guest';
+
+  const layoutModeToggleBtn = document.getElementById('layout-mode-toggle-btn');
+
+  const applyMobileLayoutMode = (mode) => {
+    currentMobileLayoutMode = mode === 'stack' ? 'stack' : 'canvas';
+    document.body.classList.toggle('mobile-stack-mode', currentMobileLayoutMode === 'stack');
+
+    if (currentMobileLayoutMode === 'stack') {
+      // Arrange mode (freeform drag) doesn't apply in Stack view — exit it if active.
+      if (isArrangeModeActive) setArrangeMode(false);
+      if (layoutModeToggleBtn) {
+        layoutModeToggleBtn.innerHTML = `<i class="fa-solid fa-diagram-project"></i>`;
+        layoutModeToggleBtn.setAttribute('aria-label', 'Switch to Canvas view');
+      }
+    } else {
+      if (layoutModeToggleBtn) {
+        layoutModeToggleBtn.innerHTML = `<i class="fa-solid fa-table-cells"></i>`;
+        layoutModeToggleBtn.setAttribute('aria-label', 'Switch to Stack view');
+      }
+      // Coming back to Canvas view — make sure positions/zoom are (re)computed.
+      requestAnimationFrame(() => initMobileCanvasLayout());
+    }
+  };
+
+  layoutModeToggleBtn?.addEventListener('click', () => {
+    if (!isMobile()) return;
+    hapticTap(10);
+    const nextMode = currentMobileLayoutMode === 'stack' ? 'canvas' : 'stack';
+    applyMobileLayoutMode(nextMode);
+    try { localStorage.setItem(getLayoutModeStorageKey(), nextMode); } catch (e) { /* ignore */ }
+  });
+
+  // Determines the initial layout mode for this render: the viewer's own
+  // remembered choice (if they've switched before) takes precedence over the
+  // owner's configured default, which takes precedence over "canvas".
+  const resolveInitialLayoutMode = (spaceData) => {
+    try {
+      const remembered = localStorage.getItem(getLayoutModeStorageKey());
+      if (remembered === 'stack' || remembered === 'canvas') return remembered;
+    } catch (e) { /* ignore */ }
+    return spaceData?.mobileLayoutMode === 'stack' ? 'stack' : 'canvas';
+  };
+
   const getPointerDistance = () => {
     const pts = Array.from(activeCanvasPointers.values());
     if (pts.length < 2) return 0;
@@ -1015,6 +1066,25 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
+  // ==========================================================================
+  // DEFAULT MOBILE LAYOUT MODE PICKER (bound once)
+  // ==========================================================================
+  let selectedMobileLayoutMode = "canvas";
+  const mobileLayoutModeGrid = document.getElementById("mobile-layout-mode-grid");
+
+  const syncMobileLayoutModeGridUI = () => {
+    mobileLayoutModeGrid?.querySelectorAll('.theme-option-btn').forEach(btn => {
+      btn.classList.toggle('selected', btn.dataset.layoutMode === selectedMobileLayoutMode);
+    });
+  };
+
+  mobileLayoutModeGrid?.querySelectorAll('.theme-option-btn').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      selectedMobileLayoutMode = btn.dataset.layoutMode;
+      syncMobileLayoutModeGridUI();
+    });
+  });
+
   accentSwatchRow?.querySelectorAll('.accent-swatch').forEach((sw) => {
     sw.addEventListener('click', () => {
       if (!isViewerPremium) {
@@ -1062,7 +1132,7 @@ document.addEventListener('DOMContentLoaded', () => {
   window.addEventListener('resize', () => {
     if (activeSpaceConfig) {
       applySavedPositions(activeSpaceConfig.widgetPositions);
-      if (isMobile()) initMobileCanvasLayout();
+      if (isMobile() && currentMobileLayoutMode === 'canvas') initMobileCanvasLayout();
       updateLockStateUI();
     }
   });
@@ -1074,7 +1144,7 @@ document.addEventListener('DOMContentLoaded', () => {
     setTimeout(() => {
       if (activeSpaceConfig) {
         applySavedPositions(activeSpaceConfig.widgetPositions);
-        if (isMobile()) initMobileCanvasLayout();
+        if (isMobile() && currentMobileLayoutMode === 'canvas') initMobileCanvasLayout();
         updateLockStateUI();
       }
     }, 150);
@@ -1825,7 +1895,11 @@ document.addEventListener('DOMContentLoaded', () => {
     document.querySelectorAll('.custom-widget-dynamic').forEach((card, i) => makeCardDraggable(card, i));
 
     applySavedPositions(spaceData?.widgetPositions);
-    if (isMobile()) initMobileCanvasLayout();
+    if (isMobile()) {
+      applyMobileLayoutMode(resolveInitialLayoutMode(spaceData));
+      // applyMobileLayoutMode already calls initMobileCanvasLayout() when
+      // resolving to Canvas mode; Stack mode needs no canvas math at all.
+    }
     updateLockStateUI();
     setArrangeMode(false);
 
@@ -1878,6 +1952,9 @@ document.addEventListener('DOMContentLoaded', () => {
     selectedAccentColor = activeSpaceConfig.accentColor || "#6366f1";
     syncThemeGridUI();
     syncAccentSwatchUI();
+
+    selectedMobileLayoutMode = activeSpaceConfig.mobileLayoutMode === "stack" ? "stack" : "canvas";
+    syncMobileLayoutModeGridUI();
 
     // Pro lock UI state
     themePresetGrid?.querySelectorAll('.theme-option-btn[data-pro="true"]').forEach(btn => {
@@ -2061,7 +2138,8 @@ document.addEventListener('DOMContentLoaded', () => {
       socials: parsedSocials,
       customWidgets: customWidgetsList,
       mediaImages: mediaImagesList,
-      customBadgeText: isViewerPremium ? getInputValue("edit-custom-badge").slice(0, 24) : (activeSpaceConfig.customBadgeText || "")
+      customBadgeText: isViewerPremium ? getInputValue("edit-custom-badge").slice(0, 24) : (activeSpaceConfig.customBadgeText || ""),
+      mobileLayoutMode: selectedMobileLayoutMode
     };
 
     if (targetUserId) {

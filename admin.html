@@ -669,13 +669,17 @@
       <div class="card-header">
         <h3><i class="fa-solid fa-crown" style="color:#f59e0b;"></i> Membership & Monetization</h3>
       </div>
-      <p class="card-subtitle">Configure the BioGram Pro lifetime membership price and Razorpay checkout. Grant or revoke Pro access per-user from the table below.</p>
+      <p class="card-subtitle">Configure BioGram Pro membership plans and Razorpay checkout. Grant or revoke Pro access per-user from the table below.</p>
+
+      <div class="form-group">
+        <label for="membership-plans-input">Membership Plans (format: <code>Label | Duration in Days | Price ₹</code> per line — Duration <code>0</code> = lifetime)</label>
+        <textarea id="membership-plans-input" class="modal-input" rows="4" style="font-family: 'JetBrains Mono', monospace; font-size: 0.82rem; resize: vertical;" placeholder="1 Month | 30 | 99&#10;1 Year | 365 | 799&#10;Lifetime | 0 | 1999"></textarea>
+        <p class="card-subtitle" style="margin:0.4rem 0 0; font-size:0.76rem;">
+          Each line is one selectable plan shown in the upgrade dialog. Users pick one at checkout — time-based plans automatically expire (checked on every page load), lifetime plans never do.
+        </p>
+      </div>
 
       <div class="admin-settings-row" style="align-items:flex-end;">
-        <div class="form-group" style="min-width:180px;">
-          <label for="membership-price-input">Lifetime Price (₹ INR)</label>
-          <input type="number" id="membership-price-input" class="modal-input" min="0" placeholder="499">
-        </div>
         <div class="form-group" style="min-width:260px; flex:1;">
           <label for="razorpay-key-input">Razorpay Key ID</label>
           <input type="text" id="razorpay-key-input" class="modal-input" placeholder="rzp_live_xxxxxxxxxxxx">
@@ -810,6 +814,6 @@
     </div>
   </div>
 
-  <script type="module" src="js/admin.js?v=20260816a"></script>
+  <script type="module" src="js/admin.js?v=20260817a"></script>
 </body>
 </html>

@@ -294,3 +294,64 @@ Card dragging now uses the Pointer Events API (`pointerdown`/`pointermove`/
 `pointerup`) instead of mouse-only events, which is what makes touch-drag work
 at all — the previous implementation only ever listened for mouse events, so
 touch dragging silently did nothing regardless of platform.
+
+## Mobile layout switcher: Canvas ↔ Simple Stack
+
+Not everyone wants to pinch-zoom and drag widgets around — some people just
+want a normal scrolling list. Both are now available and switchable:
+
+- **A toggle button in the mobile sticky header** (top bar) lets *any visitor*
+  switch between the freeform Canvas view and a Simple Stack view (plain
+  single-column scroll, no gestures) for their own session. Remembered per
+  space via localStorage, so it sticks across visits on that device.
+- **Space owners can set the default** in the editor's Layout & Canvas section
+  — Canvas or Simple Stack — which is what first-time visitors see before they
+  make their own choice.
+- Switching to Stack mode automatically exits Arrange mode (dragging doesn't
+  apply there) and restores normal page scrolling; switching back to Canvas
+  re-computes the fit-to-view zoom.
+
+New `users_spaces/{uid}` field: `mobileLayoutMode` ('canvas' | 'stack',
+defaults to 'canvas').
+
+## Membership plans: configurable durations + prices (not just lifetime)
+
+BioGram Pro is no longer locked to a single lifetime price. Admins now
+configure a list of plans — Admin Panel → Membership & Monetization →
+Membership Plans, one per line:
+
+```
+1 Month | 30 | 99
+1 Year | 365 | 799
+Lifetime | 0 | 1999
+```
+
+Format is `Label | Duration in Days | Price in ₹` — a duration of `0` means
+lifetime (never expires). Users pick a plan in the upgrade modal, which now
+shows all configured options as selectable cards instead of one flat price.
+
+**Expiry is enforced automatically.** Time-based plans set a
+`premiumExpiresAt` timestamp; `isUserPremium()` — the single helper every Pro
+feature in the app checks — now verifies that timestamp on every check, not
+just the `isPremium` flag. This means Insights, QR, Pro themes, the accent
+color picker, the avatar glow, everything: they all correctly stop working the
+moment a time-based membership expires, with zero additional gating code
+needed anywhere else, because they all route through the same helper.
+
+Admin's manual "Grant Pro" button now asks for a duration in days (0 for
+lifetime) instead of always granting lifetime access. "Revoke Pro" clears the
+expiry field too.
+
+New fields:
+- `system/config`: `membershipPlansRaw` (replaces the old single
+  `membershipPriceINR` field — existing deployments will show the default
+  "Lifetime | 0 | 499" plan until an admin saves new plans)
+- `users/{uid}`: `premiumExpiresAt` (null for lifetime grants)
+
+### Bug fixed while working on this
+The landing page's `<script type="module">` importing `membership.js` was
+missing the cache-busting version query string this whole time — every other
+script/style reference in the project had one, this inline one slipped
+through. If you ever saw the landing page's pricing card show a stale price
+after updating plans in the admin panel even after a hard refresh elsewhere,
+this was why. Fixed and brought in line with the versioning workflow.

@@ -17,7 +17,7 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
   <!-- Custom Stylesheet -->
-  <link rel="stylesheet" href="css/styles.css?v=20260816a">
+  <link rel="stylesheet" href="css/styles.css?v=20260817a">
   
   <style>
     :root {
@@ -551,7 +551,7 @@
          surface AND the positioned ancestor for each absolutely-positioned card
          (same widgetPositions field already used by desktop's free-drag mode —
          mobile and desktop share one spatial layout). */
-      html, body {
+      body {
         overflow: hidden;
         height: 100%;
       }
@@ -577,6 +577,41 @@
       }
       .glass-widget-card.dragging-live {
         transition: none !important;
+      }
+
+      /* STACK MODE — the simple alternative layout: normal single-column page
+         scroll, no drag/pinch, no absolute positioning. Toggled by the
+         viewer-facing Layout toggle button (or the owner's chosen default). */
+      body.mobile-stack-mode {
+        overflow: auto !important;
+        height: auto !important;
+      }
+      body.mobile-stack-mode .mobile-canvas-viewport {
+        position: static !important;
+        overflow: visible !important;
+        height: auto !important;
+        touch-action: auto !important;
+      }
+      body.mobile-stack-mode .widgets-wrapper {
+        transform: none !important;
+        width: 100% !important;
+        min-height: 0 !important;
+        display: flex !important;
+        flex-direction: column;
+        align-items: center;
+        padding: 4.5rem 12px 5rem 12px !important;
+      }
+      body.mobile-stack-mode .glass-widget-card {
+        position: relative !important;
+        left: auto !important;
+        top: auto !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        margin-bottom: 12px !important;
+      }
+      body.mobile-stack-mode .canvas-zoom-controls,
+      body.mobile-stack-mode .canvas-hint-pill {
+        display: none !important;
       }
 
       /* Thin accent-color stripe along the top of every card — ties into the
@@ -723,6 +758,22 @@
         overflow: hidden;
         text-overflow: ellipsis;
       }
+      .layout-mode-toggle-btn {
+        position: absolute;
+        right: 12px;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 30px;
+        height: 30px;
+        border-radius: 50%;
+        border: none;
+        background: rgba(255, 255, 255, 0.12);
+        color: #fff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.8rem;
+      }
     }
   </style>
 </head>
@@ -746,10 +797,13 @@
     <i class="fa-solid fa-qrcode" aria-hidden="true"></i>
   </button>
 
-  <!-- MOBILE STICKY MINI-HEADER (slides in once you scroll past the profile card) -->
+  <!-- MOBILE STICKY MINI-HEADER (always visible; canvas has no page scroll to trigger it on) -->
   <div id="mobile-sticky-header">
     <img id="sticky-header-avatar" src="" alt="">
     <span id="sticky-header-name" class="sticky-header-name"></span>
+    <button type="button" id="layout-mode-toggle-btn" class="layout-mode-toggle-btn" aria-label="Switch layout view">
+      <i class="fa-solid fa-table-cells" aria-hidden="true"></i>
+    </button>
   </div>
 
   <!-- MOBILE CANVAS ZOOM CONTROLS -->
@@ -1117,6 +1171,16 @@
             <p style="font-size:0.78rem; color:#64748b; margin-bottom:10px; line-height:1.5;">
               On desktop, unlock and drag widgets anywhere. On mobile, pinch to zoom and pan around freely at any time — tap <strong>Arrange</strong> in the bottom bar when you want to drag widgets into new positions.
             </p>
+
+            <div class="form-group">
+              <label class="editor-label">Default Mobile View</label>
+              <div class="theme-option-grid" id="mobile-layout-mode-grid">
+                <button type="button" class="theme-option-btn" data-layout-mode="canvas"><span class="theme-swatch-preview" style="background:linear-gradient(135deg,#6366f1,#8b5cf6);"></span>Canvas</button>
+                <button type="button" class="theme-option-btn" data-layout-mode="stack"><span class="theme-swatch-preview" style="background:#334155;"></span>Simple Stack</button>
+              </div>
+              <p style="font-size:0.72rem; color:#94a3b8; margin-top:6px;">Visitors can still switch views themselves with the toggle in the top bar — this just sets what they see first.</p>
+            </div>
+
             <button type="button" id="reset-positions-btn" style="width:100%; padding: 10px; background: #64748b; color: white; font-weight: 700; border: none; border-radius: 12px; cursor: pointer;">
               <i class="fa-solid fa-rotate-left"></i> Reset Layout
             </button>
@@ -1135,6 +1199,6 @@
     </div>
   </div>
 
-  <script type="module" src="js/profile.js?v=20260816a"></script>
+  <script type="module" src="js/profile.js?v=20260817a"></script>
 </body>
 </html>

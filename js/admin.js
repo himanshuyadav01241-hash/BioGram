@@ -1,7 +1,7 @@
 // ==========================================================================
 // 1. FIREBASE IMPORTS
 // ==========================================================================
-import { db } from "./firebase.js?v=20260816a"; 
+import { db } from "./firebase.js?v=20260817a"; 
 import { 
   collection, 
   doc, 
@@ -12,7 +12,7 @@ import {
   Timestamp,
   onSnapshot 
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
-import { isUserPremium } from "./membership.js?v=20260816a";
+import { isUserPremium, parseMembershipPlans } from "./membership.js?v=20260817a";
 
 // ==========================================================================
 // 2. GLOBAL STATE & DOM ELEMENTS
@@ -47,7 +47,7 @@ const clearAnnouncementBtn = document.getElementById("btn-clear-announcement");
 const exportUsersBtn = document.getElementById("btn-export-users");
 
 // Membership & Monetization Controls
-const membershipPriceInput = document.getElementById("membership-price-input");
+const membershipPlansInput = document.getElementById("membership-plans-input");
 const razorpayKeyInput = document.getElementById("razorpay-key-input");
 const paymentsEnabledToggle = document.getElementById("payments-enabled-toggle");
 const saveMembershipSettingsBtn = document.getElementById("btn-save-membership-settings");
@@ -99,8 +99,8 @@ function listenToSystemConfig() {
       }
 
       // Sync Membership & Monetization controls (skip fields the admin is actively typing in)
-      if (membershipPriceInput && document.activeElement !== membershipPriceInput) {
-        membershipPriceInput.value = systemConfig.membershipPriceINR ?? 499;
+      if (membershipPlansInput && document.activeElement !== membershipPlansInput) {
+        membershipPlansInput.value = systemConfig.membershipPlansRaw || "Lifetime | 0 | 499";
       }
       if (razorpayKeyInput && document.activeElement !== razorpayKeyInput) {
         razorpayKeyInput.value = systemConfig.razorpayKeyId || "";
@@ -410,20 +410,51 @@ function attachEventListeners() {
     btn.addEventListener("click", async () => {
       const uid = btn.dataset.id;
       const currentlyPremium = btn.dataset.premium === "true";
-      const confirmMsg = currentlyPremium
-        ? "Revoke this user's BioGram Pro access?"
-        : "Grant this user lifetime BioGram Pro access?";
-      if (!confirm(confirmMsg)) return;
+
+      if (currentlyPremium) {
+        if (!confirm("Revoke this user's BioGram Pro access?")) return;
+        try {
+          await updateDoc(doc(db, "users", uid), {
+            isPremium: false,
+            membershipType: null,
+            premiumSince: null,
+            premiumExpiresAt: null,
+            grantedByAdmin: false
+          });
+        } catch (err) {
+          console.error("Error revoking premium status:", err);
+          alert(`Failed to update membership: ${err.message}`);
+        }
+        return;
+      }
+
+      const durationInput = prompt(
+        "Grant BioGram Pro access.\n\nEnter a duration in days (e.g. 30 for 1 month, 365 for 1 year), or 0 for lifetime access:",
+        "0"
+      );
+      if (durationInput === null) return; // cancelled
+
+      const durationDays = parseInt(durationInput, 10);
+      if (isNaN(durationDays) || durationDays < 0) {
+        alert("Please enter a valid number of days (0 or greater).");
+        return;
+      }
+
+      const premiumExpiresAt = durationDays > 0
+        ? new Date(Date.now() + durationDays * 24 * 60 * 60 * 1000).toISOString()
+        : null;
+      const label = durationDays > 0 ? `${durationDays} day${durationDays === 1 ? '' : 's'} (admin-granted)` : "Lifetime (admin-granted)";
 
       try {
         await updateDoc(doc(db, "users", uid), {
-          isPremium: !currentlyPremium,
-          membershipType: !currentlyPremium ? "lifetime" : null,
-          premiumSince: !currentlyPremium ? new Date().toISOString() : null,
-          grantedByAdmin: !currentlyPremium
+          isPremium: true,
+          membershipType: label,
+          premiumSince: new Date().toISOString(),
+          premiumExpiresAt,
+          grantedByAdmin: true
         });
       } catch (err) {
-        console.error("Error toggling premium status:", err);
+        console.error("Error granting premium status:", err);
         alert(`Failed to update membership: ${err.message}`);
       }
     });
@@ -500,14 +531,20 @@ if (forceOwnerToggle) {
 // Save Membership & Monetization Settings
 if (saveMembershipSettingsBtn) {
   saveMembershipSettingsBtn.addEventListener("click", async () => {
-    const priceVal = parseInt(membershipPriceInput?.value, 10);
+    const plansRaw = (membershipPlansInput?.value || "").trim() || "Lifetime | 0 | 499";
+    const parsedPlans = parseMembershipPlans(plansRaw);
     const mediaLimitVal = parseInt(freeMediaLimitInput?.value, 10);
     const widgetLimitVal = parseInt(freeWidgetLimitInput?.value, 10);
+
+    if (parsedPlans.length === 0) {
+      alert("Couldn't find any valid plans in that list. Each line needs the format: Label | Duration in Days | Price ₹ (e.g. \"1 Month | 30 | 99\").");
+      return;
+    }
 
     try {
       saveMembershipSettingsBtn.disabled = true;
       await setDoc(doc(db, "system", "config"), {
-        membershipPriceINR: isNaN(priceVal) ? 499 : priceVal,
+        membershipPlansRaw: plansRaw,
         razorpayKeyId: razorpayKeyInput ? razorpayKeyInput.value.trim() : "",
         paymentsEnabled: paymentsEnabledToggle ? paymentsEnabledToggle.checked : false,
         freeMediaLimit: isNaN(mediaLimitVal) ? 3 : mediaLimitVal,
@@ -515,7 +552,7 @@ if (saveMembershipSettingsBtn) {
         siteBaseUrl: siteBaseUrlInput ? siteBaseUrlInput.value.trim().replace(/\/$/, "") : "",
         contactEmail: supportEmailInput ? supportEmailInput.value.trim() : ""
       }, { merge: true });
-      alert("Membership settings saved!");
+      alert(`Membership settings saved! ${parsedPlans.length} plan${parsedPlans.length === 1 ? '' : 's'} active.`);
     } catch (err) {
       console.error("Error saving membership settings:", err);
       alert(`Failed to save membership settings: ${err.message}`);
@@ -533,7 +570,7 @@ if (exportUsersBtn) {
       return;
     }
 
-    const headers = ["uid", "handle", "displayName", "email", "views", "isVerified", "isPremium", "isBanned", "isBlurred", "excludeFromLeaderboard"];
+    const headers = ["uid", "handle", "displayName", "email", "views", "isVerified", "isPremium", "membershipType", "premiumExpiresAt", "isBanned", "isBlurred", "excludeFromLeaderboard"];
     const escapeCsv = (val) => {
       const str = String(val ?? "");
       return /[",\n]/.test(str) ? `"${str.replace(/"/g, '""')}"` : str;

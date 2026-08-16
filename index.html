@@ -17,7 +17,7 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
   <!-- Main Stylesheet -->
-  <link rel="stylesheet" href="css/styles.css?v=20260816a">
+  <link rel="stylesheet" href="css/styles.css?v=20260817a">
 </head>
 <body class="light-theme">
 
@@ -263,12 +263,14 @@
             <span><i class="fa-solid fa-circle-check"></i> Gold Pro crown on your profile</span>
           </div>
           <button type="button" class="btn-claim" data-open-membership>
-            <i class="fa-solid fa-crown"></i> View Lifetime Pricing
+            <i class="fa-solid fa-crown"></i> View Pricing
           </button>
         </div>
         <div class="pricing-card">
-          <div class="price-tag" id="landing-price-tag">₹499</div>
-          <div class="price-caption">one-time · lifetime access</div>
+          <div id="landing-plans-list" class="landing-plans-list">
+            <div class="price-tag" id="landing-price-tag">₹499</div>
+            <div class="price-caption">lifetime access</div>
+          </div>
           <button type="button" class="btn-claim full-width" data-open-membership style="width:100%;">
             <i class="fa-solid fa-bolt"></i> Upgrade Now
           </button>
@@ -364,9 +366,9 @@
   </div>
 
   <!-- MODULE JAVASCRIPT -->
-  <script type="module" src="js/app.js?v=20260816a"></script>
+  <script type="module" src="js/app.js?v=20260817a"></script>
   <script type="module">
-    import { bindMembershipTriggers, getSystemConfig } from "./js/membership.js";
+    import { bindMembershipTriggers, getSystemConfig, parseMembershipPlans } from "./js/membership.js?v=20260817a";
     document.addEventListener("DOMContentLoaded", async () => {
       bindMembershipTriggers("[data-open-membership]");
       document.getElementById("open-leaderboard-btn-footer")?.addEventListener("click", () => {
@@ -374,10 +376,22 @@
       });
       const yearEl = document.getElementById("footer-year");
       if (yearEl) yearEl.textContent = new Date().getFullYear();
-      const priceTag = document.getElementById("landing-price-tag");
-      if (priceTag) {
+
+      const plansListEl = document.getElementById("landing-plans-list");
+      if (plansListEl) {
         const cfg = await getSystemConfig();
-        priceTag.textContent = `₹${(Number(cfg.membershipPriceINR) || 499).toLocaleString('en-IN')}`;
+        const plans = parseMembershipPlans(cfg.membershipPlansRaw);
+        const cheapest = plans.reduce((min, p) => p.priceINR < min.priceINR ? p : min, plans[0]);
+        const formatDuration = (days) => {
+          if (!days || days <= 0) return "lifetime access";
+          if (days % 365 === 0) return `${days / 365} year${days === 365 ? '' : 's'}`;
+          if (days % 30 === 0) return `${days / 30} month${days === 30 ? '' : 's'}`;
+          return `${days} days`;
+        };
+        plansListEl.innerHTML = `
+          <div class="price-tag">₹${cheapest.priceINR.toLocaleString('en-IN')}</div>
+          <div class="price-caption">${formatDuration(cheapest.durationDays)}${plans.length > 1 ? ` · ${plans.length} plans available` : ''}</div>
+        `;
       }
     });
   </script>
